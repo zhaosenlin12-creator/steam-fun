@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 
 from .config import BASE_URL, STUDENT_LOGIN_PATH, TEACHER_LOGIN_PATH
 from .course_offline import build_course_asset_not_local_response, lookup_course_archive_asset
-from .homepage import homepage_asset_path, render_marketing_homepage
+from .homepage import COURSES_ASSET_ROOT, courses_asset_path, homepage_asset_path, render_marketing_homepage
 from .rewrite import is_same_origin_host, rewrite_external_urls
 from .storage import MirrorStore
 
@@ -13332,6 +13332,21 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
             return Response(status_code=404)
         return _static_response_or_404(candidate, expected_asset_path=asset_path)
 
+    @app.get("/_site/courses/{asset_path:path}")
+    def courses_static_asset(asset_path: str) -> Response:
+        candidate = courses_asset_path(asset_path)
+        if candidate is not None:
+            return _static_response_or_404(candidate, expected_asset_path=asset_path)
+        index_path = COURSES_ASSET_ROOT / "index.html"
+        if asset_path in ("", "/") and index_path.is_file():
+            return _static_response_or_404(index_path, expected_asset_path="index.html")
+        return Response(status_code=404)
+
+        candidate = courses_asset_path(asset_path)
+        if candidate is None:
+            return Response(status_code=404)
+        return _static_response_or_404(candidate, expected_asset_path=asset_path)
+
     @app.post(TEACHER_LOGIN_PATH)
     async def teacher_login(request: Request) -> Response:
         payload = await request.json()
@@ -13935,6 +13950,28 @@ def _static_response_or_404(path: Path, *, expected_asset_path: str | None = Non
     return Response(content=body, media_type=media_type)
 
 
+def _inject_back_to_home_button(text: str) -> str:
+    """Insert a floating back-to-home button on the captured /login page."""
+    snippet = (
+        '<style>'
+        '.lq-back-home{position:fixed;top:1.2rem;left:1.2rem;z-index:9999;display:inline-flex;'
+        'align-items:center;gap:.5rem;padding:.55rem 1rem;border-radius:999px;'
+        'background:rgba(255,255,255,.92);color:#010828;font-family:"Noto Sans SC",sans-serif;'
+        'font-weight:600;font-size:.85rem;letter-spacing:.04em;text-decoration:none;'
+        'box-shadow:0 8px 22px rgba(0,0,0,.25);transition:transform .18s ease,background .18s ease}'
+        '.lq-back-home:hover{transform:translateY(-2px);background:#6fff00}'
+        '.lq-back-home svg{width:.95rem;height:.95rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}'
+        '</style>'
+        '<a class="lq-back-home" href="/" aria-label="\u8fd4\u56de\u5b98\u7f51\u9996\u9875">'
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>'
+        '<span>\u8fd4\u56de\u5b98\u7f51\u9996\u9875</span>'
+        '</a>'
+    )
+    if "</body>" in text:
+        return text.replace("</body>", snippet + "</body>", 1)
+    return text + snippet
+
+
 def _captured_route_response(
     path: Path,
     *,
@@ -13957,4 +13994,6 @@ def _captured_route_response(
         text = _prune_core_background_menu(text)
     text = _inject_teacher_session_bootstrap(text, teacher_session_bootstrap)
     text = _inject_runtime_guards(text)
+    if route_key and route_key in {"/login", "/background/login"}:
+        text = _inject_back_to_home_button(text)
     return Response(content=text.encode("utf-8"), media_type="text/html")
