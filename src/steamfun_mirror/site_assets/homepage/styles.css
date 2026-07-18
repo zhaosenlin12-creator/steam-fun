@@ -211,8 +211,43 @@ svg {
   letter-spacing: 0.02em;
 }
 
-.hero-title__parenthetical {
+.hero-title__ai {
   font-size: 0.72em;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  background: linear-gradient(120deg, #5ce1ff 0%, #6ed2ff 35%, #ffffff 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: 0 0 24px rgba(110, 210, 255, 0.35);
+}
+
+.hero-typewriter {
+  margin-top: 0.35rem;
+  min-height: 1.6em;
+  display: inline-flex;
+  align-items: center;
+  color: #cfeaff;
+  font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+  letter-spacing: 0.05em;
+  max-width: 36ch;
+}
+.hero-typewriter__text {
+  white-space: nowrap;
+  overflow: hidden;
+}
+.hero-typewriter__cursor {
+  display: inline-block;
+  width: 0.55ch;
+  height: 1.05em;
+  margin-left: 2px;
+  background: linear-gradient(180deg, #5ce1ff, #6ed2ff);
+  box-shadow: 0 0 6px rgba(110, 210, 255, 0.6);
+  animation: hero-blink 0.9s steps(2, start) infinite;
+}
+@keyframes hero-blink {
+  to { visibility: hidden; }
 }
 
 .hero-accent {
@@ -1709,3 +1744,16 @@ body {
 .nft-card__dot { width:.42rem; height:.42rem; padding:0; border:0; border-radius:999px; background:rgba(255,255,255,.5); cursor:pointer; transition:width .2s ease,background .2s ease; }
 .nft-card__dot.is-active { width:1.2rem; background:#6fff00; }
 .hero-logo__image { display:block; width:auto; height:3.1rem; object-fit:contain; }
+
+/* Final focused refinements: taller student dome and balanced contact layout. */
+.dome-wall { height: clamp(38rem, 68vh, 48rem); min-height: 38rem; }
+@media (max-width: 767.98px) { .dome-wall { height: 34rem; min-height: 34rem; border-radius: 1.35rem; } }
+@media (min-width: 1024px) {
+  .signal-copy { top: 15%; left: 52%; right: 7%; justify-content: flex-start; padding: 0; }
+  .signal-copy > div, .signal-copy { align-items: flex-start; }
+  .signal-title { width: min(29rem, 100%); padding: 0; font-size: clamp(2.2rem, 3.1vw, 4rem); line-height: .95; gap: .26em; }
+  .signal-title__lead { margin-bottom: 1rem; }
+  .signal-accent { margin-left: -7rem; margin-bottom: .4rem; }
+  .social-rail { left: 8%; bottom: 16%; }
+  .social-rail__button { width: 19rem; }
+}

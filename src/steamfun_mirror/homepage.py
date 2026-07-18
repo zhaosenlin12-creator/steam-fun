@@ -48,7 +48,7 @@ NAV_ITEMS = [
 ]
 
 SIGNAL_ITEMS = [
-    ("wechat", "\u5fae\u4fe1\uff1alqxszls", "weixin://"),
+    ("wechat", "\u5fae\u4fe1\uff1a18164173640", "weixin://"),
     ("phone", "\u7535\u8bdd\uff1a18164173640", "tel:18164173640"),
     ("pin", "\u6821\u533a\uff1a\u5b9c\u660c\u5e02\u7307\u4ead\u533a\u91d1\u5cad\u8def59-1\u53f7", "#signal"),
 ]
@@ -527,9 +527,10 @@ def render_marketing_homepage(request: Request) -> str:
     parts.append('<div class="hero-body">')
     parts.append('<div class="hero-copy">')
     parts.append('<span class="hero-eyebrow font-condiment">\u4e50\u542f\u4eab \u00b7 STEAM \u6559\u80b2</span>')
-    parts.append('<h1 class="hero-title font-grotesk">\u4ece\u4e50\u9ad8\u542f\u8499<br>\u5230 <span class="hero-title__parenthetical">( AI )</span> \u521b\u9020</h1>')
+    parts.append('<h1 class="hero-title font-grotesk">\u4ece\u4e50\u9ad8\u542f\u8499<br>\u5230 <span class="hero-title__ai">AI</span> \u521b\u9020</h1>')
     parts.append('<p class="hero-accent font-condiment">\u4e50\u542f\u4eab\u673a\u5668\u4eba</p>')
     parts.append('<p class="hero-tagline font-mono">' + subtitle + '</p>')
+    parts.append('<div class="hero-typewriter" aria-live="polite">' + '<span id="hero-typewriter-text" class="hero-typewriter__text font-mono"></span>' + '<span class="hero-typewriter__cursor" aria-hidden="true"></span></div>')
     parts.append('<div class="hero-cta-row">')
     parts.append('<a class="hero-cta hero-cta--primary font-grotesk" href="' + course_url + '" target="_blank" rel="noreferrer">\u67e5\u770b\u5b8c\u6574\u8bfe\u7a0b\u4f53\u7cfb</a>')
     parts.append('<a class="hero-cta hero-cta--ghost font-grotesk" href="#signal">\u9884\u7ea6\u4f53\u9a8c\u8bfe</a>')
@@ -540,8 +541,8 @@ def render_marketing_homepage(request: Request) -> str:
     parts.append('<div class="hero-social hero-social--mobile" aria-label="\u8054\u7cfb\u65b9\u5f0f">' + signal_buttons_html + '</div>')
     parts.append('<ul class="hero-metric-row" aria-label="\u673a\u6784\u6307\u6807">')
     parts.append('<li><span class="hero-metric__num font-grotesk">1200+</span><span class="hero-metric__label font-mono">\u5728\u8bfb\u5b66\u5458</span></li>')
-    parts.append('<li><span class="hero-metric__num font-grotesk">6 \u5e74</span><span class="hero-metric__label font-mono">\u672c\u5730\u6df1\u8015</span></li>')
-    parts.append('<li><span class="hero-metric__num font-grotesk">40+</span><span class="hero-metric__label font-mono">\u8d5b\u4e8b\u5956\u9879</span></li>')
+    parts.append('<li><span class="hero-metric__num font-grotesk">7 \u5e74</span><span class="hero-metric__label font-mono">\u672c\u5730\u6df1\u8015</span></li>')
+    parts.append('<li><span class="hero-metric__num font-grotesk">100+</span><span class="hero-metric__label font-mono">\u8d5b\u4e8b\u5956\u9879</span></li>')
     parts.append('<li><span class="hero-metric__num font-grotesk">3-16</span><span class="hero-metric__label font-mono">\u5168\u9f84\u6bb5</span></li>')
     parts.append('</ul>')
     parts.append('</div></section>')
@@ -592,7 +593,7 @@ def render_marketing_homepage(request: Request) -> str:
         + '<span class="font-mono site-footer__tagline">从乐高启蒙 · 到 AI 创造</span>'
         + '</div>'
         + '<div class="site-footer__contact font-mono">'
-        + '<span>微信：LQXSZLS</span>'
+        + '<span>微信：18164173640</span>'
         + '<span>电话：18164173640</span>'
         + '<span>校区：宜昌市猇亭区金岭路59-1号</span>'
         + '</div>'

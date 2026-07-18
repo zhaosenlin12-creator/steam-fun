@@ -83,7 +83,7 @@
             <i class="${getIconClass(stage)}"></i>
           </div>`;
       return `
-      <div class="course-card" onclick="window.location.href='course-detail.html?id=${stage.id}'" style="--card-accent:${stage.color};border-top:4px solid ${stage.color};">
+      <a class="course-card" href="course-detail.html?id=${stage.id}" style="--card-accent:${stage.color};border-top:4px solid ${stage.color};">
         ${imgHtml}
         <div class="course-card-top">
           <div class="course-card-icon" style="background:${stage.color}">
@@ -95,12 +95,54 @@
           <div class="course-card-highlights">
             ${stage.highlights.map(h => `<span style="background:${hexToRgba(stage.color, 0.1)};color:${stage.color}">${h}</span>`).join('')}
           </div>
-          <a href="course-detail.html?id=${stage.id}" class="course-card-btn" style="background:${stage.color}">
+          <a href="course-detail.html?id=${stage.id}" onclick="event.stopPropagation();" class="course-card-btn" style="background:${stage.color}">
             查看详情 <i class="fas fa-arrow-right"></i>
           </a>
-        </div>
-      </div>`;
+      </a>`;
     }).join('');
+  }
+
+
+  window.openCourseDetail = function(stageId) {
+    const stage = COURSE_DATA.stages.find(item => item.id === stageId);
+    if (!stage) return;
+    let panel = document.getElementById('course-detail-panel');
+    if (!panel) {
+      panel = document.createElement('section');
+      panel.id = 'course-detail-panel';
+      panel.className = 'inline-course-detail';
+      panel.innerHTML = '<div class="inline-course-detail__inner"><button class="inline-course-detail__close" type="button" aria-label="关闭详情">×</button><div id="detailHero" class="detail-hero"><h2 id="detailTitle"></h2><p id="detailAge"></p><p id="detailDesc"></p></div><div id="detailTabs" class="detail-tabs"></div><div id="detailContent" class="detail-content"></div></div>';
+      document.body.appendChild(panel);
+      panel.querySelector('.inline-course-detail__close').addEventListener('click', () => panel.classList.remove('is-open'));
+    }
+    panel.classList.add('is-open');
+    panel.dataset.courseId = stageId;
+    history.replaceState(null, '', '#course-detail-panel');
+    document.getElementById('detailTitle').textContent = stage.name;
+    document.getElementById('detailAge').textContent = stage.ageRange;
+    document.getElementById('detailDesc').textContent = stage.description;
+    renderInlineCourseTabs(stage);
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  function renderInlineCourseTabs(stage) {
+    const tabsEl = document.getElementById('detailTabs');
+    const contentEl = document.getElementById('detailContent');
+    const tabs = [];
+    if (stage.subCourses) {
+      stage.subCourses.forEach((sub, index) => tabs.push({ id: 'sub-' + index, label: sub.age ? sub.age + '岁' : (sub.semester || '课程'), data: sub }));
+    }
+    if (!tabs.length) tabs.push({ id: 'overview', label: '课程介绍', data: stage });
+    const render = (index) => {
+      const tab = tabs[index];
+      tabsEl.querySelectorAll('button').forEach((button, i) => button.classList.toggle('active', i === index));
+      const data = tab.data;
+      const terms = data.terms || [];
+      contentEl.innerHTML = terms.length ? terms.map(term => '<article class="inline-course-term"><h3>' + term.termName + '</h3><div class="inline-course-lessons">' + (term.lessons || []).map(lesson => '<div class="inline-course-lesson"><strong>' + lesson.title + '</strong><p>' + (lesson.skill || lesson.knowledge || lesson.project || '') + '</p></div>').join('') + '</div></article>').join('') : '<article class="inline-course-term"><h3>' + stage.name + '</h3><p>' + stage.description + '</p><div class="course-card-highlights">' + (stage.highlights || []).map(item => '<span>' + item + '</span>').join('') + '</div></article>';
+    };
+    tabsEl.innerHTML = tabs.map((tab, index) => '<button type="button" data-inline-tab="' + index + '">' + tab.label + '</button>').join('');
+    tabsEl.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => render(Number(button.dataset.inlineTab))));
+    render(0);
   }
 
   function renderRoutes() {
@@ -119,7 +161,7 @@
             const color = s ? s.color : '#3570B5';
             const icon = s ? getIconClass(s) : 'fas fa-star';
             return (i > 0 ? '<div class="route-arrow"></div>' : '') +
-              `<div class="route-step" onclick="window.location.href='course-detail.html?id=${m.stage}'" style="cursor:pointer">
+              `<div class="route-step" onclick="openCourseDetail('${m.stage}')" style="cursor:pointer">
                 <div class="route-step-icon" style="background:${color}"><i class="${icon}"></i></div>
                 <div class="route-step-info">
                   <h4>${m.label}</h4>

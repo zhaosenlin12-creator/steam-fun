@@ -81,31 +81,39 @@
     const track = root.querySelector(trackSel);
     const prev = root.querySelector(prevSel);
     const next = root.querySelector(nextSel);
-    if (!viewport || !track) return;
-    let offset = 0;
+    if (!viewport || !track || !track.firstElementChild) return;
+    let index = 0;
     let paused = false;
-    let timer = null;
-    const cardWidth = () => {
+    let resumeTimer = 0;
+    const cardStep = () => {
       const first = track.firstElementChild;
-      if (!first) return 280;
       const style = getComputedStyle(track);
       const gap = parseFloat(style.columnGap || style.gap || '0') || 0;
       return first.getBoundingClientRect().width + gap;
     };
-    const maxOffset = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
-    const step = (dir) => {
-      offset = Math.max(0, Math.min(maxOffset(), offset + dir * cardWidth() * 1.4));
-      track.style.transform = 'translate3d(' + (-offset) + 'px, 0, 0)';
+    const maxIndex = () => Math.max(0, Math.ceil(Math.max(0, track.scrollWidth - viewport.clientWidth) / Math.max(1, cardStep())));
+    const render = (animate = true) => {
+      const max = maxIndex();
+      index = max ? ((index % (max + 1)) + (max + 1)) % (max + 1) : 0;
+      track.style.transition = animate ? '' : 'none';
+      const maxOffset = Math.max(0, track.scrollWidth - viewport.clientWidth);
+      const offset = index === max ? maxOffset : Math.min(maxOffset, index * cardStep());
+      track.style.transform = `translate3d(${-offset}px, 0, 0)`;
+      if (!animate) requestAnimationFrame(() => { track.style.transition = ''; });
     };
-    const tick = () => {
-      if (!paused) step(1);
-      timer = window.setTimeout(tick, 3200);
+    const move = (direction) => { index += direction; render(true); };
+    const resumeLater = () => {
+      paused = true;
+      clearTimeout(resumeTimer);
+      resumeTimer = window.setTimeout(() => { paused = false; }, 4500);
     };
-    timer = window.setTimeout(tick, 3200);
-    if (prev) prev.addEventListener('click', () => { paused = true; step(-1); window.setTimeout(() => { paused = false; }, 5000); });
-    if (next) next.addEventListener('click', () => { paused = true; step(1); window.setTimeout(() => { paused = false; }, 5000); });
-    viewport.addEventListener('mouseenter', () => { paused = true; });
+    prev?.addEventListener('click', () => { resumeLater(); move(-1); });
+    next?.addEventListener('click', () => { resumeLater(); move(1); });
+    viewport.addEventListener('mouseenter', () => { paused = true; clearTimeout(resumeTimer); });
     viewport.addEventListener('mouseleave', () => { paused = false; });
+    window.addEventListener('resize', () => render(false));
+    window.setInterval(() => { if (!paused) move(1); }, 3200);
+    render(false);
   };
 
   initCarousel('#honorCarousel', '.honor-carousel__viewport', '.honor-carousel__track', '.honor-carousel__nav--prev', '.honor-carousel__nav--next');
@@ -218,4 +226,39 @@
     start();
   });
 
+
+  // -- hero typewriter (Senlin-style sequential phrase) -----------
+  const heroTarget = document.getElementById('hero-typewriter-text');
+  if (heroTarget) {
+    const heroLines = [
+      '乐高启蒙 · 机器人工程 · 编程思维',
+      'NOI 竞赛指导 / 1000+ 学员成果',
+      '乐启享教育 / 校长 / 合伙人',
+      'Python / C++ / Web / AI 教学实践'
+    ];
+    let hi = 0;
+    let ci = 0;
+    let deleting = false;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const tick = () => {
+      const current = heroLines[hi % heroLines.length];
+      heroTarget.textContent = current.slice(0, ci);
+      if (!deleting) {
+        if (ci < current.length) {
+          ci += 1;
+        } else {
+          deleting = true;
+          setTimeout(tick, 1800);
+          return;
+        }
+      } else if (ci > 0) {
+        ci -= 1;
+      } else {
+        deleting = false;
+        hi = (hi + 1) % heroLines.length;
+      }
+      setTimeout(tick, deleting ? 36 : (reduced ? 80 : 60));
+    };
+    tick();
+  }
 })();
