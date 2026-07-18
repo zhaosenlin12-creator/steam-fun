@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta http-equiv="cache-control" content="no-cache">
+<meta charset="utf-8">
+
+<!--引入 element-ui 的样式，-->
+<link rel="stylesheet" href="../css/element-ui/lib/theme-chalk/index.css">
+<!-- 必须先引入vue，  后使用element-ui -->
+<script src="../js/vue/vue.min.js"></script>
+<!-- 引入element 的组件库-->
+<script src="../css/element-ui/lib/index.js"></script>
+
+<head>
+  <title>Jrcode</title>
+  <script src="../js/oss/aliyun-oss-sdk.min.js"></script>
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/jquery.cokie.min.js"></script>
+  <script src="../js/common.js"></script>
+  <link rel="stylesheet" href="../css/toastr.css" />
+  <script>
+    var access_token = getUserToken();
+    var userInfo = UserStuInfo();
+
+    let client;
+    var tchPlanId = urlParams('tchPlanId');
+    var worktype = urlParams('operate');
+    var stu_tch_plan_id = urlParams('stu_tch_plan_id');
+    var stu_user_id = urlParams('stu_user_id');
+    var work_type = urlParams('work_type');
+
+
+
+    var uploadParam = {}; //提交参数
+
+    window.scratchJrPage = 'editor';
+    window.JrConfig = {
+      onSaveCloud: function (contents, name, role, type, cb) {
+
+        //console.log('操作类型');
+        //console.log(role);
+        //console.log(type);
+
+        if (type == '3') {
+          uploadParam.title = ""; //作品名称
+          uploadParam.tchPlanId = tchPlanId; //讲次id
+          uploadParam.template_type = worktype;
+          uploadParam.work_url = "";
+          uploadParam.covers_url = "";
+          updateTchPlanTemplate(access_token,
+            uploadParam,
+            function (res) {
+
+              //console.log('重置模板返回');
+              //console.log(res);
+
+              if (res.is_update) {
+                window.ToastSuccess('模板重置成功');
+                cb('success');
+              }
+
+            })
+        }
+        else {
+          window.ToastSuccess('暂不支持');
+          cb('success');
+        }
+
+
+      },
+
+      onSaveLocal: function (contents, name, role, type, cb) {
+
+        //console.log('操作类型');
+        //console.log(role);
+        //console.log(type);
+
+        if (type == '3') {
+          //console.log('老师修改课堂模板');
+          //console.log(tchPlanId);
+
+
+          InitOss(access_token, function (res) {
+            ////console.log("初始化OSS");
+            ////console.log(res);
+            client = new OSS({
+              region: "oss-cn-zhangjiakou",
+              accessKeyId: res.AccessKeyId,
+              accessKeySecret: res.AccessKeySecret,
+              stsToken: res.SecurityToken,
+              bucket: "jrcodework",
+              secure: true
+            });
+
+            uploadParam.title = name; //作品名称
+            uploadParam.tchPlanId = tchPlanId; //讲次id
+            uploadParam.template_type = worktype;
+
+            var arg = new Array()
+            arg[0] = 'works/jrcode/coursetemplate/' + userInfo
+              .educational_institution_id;
+            arg[1] = userInfo.code;
+            arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+            window.ScratchJr.getProjectCover(cover => {
+              //TODO 获取到作品截图
+              ////console.log("cover")
+              ////console.log(cover)
+              arg[3] = cover;
+              uploadpng(arg, function (pngurl) {
+                ////console.log(pngurl);
+                uploadParam.covers_url = pngurl; //作品封面图地址
+
+                arg[4] = contents;
+
+                uploadsjr(arg, function (
+                  sjrurl) {
+                  //////console.log("项目链接");
+                  ////console.log(sjrurl);
+                  uploadParam.work_url =
+                    sjrurl; //项目sb3地址
+                  upload_flag =
+                    true; //上传完毕
+
+                  //console.log('上传参数');
+                  //console.log(uploadParam);
+
+                  updateTchPlanTemplate(access_token,
+                    uploadParam,
+                    function (res) {
+
+                      //console.log('修改模板返回');
+                      //console.log(res);
+
+                      if (res.is_update) {
+                        window.ToastSuccess('模板修改成功');
+                        cb('success');
+                      }
+
+                    })
+                });
+
+              });
+            })
+          });
+
+        }
+        else if (type == '5') {
+
+          InitOss(access_token, function (res) {
+            client = new OSS({
+              region: "oss-cn-zhangjiakou",
+              accessKeyId: res.AccessKeyId,
+              accessKeySecret: res.AccessKeySecret,
+              stsToken: res.SecurityToken,
+              bucket: "jrcodework",
+              secure: true
+            });
+
+            uploadParam.title = name; //作品名称
+            uploadParam.stu_tch_plan_id = stu_tch_plan_id; //讲次id
+            uploadParam.stu_user_id = stu_user_id;
+            uploadParam.work_type = work_type;
+            uploadParam.is_local = false; //是否暂存
+
+            //console.log('提交的参数');
+            //console.log(uploadParam);
+
+            var arg = new Array()
+            arg[0] = 'works/jrcode/coursework/' + userInfo
+              .educational_institution_id;
+            arg[1] = userInfo.code;
+            arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+            window.ScratchJr.getProjectCover(cover => {
+              //TODO 获取到作品截图
+              ////console.log("cover")
+              ////console.log(cover)
+              arg[3] = cover;
+              uploadpng(arg, function (pngurl) {
+                ////console.log(pngurl);
+                uploadParam.covers = pngurl; //作品封面图地址
+
+                arg[4] = contents;
+
+                uploadsjr(arg, function (
+                  sjrurl) {
+
+                  uploadParam.work_url =
+                    sjrurl; //项目sb3地址
+
+                  UploadJrWorks(access_token,
+                    uploadParam,
+                    function (res) {
+                      if (res.is_save) {
+
+                        window.ToastSuccess('修改成功');
+                        cb('success');
+
+                      } else {
+                        window.ToastSuccess('修改失败');
+                        cb('success');
+                      }
+                    })
+                });
+
+              });
+            })
+          });
+
+
+        }
+        else if (type == '6') {
+          window.ToastSuccess('暂不支持');
+          cb('success');
+        }
+
+
+
+      }
+    }
+
+
+    function uploadpng(arg, callback) {
+      //console.log("上传项目缩略图");
+      //console.log(arg);
+      var url = arg[0] + '/' + arg[1] + '/' + 'cover/' + arg[2] + '.png';
+      //console.log(url);
+      try {
+        let result = client.put(url, dataURLtoBlob(arg[3]));
+        result.then(
+          function (res) {
+            //console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+    //更新缩略图
+    function updatepng(url, cover, callback) {
+      //console.log("更新缩略图");
+      //console.log(url);
+      try {
+        let result = client.put(url, dataURLtoBlob(cover));
+        result.then(
+          function (res) {
+            //console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+    //上传sjr到OSS
+    function uploadsjr(arg, callback) {
+      //console.log("上传项目SJR");
+      //console.log(arg);
+      var url = arg[0] + '/' + arg[1] + '/' + 'release/' + arg[2] + '.sjr';
+      //console.log(url);
+      try {
+        let result = client.put(url, arg[4]);
+        result.then(
+          function (res) {
+            //console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+
+    //更新sjr
+    function updatesjr(url, file, callback) {
+      //console.log("更新SJR");
+      //console.log(url);
+
+      try {
+        let result = client.put(url, file);
+        result.then(
+          function (res) {
+            //console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+
+    //上传文件
+    function uploadFile(fileName, fileTag, filePath) {
+      var id = null;
+      $.ajax({
+        url: '/api/system/sysFile/add',
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        async: false,
+        beforeSend: function (request) {
+          request.setRequestHeader('X-Access-Token', access_token)
+        },
+        data: JSON.stringify({
+          fileType: 2,
+          fileName: fileName,
+          filePath: filePath,
+          fileLocation: 2,
+          fileTag: fileTag
+        }),
+        success: function (res) {
+          if (res.success) {
+            id = res.result.id
+          }
+        },
+        error: function () { },
+        complete: function () { }
+      })
+      return id;
+    }
+
+    //上传作业
+    function uploadWork(projectKey, coverKey, projectTitle) {
+      $.ajax({
+        url: '/api/teaching/teachingWork/submit',
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        beforeSend: function (request) {
+          request.setRequestHeader('X-Access-Token', access_token)
+        },
+        data: JSON.stringify({
+          courseId: unitId,
+          workCover: coverKey,
+          workFile: projectKey,
+          workName: projectTitle,
+          id: workId,
+          workType: 2
+        }),
+        success: function (res) {
+          canShare = true
+          if (res.code == 200) {
+            alert("上传成功")
+          } else { }
+        },
+        error: function () {
+
+        },
+        complete: function () { }
+      })
+    }
+
+    function upload2Qiniu(zip, key, fileName, observer) {
+      var config = {
+        useCdnDomain: true,
+        region: qiniu.region.z0,
+        disableStatisticsReport: true
+      }
+      var putExtra = {
+        fname: fileName, //文件原名
+        params: {},
+        mimeType: null
+      }
+      // var observable = qiniu.upload(zip, key, qn_token, putExtra, config)
+      var subscription = observable.subscribe(observer)
+    }
+  </script>
+  <script type="text/javascript" src="app.bundle.js"></script>
+  <script src="../js/toastr.js"></script>
+</head>
+
+<body style="background: white; overflow: hidden;">
+  <div class="frame" id="frame"></div>
+  <div class="libframe" id="libframe"></div>
+  <div class="paintframe" id="paintframe"></div>
+  <!--代码折叠-->
+  
+
+  <div id="app">
+  </div>
+
+  <script language="Javascript">
+    document.oncontextmenu = new Function("event.returnValue=false");
+    document.onselectstart = new Function("event.returnValue=false");
+  </script>
+
+  <script>
+
+    new Vue({
+      el: '#app',
+      data: {
+        message: 'Hello Jrcode'
+      },
+      mounted() {
+        // 将vue中的方法赋值给window
+        window.goHome = this.goHome;
+        window.ToastSuccess = this.ToastSuccess;
+      },
+      methods: {
+        goHome() {
+          this.$confirm("即将返回,记得保存作品哦！", "提示", {
+            confirmButtonText: "确定",
+            cancelButtonText: "取消",
+            type: "warning",
+          }).then(() => {
+            window.history.go(-1);
+          });
+        },
+
+        ToastSuccess(msg) {
+          this.$message.success({
+            message: msg, type: 'success', customClass: 'toast_success', center: true
+          });
+        }
+
+
+      }
+
+    })
+
+  </script>
+  <style>
+    .toast_success {
+      z-index: 12000 !important;
+      background: #f9cf37 !important;
+      color: white !important;
+    }
+
+    .el-message--success .el-message__content {
+      color: white !important;
+      font-size: 18px !important;
+      font-weight: bold !important;
+    }
+  </style>
+
+
+</body>
+
+</html>

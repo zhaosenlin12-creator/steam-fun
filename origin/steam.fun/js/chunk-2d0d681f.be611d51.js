@@ -1,0 +1,1 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["chunk-2d0d681f"],{"739f":function(e,n,t){"use strict";t.r(n);var a=function(){var e=this,n=e.$createElement,t=e._self._c||n;return t("div",{staticClass:"page"},[t("router-view")],1)},i=[],r={name:"CompetitionCenter-QuestionBankCenter"},s=r,u=t("2877"),o=Object(u["a"])(s,a,i,!1,null,null,null);n["default"]=o.exports}}]);

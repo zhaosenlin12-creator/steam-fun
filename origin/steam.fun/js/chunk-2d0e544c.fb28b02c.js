@@ -1,0 +1,1 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["chunk-2d0e544c"],{9483:function(e,n,t){"use strict";t.r(n);var a=function(){var e=this,n=e.$createElement,t=e._self._c||n;return t("div",[e._v("线下组卷")])},c=[],r={name:"offline-exam",data(){return{}}},u=r,i=t("2877"),l=Object(i["a"])(u,a,c,!1,null,"9ee554f0",null);n["default"]=l.exports}}]);

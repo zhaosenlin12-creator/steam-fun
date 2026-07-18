@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>学习报告</title>
+    <script>
+        // Polyfill for Array.prototype.at (for older browsers)
+        if (!Array.prototype.at) {
+            Array.prototype.at = function (index) {
+                if (index >= 0) return this[index];
+                return this[this.length + index];
+            };
+        }
+    </script>
+    <script src="https://wugecdn.steam.fun/resources/tools/marked.min.js"></script>
+    <script src="https://wugecdn.steam.fun/resources/tools/vue.global.js"></script>
+    <script src="https://res2.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+    <script src="https://wugecdn.steam.fun/resources/tools/axios.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.3.2/html2canvas.min.js"></script> -->
+    <!-- 手机端调试工具 -->
+    <!-- <script src="https://fastly.jsdelivr.net/npm/eruda"></script> -->
+    <!-- <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script> -->
+
+    <!-- 原Monaco Editor相关代码已注释 -->
+    <!-- <link rel="stylesheet" href="https://wugecdn.steam.fun/resources/tools/monaco-editor/editor.main.css"> -->
+    <!-- <script src="https://wugecdn.steam.fun/resources/tools/monaco-editor/monaco-editor@0.30.1-loader.js"></script>
+    <script src="https://wugecdn.steam.fun/resources/tools/monaco-editor/editor.main.nls.js"></script>
+    <script src="https://wugecdn.steam.fun/resources/tools/monaco-editor/editor.main.js"></script> -->
+    <!-- <script type="text/javascript" src="./package/min/vs/loader.js"></script>
+    <script type="text/javascript" src="./package/min/vs/basic-languages/cpp/cpp.js"></script> -->
+
+    <!-- 新的改进版代码编辑器 -->
+    <script src="./simple-code-editor.js"></script>
+
+    <script src="https://wugecdn.steam.fun/resources/tools/qrcode.min.js"></script>
+    <!--导入SDK文件-->
+    <script type="text/javascript" src="https://gosspublic.alicdn.com/aliyun-oss-sdk-6.18.0.min.js"></script>
+
+    <!-- 原Monaco Editor初始化代码已注释 -->
+    <!-- <script>
+        // 引入处理js
+        require.config({ paths: { 'vs': './package/min/vs' } })
+        require.config({ 'vs/nls': { availableLanguages: { '*': 'zh-cn' } } });
+        require(['vs/editor/editor.main'], function (res) { // 初始化，很有必要
+            // initCode()
+            console.log('editor初始化结果：')
+            console.log(res)
+        })
+    </script> -->
+</head>
+
+<body>
+    <style>
+        @import './styles/style.css';
+    </style>
+    <div id="mobileApp">
+        <header class="report-top-bg" :style="{'max-width':baseWidth+'px'}">
+            <img src="./image/reportTop@2x.png" alt="">
+            <img src="./image/people@2x.png" class="people" alt="">
+        </header>
+        <main class="mobile-container" v-if="stuWorkDetail" style="display: none;"
+            :style="{display: 'block', 'max-width':baseWidth+'px'}">
+            <!-- <h1 class="title">学习报告</h1> -->
+            <article class="top">
+                <dl class="stu-info">
+                    <dt>
+                        <img :src="stuWorkDetail.evaluateInfo.stuUserInfo.headImgUrl" alt="">
+                    </dt>
+                    <dd>
+                        <span class="name">{{stuWorkDetail.evaluateInfo.stuUserInfo.name}}</span>
+                        <span class="days">学习
+                            <strong>{{stuWorkDetail.evaluateInfo.stuUserInfo.loginDuration}}</strong> 天</span>
+                        <div class="tch">
+                            <!-- <img src="./image/tch@2x.png" alt=""> -->
+                            <span>指导老师：{{stuWorkDetail.evaluateInfo.userInfo.realname}}</span>
+                        </div>
+                        <div class="time">
+                            <!-- <img src="./image/time@2x.png" alt=""> -->
+                            <span>点评时间：{{stuWorkDetail.evaluateInfo.created_time}}</span>
+                        </div>
+                    </dd>
+                </dl>
+                <!-- 作品简介 -->
+                <article class="works-intro">
+                    <div class="works-title">
+                        <!-- <img src="./image/album@2x.png" alt=""> -->
+                        名称：{{stuWorkDetail.lessonInfo.title}}
+                    </div>
+                    <div class="content">
+                        <p>
+                            简介：{{stuWorkDetail.lessonInfo.desc}}
+                        </p>
+                    </div>
+                </article>
+            </article>
+            <!-- 作品详情 -->
+            <article class="works-detail" v-if="stuWorkDetail.tchWorkInfo||stuWorkDetail.homeWorkInfo">
+                <div class="eval-title">
+                    <div class="eval-title-box">
+                        学生作品
+                    </div>
+                </div>
+                <!-- 课堂作品 -->
+                <div :class="{'iframe-box':true, 'show-tools': iframeShowTools}" v-if="stuWorkDetail.tchWorkInfo">
+                    <h5 class="class-type">
+                        <img src="https://wugecdn.steam.fun/resources/static/jiaxiaotong/%E8%AF%BE%E5%A0%82%E4%BD%9C%E5%93%81.png"
+                            alt="Icon" />
+                        课堂作品
+                    </h5>
+                    <!-- jr & sc -->
+                    <div style="margin-top: 2vw;" v-if="stuWorkDetail.subjectInfo.id == 1">
+                        <iframe style="border: 0px" frameborder="0" scrolling="no"
+                            :src="'/jrcode/h5show1.html?mode=look&filepath=' + stuWorkDetail.tchWorkInfo.work_url"
+                            :width="'100%'" :height="iframeHeight"></iframe>
+                    </div>
+
+                    <div v-if="stuWorkDetail.subjectInfo.id == 2" style="display: flex;justify-content: center;">
+                        <!-- <object :data="`/scratch/h5player1.html?scoure=MiniWorksDetails&basePageWidth=${baseWidth}&marginVal=20&work_type=2` +
+                        '&work_id=' +
+                        stuWorkDetail.tchWorkInfo.id +
+                        '&subject_code=' +
+                        '2' +
+                        '&tchWorkInfo=' +
+                        JSON.stringify(stuWorkDetail.tchWorkInfo)" type="text/html"
+                            style="width:100%;height:100%;"></object> -->
+                        <iframe ref="myIframe" style="border: 0;" :src="`/scratch/h5player1.html?scoure=MiniWorksDetails&basePageWidth=${baseWidth}&marginVal=20&work_type=2` +
+                              '&work_id=' +
+                              stuWorkDetail.tchWorkInfo.id +
+                              '&subject_code=' +
+                              '2' +
+                              '&tchWorkInfo=' +
+                              JSON.stringify(stuWorkDetail.tchWorkInfo)
+                              " frameborder="0" scrolling="no" id="bdIframe"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+                    </div>
+                    <!-- c++ & py -->
+                    <div class="code-box" v-if="stuWorkDetail.subjectInfo.id == 3 || stuWorkDetail.subjectInfo.id == 4">
+                        <div class="code-tag-box" v-if="stuWorkDetail.subjectInfo.id == 3">
+                            <span v-for="codeItem in classCodeData.codeList" :key="codeItem.id"
+                                @click="handleChangeClassCode(codeItem)"
+                                :class="{'code-tag':true,active:codeItem.id ===classCodeData.codeId}">{{codeItem.label}}</span>
+                        </div>
+                        <div class="code-tag-box" v-if="stuWorkDetail.subjectInfo.id == 4">
+                            <span v-for="codeItem in classCodeData.codeList" :key="codeItem.id"
+                                @click="handleChangeClassCode(codeItem.submissionInfo)"
+                                :class="{'code-tag':true,active:codeItem.submissionInfo&&codeItem.submissionInfo.id ===classCodeData.codeId}">{{codeItem.oj_problem_title}}</span>
+                        </div>
+                        <div id="monaco_editor" style="width:100%;height: 100%;padding-top: 10rem"></div>
+                    </div>
+                </div>
+                <!-- 课后作品 -->
+                <div :class="{'iframe-box':true, 'show-tools': iframeShowTools}" v-if="stuWorkDetail.homeWorkInfo">
+                    <h5 class="class-type">
+                        <img src="https://wugecdn.steam.fun/resources/static/jiaxiaotong/%E8%AF%BE%E5%A0%82%E4%BD%9C%E5%93%81.png"
+                            alt="Icon" />
+                        课后作品
+                    </h5>
+                    <!-- jr & sc -->
+                    <div style="margin-top: 2vw;" v-if="stuWorkDetail.subjectInfo.id == 1">
+                        <iframe style="border: 0px" frameborder="0" scrolling="no"
+                            :src="'/jrcode/h5show1.html?mode=look&filepath=' + stuWorkDetail.homeWorkInfo.work_url"
+                            width="100%" :height="iframeHeight"></iframe>
+                    </div>
+
+                    <div v-if="stuWorkDetail.subjectInfo.id == 2" style="display: flex;justify-content: center;">
+                        <!-- <object
+                            :data="`/scratch/h5player2.html?scoure=MiniWorksDetails&basePageWidth=${baseWidth}&marginVal=20&work_type=2&work_id=${stuWorkDetail.homeWorkInfo.id}&subject_code=2&homeWorkInfo=${JSON.stringify(stuWorkDetail.homeWorkInfo)}`"
+                            type="text/html" style="width:100%;height:100%;"></object> -->
+                        <iframe ref="myIframe1" style="border: 0;"
+                            :src="`/scratch/h5player2.html?scoure=MiniWorksDetails&basePageWidth=${baseWidth}&marginVal=20&work_type=2&work_id=${stuWorkDetail.homeWorkInfo.id}&subject_code=2&homeWorkInfo=${JSON.stringify(stuWorkDetail.homeWorkInfo)}`"
+                            frameborder="0" scrolling="no" id="scrrame"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+                    </div>
+                    <!-- c++ & py -->
+                    <div class="code-box" v-if="stuWorkDetail.subjectInfo.id == 3 || stuWorkDetail.subjectInfo.id == 4">
+                        <div class="code-tag-box" v-if="stuWorkDetail.subjectInfo.id == 3">
+                            <span v-for="codeItem in afterClassCodeData.codeList" :key="codeItem.id"
+                                @click="handleChangeAfterClassCode(codeItem)"
+                                :class="{'code-tag':true,active:codeItem.id ===afterClassCodeData.codeId}">{{codeItem.label}}</span>
+                        </div>
+                        <div class="code-tag-box" v-if="stuWorkDetail.subjectInfo.id == 4">
+                            <span v-for="codeItem in afterClassCodeData.codeList" :key="codeItem.id"
+                                @click="handleChangeAfterClassCode(codeItem.submissionInfo)"
+                                :class="{'code-tag':true,active:codeItem.submissionInfo&&codeItem.submissionInfo.id ===afterClassCodeData.codeId}">{{codeItem.oj_problem_title}}</span>
+                        </div>
+                        <div id="monaco_editor_after" style="width:100%;height: 100%;padding-top: 10rem"></div>
+                    </div>
+                </div>
+            </article>
+            <div class="eval-box" v-if="stuWorkDetail.evaluateInfo.showEval">
+                <div class="eval-title">
+                    <div class="eval-title-box">
+                        点评内容
+                    </div>
+                </div>
+                <!-- 老师点评 -->
+                <article class="tch-comment" v-if="stuWorkDetail.evaluateInfo.showTchEval">
+                    <div class="tch-title">
+                        <img src="./image/comment@2x.png" alt="">
+                        老师点评
+                    </div>
+                    <div class="content">
+                        <!-- 星级 -->
+                        <div class="star-leave">
+                            <!-- <strong>星级</strong> -->
+                            <template v-for="(item, index) in stuWorkDetail.evaluateInfo.score" :key="index">
+                                <div v-if="item.star>0">
+                                    <span>{{item.title}}</span>
+                                    <span class="star-box">
+                                        <i v-for="num in 5" :key="num" :class="{active:Number(item.star)>=num}">
+                                            <svg t="1732254107248" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                                v-if="Number(item.star)<num" xmlns="http://www.w3.org/2000/svg"
+                                                p-id="2356" width="24" height="24">
+                                                <path
+                                                    d="M540.7 133.4l103.5 209.8c4.6 9.4 13.6 15.9 24 17.4l231.5 33.6c26.1 3.8 36.6 35.9 17.7 54.4L749.9 612c-7.5 7.3-10.9 17.9-9.2 28.2l39.5 230.6c4.5 26-22.9 45.9-46.2 33.6L526.9 795.5c-9.3-4.9-20.4-4.9-29.7 0l-207 108.9c-23.4 12.3-50.7-7.6-46.2-33.6l39.5-230.6c1.8-10.3-1.7-20.9-9.2-28.2L106.8 448.7c-18.9-18.4-8.5-50.6 17.7-54.4L356 360.7c10.4-1.5 19.4-8 24-17.4l103.5-209.8c11.7-23.7 45.5-23.7 57.2-0.1z"
+                                                    fill="#D7D7D7" p-id="2357"></path>
+                                            </svg>
+                                            <svg t="1732254107248" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                                                v-else xmlns="http://www.w3.org/2000/svg" p-id="2356" width="24"
+                                                height="24">
+                                                <path
+                                                    d="M540.7 133.4l103.5 209.8c4.6 9.4 13.6 15.9 24 17.4l231.5 33.6c26.1 3.8 36.6 35.9 17.7 54.4L749.9 612c-7.5 7.3-10.9 17.9-9.2 28.2l39.5 230.6c4.5 26-22.9 45.9-46.2 33.6L526.9 795.5c-9.3-4.9-20.4-4.9-29.7 0l-207 108.9c-23.4 12.3-50.7-7.6-46.2-33.6l39.5-230.6c1.8-10.3-1.7-20.9-9.2-28.2L106.8 448.7c-18.9-18.4-8.5-50.6 17.7-54.4L356 360.7c10.4-1.5 19.4-8 24-17.4l103.5-209.8c11.7-23.7 45.5-23.7 57.2-0.1z"
+                                                    fill="#F8B922" p-id="2357"></path>
+                                            </svg>
+                                        </i>
+                                    </span>
+                                </div>
+                            </template>
+                        </div>
+                        <!-- 评语 -->
+                        <div class="remark" v-if="stuWorkDetail.evaluateInfo.remark">
+                            <strong>
+                                <img src="https://wugecdn.steam.fun/resources/static/jiaxiaotong/%E8%80%81%E5%B8%88%E8%AF%84%E8%AF%AD.png"
+                                    alt="Icon" style="width: 40rem; margin-right: 10rem;" />
+                                教师评语
+                            </strong>
+                            <div v-html="stuWorkDetail.evaluateInfo.remark"></div>
+                        </div>
+                    </div>
+                </article>
+                <!-- 课堂风采 -->
+                <article class="class-style" v-if="stuWorkDetail.evaluateInfo.attachment.length > 0">
+                    <div class="class-title">
+                        <img src="./image/classroom@2x.png" alt="">
+                        课堂风采
+                    </div>
+                    <div class="content">
+                        <div v-for="(item, index) in stuWorkDetail.evaluateInfo.attachment" :key="index">
+                            <div v-if="item.type === 'voice'"
+                                style="padding:20px;background:#f3f6fb;border-radius:10px;margin-bottom:15px;">
+                                <div style="text-align:center;margin-bottom:10px;"> 👇 ~ 收到一条来自老师的语音消息 ~</div>
+                                <audio ref="audioPlayer" controls style="width: 100%;" @click="playAudio">
+                                    <source :src="item.url" type="audio/mpeg" />
+                                </audio>
+
+                            </div>
+                            <div v-if="item.type === 'img'">
+                                <div style="width: 100%;margin-bottom: 2vw;">
+                                    <img :src="item.url" style="width: 100%;height: 100%;border-radius: 10px;" />
+                                </div>
+                            </div>
+                            <div v-if="item.type === 'video'" style="border-radius: 10px;margin-bottom:10px;"
+                                class="video-group">
+                                <video id="domVideo" controls style="width: 100%;border-radius: 10px;"
+                                    :poster="item.url + '?x-oss-process=video/snapshot,t_50,f_jpg'">
+                                    <source :src="item.url" type="video/mp4" />
+                                </video>
+                            </div>
+                        </div>
+                        <p class="contet-tip">图片支持长按保存，音/视频请通过电脑端下载</p>
+                    </div>
+                </article>
+            </div>
+            <!-- 知识点海报 -->
+            <article class="poster" data-html2canvas-ignore="true" v-if="stuWorkDetail.lessonInfo.posterImg">
+                <div class="poster-title">
+                    <img src="./image/placard@2x.png" alt="">
+                    知识点海报
+                </div>
+                <div class="content">
+                    <img :src="stuWorkDetail.lessonInfo.posterImg" alt="">
+                </div>
+            </article>
+            <!-- 点赞头像列表 -->
+            <div :class="{evaZanInfo:true, heightAuto:zanListUnfold}"
+                v-if="!globalLoading && !isShare && headList && headList.length>0">
+                <div class="zan-num">
+                    <svg t="1732254799085" class="icon" viewBox="0 0 1024 1024" version="1.1"
+                        xmlns="http://www.w3.org/2000/svg" p-id="3998" width="22" height="20">
+                        <path
+                            d="M667.786667 117.333333C832.864 117.333333 938.666667 249.706667 938.666667 427.861333c0 138.250667-125.098667 290.506667-371.573334 461.589334a96.768 96.768 0 0 1-110.186666 0C210.432 718.368 85.333333 566.112 85.333333 427.861333 85.333333 249.706667 191.136 117.333333 356.213333 117.333333c59.616 0 100.053333 20.832 155.786667 68.096C567.744 138.176 608.170667 117.333333 667.786667 117.333333z"
+                            fill="#F65065" p-id="3999"></path>
+                    </svg>
+                </div>
+                <ul>
+                    <li v-for="(zanItemImg,zanIndex) in computedHeadList" :key="zanIndex">
+                        <img :src="zanItemImg" alt="">
+                    </li>
+                    <li class="more" @click="getMoreZanList" v-if="zanListUnfold">更多...</li>
+                </ul>
+            </div>
+            <article class="report-bottom">
+                <div class="block-top"></div>
+                <img src="./image/reportBottom.png" alt="">
+                <!-- <div class="block-bottom"></div> -->
+            </article>
+            <!-- 提示 -->
+            <!-- 判断获得星币数量是否=0，为0 时，则不显示文案 -->
+            <article class="tips" v-if="getStarAuth && !isShare && shareReportReward>0">
+                注：集{{shareReportType===0?'够':''}}{{shareReportZanNum}}赞，获得{{shareReportReward}}星币
+            </article>
+            <!-- 报名 -->
+            <article id="signUpTarget" :class="{'sign-up':true, 'scan-code': shareReportClueType === 2}"
+                data-html2canvas-ignore="true" v-if="isShare && !globalLoading && shareReportShow" v-show="showSignUp">
+                <!-- shareReportClueType === 1 ? 手机号报名 : 2扫码 -->
+                <template v-if="shareReportClueType === 1">
+                    <div class="wg-input">
+                        <input type="number" pattern="[0-9]*" oninput="if(value.length>11)value=value.slice(0,11)"
+                            placeholder="请输入手机号" v-model="phoneNum" class="clear-default">
+                        <div class="send-code">
+                            <button class="send-code-btn clear-default" :class="{'ban-click': codeDisabled}"
+                                :disabled="codeDisabled" @click.stop="sendCode">{{codeMsg}}</button>
+                        </div>
+                    </div>
+                    <div class="wg-input">
+                        <input type="text" placeholder="请输入验证码" v-model="code" class="clear-default" maxlength="6">
+                    </div>
+                    <button class="sign-up-btn clear-default" @click="handleSignUp">报名试听体验课</button>
+                </template>
+                <template v-else>
+                    <div class="scan-code-box">
+                        <img :src="shareReportQrCodeImg" alt="">
+                        <p>长按识别二维码，预约试听课</p>
+                    </div>
+                </template>
+            </article>
+            <!-- 分享按钮 -->
+            <button class="share-btn clear-default" @click="handleShare" data-html2canvas-ignore="true"
+                v-if="!isShare && !globalLoading">
+                <img src="./image/share@2x.png" alt="">
+                <span>
+                    <!-- 
+                        是否是分享人：isShare
+                            未开通星币：getStarAuth=false
+                                分享人：分享报告
+                                被分享人：分享报告，帮集赞
+                            已开通星币：getStarAuth=true
+                                分享人：分享报告，集赞获得星币
+                                被分享人：分享报告，帮集赞
+                    -->
+                    分享报告{{ getStarAuth?'，集赞获得星币':''}}
+                </span>
+            </button>
+            <!-- 被分享后的页面按钮 -->
+            <div class="shared-btn-box" data-html2canvas-ignore="true" v-else-if="!globalLoading && isShare">
+                <button :class="{'shared-btn':true, 'clear-default':true, 'only-btn':!shareReportShow}"
+                    @click="handleShare">
+                    分享报告，帮集赞
+                </button>
+                <a class="clear-default signUp-btn" v-if="shareReportShow" href="#signUpTarget"
+                    @click="()=>showSignUp=true">
+                    报名试听体验课
+                </a>
+            </div>
+            <!-- 点赞 -->
+            <div :class="{'give-like':true, 'give-end':zanState }" @click.stop="handleGiveLike"
+                :style="{top: initViewportHeight/1.5+'px'}" v-if="platform!=='PC' && !globalLoading">
+                <strong>
+                    <svg t="1732254799085" class="icon" viewBox="0 0 1024 1024" version="1.1" v-if="!zanState"
+                        xmlns="http://www.w3.org/2000/svg" p-id="3998" width="30" height="30">
+                        <path
+                            d="M667.786667 117.333333C832.864 117.333333 938.666667 249.706667 938.666667 427.861333c0 138.250667-125.098667 290.506667-371.573334 461.589334a96.768 96.768 0 0 1-110.186666 0C210.432 718.368 85.333333 566.112 85.333333 427.861333 85.333333 249.706667 191.136 117.333333 356.213333 117.333333c59.616 0 100.053333 20.832 155.786667 68.096C567.744 138.176 608.170667 117.333333 667.786667 117.333333z"
+                            fill="#F65065" p-id="3999"></path>
+                    </svg>
+                    <svg t="1732254799085" class="icon" viewBox="0 0 1024 1024" version="1.1" v-else
+                        xmlns="http://www.w3.org/2000/svg" p-id="3998" width="30" height="30">
+                        <path
+                            d="M667.786667 117.333333C832.864 117.333333 938.666667 249.706667 938.666667 427.861333c0 138.250667-125.098667 290.506667-371.573334 461.589334a96.768 96.768 0 0 1-110.186666 0C210.432 718.368 85.333333 566.112 85.333333 427.861333 85.333333 249.706667 191.136 117.333333 356.213333 117.333333c59.616 0 100.053333 20.832 155.786667 68.096C567.744 138.176 608.170667 117.333333 667.786667 117.333333z"
+                            fill="#FFFFFF" p-id="3999"></path>
+                    </svg>
+                </strong>
+                <span>{{zanNum}}</span>
+            </div>
+        </main>
+        <!-- 脱离文档流的元素 -->
+        <div class="share-container" v-show="shareStep>0" @click="shareStep=0">
+            <!-- :style="{top:pageDistanceTop+'px'}" -->
+            <div class="share-step2" v-show="shareStep===1">
+                <img class="open-share2" src="./image/shareGuide@2x.png" alt="" />
+                <img class="open-share3" src="./image/shareEmoji@2x.png" alt="" />
+                <div class="open-share4">
+                    点击，分享学习报告
+                    <img class="img-warrper" src="./image/shareBorder2@2x.png" alt="" />
+                </div>
+            </div>
+        </div>
+        <!-- loading -->
+        <div class="loading" v-show="loading"></div>
+        <!-- globalLoading -->
+        <div class="globalLoading" v-show="globalLoading">
+            <div class="loader-inner ball-scale-multiple">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+        <!-- alert -->
+        <div class="wg-alert" id="wgAlert">
+            <div class="alert-box">
+                <div class="alert-title">STEAM编程平台</div>
+                <div class="alert-content"></div>
+                <div class="alert-confirm" @click="handleShowAlert('',false)">确定</div>
+            </div>
+        </div>
+        <!-- 弹出二维码 -->
+        <div class="wg-qr-alert" ref="refWgQRAlert">
+            <div class="alert-box">
+                <img src="./image/QRHead@2x.png" class="head" alt="">
+                <img src="./image/QRClose@2x.png" class="close" alt="" @click="handleCloseQRCode">
+                <div class="content">
+                    <div>课程学习报告</div>
+                    <div id="qrcode"></div>
+                    <p>请用微信扫码查看学习报告并分享</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- js -->
+    <script>
+        // eruda.init()
+        // var vConsole = new window.VConsole();
+    </script>
+    <!-- tools工具方法 -->
+    <script>
+        // 删除URL某个参数
+        function removeUrlParam(url, removeParam) {
+            // 使用URL对象来处理URL
+            const urlObj = new URL(url);
+            // 移除指定的参数
+            urlObj.searchParams.delete(removeParam);
+            // 将URL对象重新构造为字符串
+            return urlObj.toString();
+        }
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, '\\$&');
+            //匹配所有符合条件的，并取最后一个
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)', 'g');
+            var results = url.match(regex);
+            var tempResults = results != null && results[results.length - 1] != undefined ? results[results.length - 1] : '';
+
+            var finalResults = regex.exec(tempResults);
+            if (!finalResults) return '';
+            if (!finalResults[2]) return '';
+            return decodeURIComponent(finalResults[2].replace(/\+/g, ' '));
+        }
+        function wgHandleShowAlert(content, show = true) {
+            const wgAlertDom = document.getElementById('wgAlert')
+            const wgAlertContent = wgAlertDom.querySelector('.alert-content')
+            if (show) {
+                wgAlertDom.classList.add('show')
+                wgAlertContent.textContent = content;
+            } else {
+                wgAlertDom.classList.remove('show')
+                wgAlertContent.textContent = '无内容';
+            }
+        }
+    </script>
+    <!-- codeEditor处理 -->
+    <script>
+        // 初始化简化版代码编辑器
+        const codeEditor = new SimpleCodeEditor();
+
+        // 初始化编辑器
+        codeEditor.init().then((editorType) => {
+            console.log(`简化版代码编辑器初始化成功，使用: ${editorType}`);
+        }).catch(error => {
+            console.error('代码编辑器初始化失败:', error);
+        });
+
+        // 替换原有的initCode函数
+        async function initCode(value, idKey) {
+            const containerId = idKey === 'after' ? 'monaco_editor_after' : 'monaco_editor';
+
+            try {
+                // 使用简化版编辑器创建代码显示，自动检测语言
+                await codeEditor.createEditor(containerId, value || '');
+                console.log(`代码编辑器 ${containerId} 创建成功`);
+            } catch (error) {
+                console.error(`代码编辑器 ${containerId} 创建失败:`, error);
+
+                // 最终降级到简单文本显示
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = `
+                        <pre style="
+                            background: #f8f8f8;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                            padding: 15px;
+                            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                            font-size: 14px;
+                            line-height: 1.5;
+                            overflow-x: auto;
+                            white-space: pre-wrap;
+                            word-wrap: break-word;
+                            margin: 0;
+                            max-height: 400px;
+                            overflow-y: auto;
+                        "><code>${value || ''}</code></pre>
+                    `;
+                }
+            }
+        }
+
+        // 更新编辑器内容的函数
+        function updateEditorContent(containerId, newCode) {
+            try {
+                // 自动检测语言
+                codeEditor.updateEditor(containerId, newCode);
+            } catch (error) {
+                console.error('更新编辑器内容失败:', error);
+                // 降级处理
+                const container = document.getElementById(containerId);
+                if (container) {
+                    const codeElement = container.querySelector('code');
+                    if (codeElement) {
+                        codeElement.textContent = newCode || '';
+                    }
+                }
+            }
+        }
+
+        // 全局函数，供外部调用
+        window.initCode = initCode;
+        window.updateEditorContent = updateEditorContent;
+        window.codeEditor = codeEditor;
+    </script>
+    <!-- 接口请求处理 -->
+    <script>
+        window.baseURL = location.protocol === 'http:' ? 'https://wugedev.boxscrm.com' : location.origin;
+        const $http = window.axios.create({
+            timeout: 60000,
+            baseURL: window.baseURL
+        })
+        $http.interceptors.request.use(config => {
+            console.log('发送请求:', config.url, config);
+            const token = window.localStorage.getItem('learningReportToken')
+            if (token) {
+                config.headers["Authorization"] = token;
+            }
+            config.headers["X-Requested-With"] = "XMLHttpRequest";
+            config.headers["Content-Type"] = "application/json";
+            return config;
+        }, err => {
+            console.log('请求配置错误:', err)
+            return Promise.reject(err)
+        })
+        $http.interceptors.response.use(res => {
+            console.log('response success:', res)
+            if (res.data && res.data.error) {
+                if (res.data.error.code === 'InvalidToken') {
+                    // wgHandleShowAlert('token权限验证失败，将重新授权！')
+                    window.localStorage.removeItem('learningReportToken');
+                    if (window.toWXAuth) { // 么有权限去授权页面
+                        location.replace(window.loginAuthUrl)
+                    }
+                } else {
+                    wgHandleShowAlert(res.data.error.message)
+                }
+            }
+            return res.data;
+        }, err => {
+            console.log('response error:', err)
+            if (err.status === 401) {
+                const errData = err.response.data;
+                if (errData.error.code === "InvalidToken") {
+                    // wgHandleShowAlert('权限验证失败，将重新授权！')
+                    window.localStorage.removeItem('learningReportToken');
+                    if (window.toWXAuth) { // 么有权限去授权页面
+                        location.replace(window.loginAuthUrl)
+                    }
+                }
+            }
+            return Promise.reject(err)
+        })
+        /*获取该校区是否开启分享报告获取星币*/
+        const getShareReportState = params => {
+            return $http.post('/java-api/points/wcm/eduCampus/getShareReportState', params)
+        }
+        /*获取页面内容信息*/
+        const getStuTchPlanEvaluateForH5 = params => {
+            return $http.get('/api/h5/getStuTchPlanEvaluateForH5', {
+                params
+            })
+        }
+        // 获取阿里sts配置
+        const getAliyunStsConfig = params => {
+            return $http.get('/api/get/aliyun/sts', params)
+        }
+        /*微信用户登入*/
+        const wxUserLogin = (params) => {
+            // code
+            return $http.post('/java-api/weChatMini/wxIntendUser/login', params);
+        }
+        /*微信用户查看点赞状态*/
+        const wxUserCheckZan = (params) => {
+            // stuTchPlanEvaId
+            return $http.post('/java-api/weChatMini/wxIntendUser/checkZan', params);
+        }
+        /*微信用户点赞学习报告*/
+        const wxUserUpvote = (params) => {
+            // stuTchPlanEvaId
+            return $http.post('/java-api/weChatMini/wxIntendUser/zanReport', params);
+        }
+        /*微信用户取消点赞学习报告*/
+        const wxUserCancelUpvote = (params) => {
+            // stuTchPlanEvaId
+            return $http.post('/java-api/weChatMini/wxIntendUser/cancelZan', params);
+        }
+        /*微信用户校验验证并转换为意向用户*/
+        const wxUserVerify = (params) => {
+            // phoneNum: '', // 手机号
+            // code: '', // 验证码
+            // eduId: '', // 机构ID
+            // eduCampusId: '', // 校区ID
+            return $http.post('/java-api/weChatMini/wxIntendUser/verifyAndChange', params);
+        }
+        /*微信用户发送验证码*/
+        const wxUserSendMsg = (params) => {
+            // stuTchPlanEvaId
+            return $http.post('/java-api/weChatMini/common/sendSms', params);
+        }
+        /*更新评论分享状态*/
+        const updateShareState = (params) => {
+            // id
+            return $http.post('/java-api/weChatMini/stuTchPlanEva/updateShareState', params);
+        }
+        /*获取分享学习报告线索状态*/
+        const getShareReportClue = params => {
+            return $http.post('/java-api/weChatMini/stuTchPlanEva/getShareReportClue', params)
+        }
+        /*获取评论文案*/
+        const getEvaCopy = params => {
+            return $http.post('/java-api/weChatMini/stuTchPlanEva/getEvaCopy', params)
+        }
+    </script>
+    <!-- VUE -->
+    <script>
+        const { createApp, ref, onBeforeMount, onMounted, nextTick, computed } = Vue
+
+        createApp({
+            setup() {
+                /*
+                    测试公众号：五格殿下开发者
+                    appId: 'wxb4777c6a9a135a94',
+                    正式公众号：我的编程教室
+                    appId: 'wx930225c0371e8a36',
+                */
+                let baseWidth = ref(750)
+                let baseFontSize = ref(1);
+                let phoneNum = ref('')
+                let code = ref('')
+                let phoneValid = ref('')
+                let isMiniProgram = ref(false)
+                let appid = ref('wxb4777c6a9a135a94');
+                if (location.origin === 'https://steam.fun') {
+                    appid.value = 'wx930225c0371e8a36'
+                }
+                let token = ref('');
+                let globalLoading = ref(true);
+                let loading = ref(false);
+                let shareUrl = ref('');
+                let authParams = ref('')
+                let stuTchPlanEvaId = ref('') // 评论ID
+                let eduId = ref('') // 分享机构ID
+                let tchPlanId = ref('') // 教学计划ID
+                let stuTchPlanId = ref('') // 学生教学计划ID
+                let eduCampusId = ref('') // 分享校区ID
+                let shareTitle = ref('') // 分享内容title
+                let shareDesc = ref('') // 分享内容描述
+                let shareImgUrl = ref('') // 分享内容图片
+                let shareParams = ref('') // 参数组装
+                let isShare = ref(false); // 是否是被分享人
+                let platform = ref('');
+                let stuWorkDetail = ref(null)
+                let getStarAuth = ref(false);
+                let shareReportType = ref(0);
+                let shareReportZanNum = ref(0);
+                let shareReportReward = ref(0);
+                const refWgQRAlert = ref(null);
+                const qrcodebox = ref(null)
+                let shareReportShow = ref(false); // 分享学习报告是否显示
+                let shareReportClueType = ref(1); // 分享学习报告获取线索类型(1 表单获取线索，2 二维码获取线索)
+                let shareReportQrCodeImg = ref(''); // 分享学习报告二维码
+                let showSignUp = ref(true)
+                let evaCopy = ref('')
+                // 课堂C++ & PY作品
+                let classCodeData = ref({
+                    codeId: '',
+                    code: '',
+                    codeList: []
+                });
+                // 课后C++ & PY作品
+                let afterClassCodeData = ref({
+                    codeId: '',
+                    code: '',
+                    codeList: []
+                });
+                let iframeWidth = ref(0)
+                let iframeHeight = ref(0)
+                const audioPlayer = ref(null)
+                let shareStep = ref(0)
+                let iframeShowTools = ref(false) // 针对JR,SC点击会展开虚拟手柄
+                let initViewportHeight = ref(0)
+                let OSSClient = ref(null)
+
+                // window.onload = () => {
+                //     globalLoading.value = false;
+                // }
+                const beforeEnterPage = async () => {
+                    // 前置：token存local中，
+                    // 没有token就跳转，
+                    // 有code直接调接口取token
+                    // 有token就不关code的事情了
+                    shareUrl.value = removeUrlParam(location.href, 'plat');
+                    token.value = window.localStorage.getItem('learningReportToken') || '';
+                    token.value = token.value.length < 10 ? '' : token.value;
+                    stuTchPlanEvaId.value = getParameterByName('stuTchPlanEvaId')
+                    eduId.value = getParameterByName('eduId')
+                    eduCampusId.value = getParameterByName('eduCampusId')
+                    tchPlanId.value = getParameterByName('tchPlanId')
+                    stuTchPlanId.value = getParameterByName('stuTchPlanId')
+                    isShare.value = JSON.parse(getParameterByName('isShare') || false);
+                    platform.value = getParameterByName('plat')
+                    const code = getParameterByName('code')
+                    window.toWXAuth = platform.value !== 'PC'
+
+                    // 小程序webview环境检测和历史记录管理
+                    if (typeof window.wx !== 'undefined' && window.wx.miniProgram) {
+                        console.log('检测到小程序webview环境，启用历史记录管理');
+
+                        // 设置初始历史记录长度
+                        window.initialHistoryLength = history.length;
+                        console.log('初始历史记录长度:', window.initialHistoryLength);
+
+                        // 为小程序环境添加特殊标识
+                        window.isInMiniProgram = true;
+
+                        // 记录iframe数量，用于计算预期的历史记录增长
+                        window.expectedIframeCount = 0;
+
+                        // 重写父页面的history方法，防止意外的历史记录操作
+                        const originalPushState = history.pushState;
+                        const originalReplaceState = history.replaceState;
+
+                        history.pushState = function (state, title, url) {
+                            console.log('父页面拦截pushState调用:', { state, title, url });
+                            // 在小程序环境中，将pushState替换为replaceState
+                            return originalReplaceState.call(history, state, title, url);
+                        };
+
+                        history.replaceState = function (state, title, url) {
+                            console.log('父页面执行replaceState:', { state, title, url });
+                            return originalReplaceState.call(history, state, title, url);
+                        };
+
+                        // 监听页面卸载，清理历史记录
+                        window.addEventListener('beforeunload', () => {
+                            const currentLength = history.length;
+                            const expectedLength = window.initialHistoryLength + window.expectedIframeCount;
+                            if (currentLength > expectedLength) {
+                                console.log('页面卸载时清理多余历史记录');
+                                // 通知父页面或小程序进行清理
+                                try {
+                                    window.wx.miniProgram.postMessage({
+                                        data: {
+                                            type: 'cleanHistory',
+                                            extraLength: currentLength - window.initialHistoryLength,
+                                            iframeCount: window.expectedIframeCount
+                                        }
+                                    });
+                                } catch (e) {
+                                    console.warn('无法发送消息到小程序:', e);
+                                }
+                            }
+                        });
+                    }
+
+                    if (platform.value === 'PC') {
+                        baseWidth.value = 500
+                        baseFontSize.value = 0.6666666666666666
+                    }
+
+                    authParams.value = `${window.baseURL}/learningReport/index.html?stuTchPlanEvaId=${stuTchPlanEvaId.value}&eduId=${eduId.value}&eduCampusId=${eduCampusId.value}&tchPlanId=${tchPlanId.value}&stuTchPlanId=${stuTchPlanId.value}`;
+                    window.loginAuthUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${appid.value}&redirect_uri=${encodeURIComponent(authParams.value + `${isShare.value ? '&isShare=true' : ''}`)}&response_type=code&scope=snsapi_userinfo&forcePopup=true&state=STATE#wechat_redirect`
+
+                    // 获取页面数据
+                    await getStuTchPlanEvaluateForH5({
+                        evaluateId: stuTchPlanEvaId.value, // 评论ID
+                        schoolId: eduId.value, // 机构ID
+                        tchPlanId: tchPlanId.value, // 教学计划ID
+                        stuTchPlanId: stuTchPlanId.value, // 学生教学计划ID
+                    }).then(res => {
+                        if (res.content.evaluateInfo) {
+                            res.content.evaluateInfo.showEval = false;
+                            res.content.evaluateInfo.showTchEval = false;
+                            let showScore = false;
+                            let showAttachment = false;
+                            if (res.content.evaluateInfo.attachment && res.content.evaluateInfo.attachment.length > 0) {
+                                showAttachment = true;
+                            }
+                            res.content.evaluateInfo.score.forEach(item => {
+                                if (item.star > 0) {
+                                    showScore = true;
+                                }
+                            })
+                            if (res.content.evaluateInfo.remark || showScore || showAttachment) {
+                                res.content.evaluateInfo.showEval = true;
+                                if (res.content.evaluateInfo.remark || showScore) {
+                                    res.content.evaluateInfo.showTchEval = true;
+                                }
+                                if (res.content.evaluateInfo.remark) {
+                                    res.content.evaluateInfo.remark = marked.parse(res.content.evaluateInfo.remark)
+                                }
+                            }
+                        }
+                        stuWorkDetail.value = res.content
+                        // 设置海报图
+                        if (stuWorkDetail.value.lessonInfo.knowledge_point_url) {
+                            const paseUrlArr = JSON.parse(stuWorkDetail.value.lessonInfo.knowledge_point_url)
+                            stuWorkDetail.value.lessonInfo.posterImg = paseUrlArr[0].url
+                        }
+                        if (stuWorkDetail.value.lessonInfo.other_meterial_url) {
+                            stuWorkDetail.value.lessonInfo.posterImg = stuWorkDetail.value.lessonInfo.other_meterial_url
+                        }
+                        // 给分享内容设置值
+                        shareTitle.value = `${stuWorkDetail.value.subjectInfo.name}-${stuWorkDetail.value.lessonInfo.title}-${stuWorkDetail.value.evaluateInfo.stuUserInfo.name}-${stuWorkDetail.value.schoolInfo.name}`
+                        shareDesc.value = stuWorkDetail.value.lessonInfo.desc
+                        // shareTitle.value = '我是十三个汉字你数数刚刚好但是从这里开始就是二十八个字了'
+                        // shareDesc.value = '一二三四五六七八九十一二三四五六七八九十一二三四五六七八九十一二三四五六七八九十零'
+                        shareImgUrl.value = stuWorkDetail.value.lessonInfo.img_url;
+                        // shareParams.value = `${location.search}&shareTitle=${evaCopy.value}&shareDesc=${shareDesc.value}&shareImgUrl=${shareImgUrl.value}`;
+                        // 设置iframe1的宽高
+                        // iframeWidth.value = document.documentElement.clientWidth;
+                        iframeWidth.value = (document.documentElement.clientWidth < baseWidth.value ? document.documentElement.clientWidth : baseWidth.value);
+                        iframeHeight.value = iframeWidth.value * 0.85;
+                        if (stuWorkDetail.value.subjectInfo.code == 2) {
+                            setTimeout(() => {
+                                const oIframe = document.getElementById('bdIframe');
+                                console.log('sc元素 oIframe', oIframe);
+                                if (oIframe) {
+                                    const deviceWidth = document.querySelector('.iframe-box').clientWidth - 10;
+                                    // const deviceHeight = document.documentElement.clientHeight;
+                                    oIframe.style.width = (Number(deviceWidth) - 0) + 'px'; //数字是页面布局宽度差值
+                                    oIframe.style.height = (Number(deviceWidth) * 0.75 + 55) + 'px'; //数字是页面布局高度差
+                                    if (stuWorkDetail.value.homeWorkInfo) {
+                                        stuWorkDetail.value.homeWorkInfo.remark = '';
+                                        const oIframe1 = document.getElementById('scrrame');
+                                        console.log('sc元素 oIframe1', oIframe1);
+                                        const deviceWidth1 = document.querySelector('.iframe-box').clientWidth - 10;
+                                        // const deviceHeight = document.documentElement.clientHeight;
+                                        oIframe1.style.width = (Number(deviceWidth1) - 0) + 'px'; //数字是页面布局宽度差值
+                                        oIframe1.style.height = (Number(deviceWidth1) * 0.75 + 55) + 'px'; //数字是页面布局高度差
+                                    }
+                                }
+                            }, 200)
+                        }
+                        // 设置代码编辑器数据
+                        if (stuWorkDetail.value.subjectInfo.code === 3) {
+                            if (stuWorkDetail.value.tchWorkInfo) {
+                                classCodeData.value.codeList = JSON.parse(stuWorkDetail.value.tchWorkInfo.work_url);
+                                classCodeData.value.code = classCodeData.value.codeList[0].code;
+                                classCodeData.value.codeId = classCodeData.value.codeList[0].id;
+                            }
+                            if (stuWorkDetail.value.homeWorkInfo) {
+                                afterClassCodeData.value.codeList = JSON.parse(stuWorkDetail.value.homeWorkInfo.work_url);
+                                afterClassCodeData.value.code = afterClassCodeData.value.codeList[0].code;
+                                afterClassCodeData.value.codeId = afterClassCodeData.value.codeList[0].id;
+                            }
+                        } else if (stuWorkDetail.value.subjectInfo.code == 4) {
+                            if (stuWorkDetail.value.cppLessonOjProblemRelationList && stuWorkDetail.value.cppLessonOjProblemRelationList.length > 0) {
+                                stuWorkDetail.value.cppLessonOjProblemRelationList.forEach((element, index) => {
+                                    if (!element.submissionInfo) {
+                                        element.submissionInfo = { id: 'custom_' + index }
+                                    }
+                                });
+                                classCodeData.value.codeList = stuWorkDetail.value.cppLessonOjProblemRelationList;
+                                const classCodeDataSubmissionInfo = classCodeData.value.codeList[0].submissionInfo
+                                classCodeData.value.code = classCodeDataSubmissionInfo ? classCodeDataSubmissionInfo.code : '';
+                                classCodeData.value.codeId = classCodeDataSubmissionInfo ? classCodeDataSubmissionInfo.id : '';
+                            }
+                            if (stuWorkDetail.value.cppHomeworkOjProblemRelationList && stuWorkDetail.value.cppHomeworkOjProblemRelationList.length > 0) {
+                                stuWorkDetail.value.cppHomeworkOjProblemRelationList.forEach((element, index) => {
+                                    if (!element.submissionInfo) {
+                                        element.submissionInfo = { id: 'custom_' + index }
+                                    }
+                                });
+                                afterClassCodeData.value.codeList = stuWorkDetail.value.cppHomeworkOjProblemRelationList;
+                                const afterClassCodeDataSubmissionInfo = afterClassCodeData.value.codeList[0].submissionInfo
+                                afterClassCodeData.value.code = afterClassCodeDataSubmissionInfo ? afterClassCodeDataSubmissionInfo.code : '';
+                                afterClassCodeData.value.codeId = afterClassCodeDataSubmissionInfo ? afterClassCodeDataSubmissionInfo.id : '';
+                            }
+                        }
+                        setTimeout(() => {
+                            initCode(classCodeData.value.code)
+                            initCode(afterClassCodeData.value.code, 'after')
+                            //     if (stuWorkDetail.value.tchWorkInfo) {
+                            //         initCode(classCodeData.value.code)
+                            //     }
+                            //     if (stuWorkDetail.value.homeWorkInfo) {
+                            //         initCode(afterClassCodeData.value.code, 'after')
+                            //     }
+                        }, 250)
+                    })
+                    // 获取用户点赞获得星币权限
+                    await getShareReportState({
+                        // eduCampusId: eduCampusId.value, // 去掉不要了
+                        evaId: stuTchPlanEvaId.value
+                    }).then(res => {
+                        getStarAuth.value = res.content.state; // 开启状态
+                        shareReportType.value = res.content.shareReportType; // 学习报告星币发放模式：0 一次性发放,1 重复发放
+                        shareReportZanNum.value = res.content.shareReportZanNum; // 学习报告集赞数量
+                        shareReportReward.value = res.content.shareReportReward; // 学习报告奖励数
+                    })
+                    // 获取自定义分享title
+                    await getEvaCopy({ id: stuTchPlanEvaId.value }).then(res => {
+                        evaCopy.value = res.content
+                        window.evaCopy = res.content;
+                        // shareParams.value = `${location.search}&shareTitle=${evaCopy.value}&shareDesc=${shareDesc.value}&shareImgUrl=${shareImgUrl.value}`;
+                        shareParams.value = `?${shareUrl.value.split('?')[1]}&shareTitle=${evaCopy.value}&shareDesc=${shareDesc.value}&shareImgUrl=${shareImgUrl.value}`;
+                    })
+                    // 获取不需要token的页面内容后再去校验其它需要校验token的逻辑
+                    if (!token.value) {
+                        if (code) {
+                            await wxUserLogin({ code }).then(res => {
+                                globalLoading.value = false;
+                                document.documentElement.style.overflow = 'auto'
+                                window.localStorage.setItem('learningReportToken', token.value = res.content)
+                                // getWxSDKSign();
+                            });
+                        } else {
+                            globalLoading.value = false;
+                            document.documentElement.style.overflow = 'auto'
+                            // location.protocol === 'https:' && isShare.value
+                            // 现在不区分分享人和被分享人，都得进行授权，只加一个判断本地环境，用于测试方便
+                            if (window.toWXAuth) { // 么有权限去授权页面
+                                location.replace(window.loginAuthUrl)
+                            }
+                        }
+                        // return false;
+                    } else {
+                        // token.value = token;
+                        // getWxSDKSign();
+                    }
+                    /*此处的三个接口是需要有token才能调用成功的*/
+                    if (token.value) {
+                        getWxSDKSign();
+                        // 获取分享学习报告线索状态
+                        await getShareReportClue({ id: stuTchPlanEvaId.value }).then(res => {
+                            shareReportClueType.value = res.content.shareReportClueType;
+                            shareReportQrCodeImg.value = res.content.shareReportQrCodeImg;
+                            shareReportShow.value = res.content.flag;
+                        })
+                        // 获取用户点赞数量和点赞状态
+                        await wxUserCheckZan({ stuTchPlanEvaId: stuTchPlanEvaId.value, limit: 6 }).then(res => {
+                            zanNum.value = res.content.zanNum;
+                            zanState.value = res.content.zanState;
+                            headList.value = res.content.headList || []
+                            // if (headList.value.length <= 21) {
+                            //     zanListUnfold.value = true
+                            // }
+                            zanListUnfold.value = !(headList.value.length === zanNum.value)
+                        })
+                        // 获取阿里oss配置 OSS
+                        await getAliyunStsConfig().then(res => {
+                            console.log('阿里oss配置', res)
+                            OSSClient.value = new OSS({
+                                region: "oss-cn-zhangjiakou",
+                                authorizationV4: true,
+                                accessKeyId: res.AccessKeyId,
+                                accessKeySecret: res.AccessKeySecret,
+                                stsToken: res.SecurityToken,
+                                bucket: 'steamfun',
+                                secure: true
+                            });
+                            console.log('OSSClient', OSSClient.value)
+                        })
+                    }
+                    // 所有初始化得步骤都走完了才走这里
+                    globalLoading.value = false;
+                    document.documentElement.style.overflow = 'auto'
+                }
+                onBeforeMount(async () => {
+                    beforeEnterPage();
+                    document.documentElement.style.overflow = 'hidden'
+                })
+                // mounted生命周期
+                onMounted(() => {
+                    initViewportHeight.value = window.innerHeight;
+
+                    // 添加历史记录管理 - 解决小程序webview中Scratch项目多层历史记录问题
+                    const originalHistoryLength = history.length;
+                    let hasAddedCustomHistory = false;
+                    let iframeHistoryCount = 0; // 记录iframe产生的历史记录数量
+                    let loadedIframeCount = 0; // 记录已加载完成的iframe数量
+
+                    // 监听来自iframe的消息
+                    window.addEventListener('message', function (event) {
+                        if (event.data && event.data.type === 'iframeLoaded') {
+                            loadedIframeCount++;
+                            console.log(`收到iframe ${event.data.iframeIndex} 加载完成消息，已加载: ${loadedIframeCount}/${window.expectedIframeCount}`);
+
+                            // 如果所有iframe都加载完成，进行最终检查
+                            if (loadedIframeCount === window.expectedIframeCount) {
+                                setTimeout(() => {
+                                    const finalHistoryLength = history.length;
+                                    console.log('所有iframe加载完成，最终历史记录长度:', finalHistoryLength);
+
+                                    // 如果历史记录超出预期，进行清理
+                                    if (finalHistoryLength > originalHistoryLength + 1) {
+                                        console.log('执行最终历史记录清理');
+                                        history.replaceState({
+                                            finalClean: true,
+                                            timestamp: Date.now()
+                                        }, '', location.href);
+                                    }
+                                }, 1000);
+                            }
+                        }
+                    });
+
+                    // 监听popstate事件，拦截多余的返回
+                    const handlePopState = (event) => {
+                        console.log('当前历史记录长度:', history.length);
+                        console.log('原始历史记录长度:', originalHistoryLength);
+                        console.log('iframe历史记录数量:', iframeHistoryCount);
+                        console.log('预期iframe数量:', window.expectedIframeCount);
+
+                        // 如果是小程序webview环境
+                        if (window.wx && window.wx.miniProgram) {
+                            // 计算预期的最大历史记录长度（原始长度 + 每个iframe最多1个历史记录）
+                            const maxExpectedLength = originalHistoryLength + (window.expectedIframeCount || 0);
+
+                            // 如果当前历史记录长度超过预期最大长度，说明有多余的历史记录
+                            if (history.length > maxExpectedLength) {
+                                event.preventDefault();
+                                event.stopPropagation();
+
+                                console.log(`拦截多余返回操作，当前长度: ${history.length}, 预期最大长度: ${maxExpectedLength}`);
+
+                                // 直接回到小程序
+                                if (typeof window.wx.miniProgram.navigateBack === 'function') {
+                                    window.wx.miniProgram.navigateBack();
+                                } else {
+                                    // 降级处理：直接跳转回初始状态
+                                    const stepsBack = history.length - originalHistoryLength;
+                                    history.go(-stepsBack);
+                                }
+                                return false;
+                            }
+                        }
+                    };
+
+                    window.addEventListener('popstate', handlePopState, true);
+
+                    // 统计页面中的Scratch iframe数量
+                    const countScratchIframes = () => {
+                        const scratchIframes = document.querySelectorAll('#bdIframe, #scrrame');
+                        window.expectedIframeCount = scratchIframes.length;
+                        console.log('检测到Scratch iframe数量:', window.expectedIframeCount);
+                        return scratchIframes.length;
+                    };
+
+                    // 监听Scratch iframe加载完成后的历史记录变化
+                    const setupScratchHistoryManagement = () => {
+                        const scratchIframes = document.querySelectorAll('#bdIframe, #scrrame');
+                        let loadedIframes = 0;
+
+                        scratchIframes.forEach((iframe, index) => {
+                            if (iframe) {
+                                iframe.addEventListener('load', () => {
+                                    loadedIframes++;
+                                    console.log(`Scratch iframe ${index + 1} 加载完成`);
+
+                                    // 延迟检测历史记录变化
+                                    setTimeout(() => {
+                                        const currentHistoryLength = history.length;
+                                        const expectedMinLength = originalHistoryLength + loadedIframes;
+
+                                        console.log(`iframe ${index + 1} 加载后历史记录长度:`, currentHistoryLength);
+
+                                        // 如果所有iframe都加载完成，进行最终的历史记录处理
+                                        if (loadedIframes === scratchIframes.length) {
+                                            iframeHistoryCount = currentHistoryLength - originalHistoryLength;
+                                            console.log('所有Scratch iframe加载完成，总历史记录增长:', iframeHistoryCount);
+
+                                            // 如果历史记录被严重污染（超过iframe数量+1），进行清理
+                                            if (iframeHistoryCount > scratchIframes.length + 1 && !hasAddedCustomHistory) {
+                                                hasAddedCustomHistory = true;
+                                                console.log('检测到严重的历史记录污染，进行清理');
+
+                                                // 在小程序环境中，替换当前历史记录
+                                                if (window.wx && window.wx.miniProgram) {
+                                                    // 使用replaceState减少历史记录层数
+                                                    const cleanUrl = location.href.split('?')[0] + location.search;
+                                                    history.replaceState({
+                                                        customReturn: true,
+                                                        iframeCount: scratchIframes.length,
+                                                        timestamp: Date.now()
+                                                    }, '', cleanUrl);
+
+                                                    // 如果还有多余的历史记录，继续清理
+                                                    const remainingExtra = history.length - originalHistoryLength - 1;
+                                                    if (remainingExtra > 0) {
+                                                        console.log('清理剩余多余历史记录:', remainingExtra);
+                                                        for (let i = 0; i < remainingExtra; i++) {
+                                                            history.replaceState(null, '', location.href);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }, 1500); // 增加延迟时间，确保iframe完全加载
+                                });
+
+                                // 监听iframe内部的历史记录变化
+                                iframe.addEventListener('load', () => {
+                                    try {
+                                        // 尝试向iframe发送消息，告知其在小程序环境中
+                                        setTimeout(() => {
+                                            iframe.contentWindow.postMessage({
+                                                type: 'miniProgramEnv',
+                                                originalHistoryLength: originalHistoryLength,
+                                                iframeIndex: index
+                                            }, '*');
+                                        }, 500);
+                                    } catch (e) {
+                                        console.warn('无法向iframe发送消息:', e);
+                                    }
+                                });
+                            }
+                        });
+                    };
+
+                    // 延迟执行，等待Vue渲染完成
+                    setTimeout(() => {
+                        countScratchIframes();
+                        setupScratchHistoryManagement();
+                    }, 2000);
+
+                    // 原有的响应式处理代码
+                    (function () {
+                        change();
+                        function change() {
+                            /* 假设设计屏幕宽度为1920px */
+                            let rootFontSize = document.documentElement.clientWidth * baseFontSize.value / baseWidth.value;
+                            document.documentElement.style.fontSize = rootFontSize > 1 ? baseFontSize.value + 'px' : rootFontSize + 'px';
+                        }
+                        /* 监听窗口大小改变时 */
+                        // document.addEventListener('DOMContentLoaded', change, false)
+                        window.addEventListener('resize', change, false);
+                        window.addEventListener('load', change, false)
+                    })();
+
+                    const video = document.getElementById('domVideo');
+                    console.log('video:', video)
+                    let pressTimer = null;
+                    const longPressDuration = 800; // 长按阈值（毫秒）
+                    if (video) {
+
+                        // 阻止默认手势（如滑动控制条）
+                        video.addEventListener('touchstart', (e) => {
+                            e.preventDefault(); // 阻止视频控件默认滑动
+                            pressTimer = setTimeout(() => {
+                                alert('长按触发');
+                                // 执行自定义操作（如下载视频）
+                            }, longPressDuration);
+                        });
+
+                        video.addEventListener('touchmove', () => {
+                            clearTimeout(pressTimer); // 移动时取消长按
+                        });
+
+                        video.addEventListener('touchend', () => {
+                            clearTimeout(pressTimer); // 抬起时取消长按
+                        });
+                    }
+                })
+                //                 setTimeout(() => {
+                //                     initCode(`#include <cstdio>
+                // int main(){
+                //     int n,m;
+                //     scanf("%d %d",&n,&m);
+                //     printf("%d",n+m);
+                //     return 0;
+                // }`)
+                //                 }, 200)
+                // 验证码
+                let codeDisabled = ref(false)
+                let codeMsg = ref('发送验证码')
+                let interval = null;
+                const countDown = (seconds) => {
+                    codeMsg.value = seconds + 's'
+                    codeDisabled.value = true
+                    seconds--
+                    interval = setInterval(function () {
+                        if (seconds > 0) {
+                            codeMsg.value = seconds + 's'
+                            seconds--;
+                        } else {
+                            codeMsg.value = '发送验证码'
+                            codeDisabled.value = false
+                            clearInterval(interval); // 清除定时器
+                        }
+                    }, 1000);
+                }
+                const sendCode = () => {
+                    const regPhone = /^1[3-9]\d{9}$/;
+                    if (!regPhone.test(phoneNum.value)) {
+                        return wgHandleShowAlert('手机号码格式不正确')
+                    }
+                    if (!token.value) {
+                        window.localStorage.removeItem('learningReportToken');
+                        location.replace(window.loginAuthUrl)
+                        return false;
+                    }
+                    phoneValid.value = phoneNum.value
+                    loading.value = true
+                    wxUserSendMsg({ phoneNum: phoneNum.value, route: 2 }).then(res => {
+                        loading.value = false
+                        wgHandleShowAlert('验证码已发送')
+                        countDown(60)
+                    }).catch(err => {
+                        loading.value = false
+                    })
+                }
+
+                // 报名
+                const handleSignUp = () => {
+                    if (!phoneValid.value || !code.value) return wgHandleShowAlert('报名失败，请检查您的手机号和验证码')
+                    loading.value = true
+                    wxUserVerify({
+                        phoneNum: phoneNum.value, // 手机号
+                        code: code.value, // 验证码
+                        eduId: eduId.value, // 机构ID
+                        eduCampusId: eduCampusId.value, // 校区ID
+                        evaId: stuTchPlanEvaId.value // 评论ID
+                    }).then(res => {
+                        loading.value = false
+                        if (res.success) {
+                            wgHandleShowAlert('报名成功！')
+                            setTimeout(() => {
+                                showSignUp.value = false;
+                                clearInterval(interval)
+                                phoneNum.value = ''
+                                code.value = ''
+                                codeDisabled.value = false
+                                codeMsg.value = '发送验证码'
+                            }, 500)
+                        }
+                    }).catch(err => {
+                        loading.value = false
+                    })
+                }
+
+                // 点赞
+                let zanNum = ref(0) // 点赞数量
+                let zanState = ref(false) // 是否已点赞
+                let headList = ref([]) // 点赞头像列表
+                let zanListUnfold = ref(false);
+                let zanListIndex = ref(0);
+                const handleGiveLike = () => {
+                    loading.value = true
+                    if (!zanState.value) {
+                        wxUserUpvote({ stuTchPlanEvaId: stuTchPlanEvaId.value }).then(() => {
+                            wxUserCheckZan({ stuTchPlanEvaId: stuTchPlanEvaId.value, limit: 6 }).then(res => {
+                                zanNum.value = res.content.zanNum;
+                                zanState.value = res.content.zanState;
+                                headList.value = res.content.headList || []
+                                // if (headList.value.length <= 21) {
+                                //     zanListUnfold.value = true
+                                // }
+                                zanListUnfold.value = !(headList.value.length === zanNum.value)
+                                loading.value = false;
+                            }).catch(err => {
+                                loading.value = false
+                            })
+                        }).catch(err => {
+                            loading.value = false
+                        })
+                    } else {
+                        wxUserCancelUpvote({ stuTchPlanEvaId: stuTchPlanEvaId.value }).then(() => {
+                            wxUserCheckZan({ stuTchPlanEvaId: stuTchPlanEvaId.value, limit: 6 }).then(res => {
+                                zanNum.value = res.content.zanNum;
+                                zanState.value = res.content.zanState;
+                                headList.value = res.content.headList || []
+                                // if (headList.value.length <= 21) {
+                                //     zanListUnfold.value = true
+                                // }
+                                zanListUnfold.value = !(headList.value.length === zanNum.value)
+                                loading.value = false;
+                            }).catch(err => {
+                                loading.value = false
+                            })
+                        }).catch(err => {
+                            loading.value = false
+                        })
+                    }
+                }
+
+                // 分享
+                const handleShare = async () => {
+                    if (platform.value === 'PC') {
+                        handleShowQRCode();
+                    } else { // 如果不是PC
+                        isMiniProgram.value = judgmentIsMiniProgram();
+                        if (isMiniProgram.value) {
+                            // const canvasSrc = await generateCanvas();
+                            // gotoWXshare(canvasSrc); 不需要画图了
+                            gotoWXshare();
+                        } else {
+                            handleShareStep(1)
+                        }
+                    }
+                }
+                // 生成canvas img
+                const generateCanvas = () => {
+                    return new Promise((resolve) => {
+                        const innerWidth = window.innerWidth;
+                        const innerHeight = window.innerHeight + 200;
+                        html2canvas(document.body, {
+                            useCORS: true,
+                            scale: 2, // 提供更清晰的图片
+                            width: innerWidth, // 只截取可视区域的宽度
+                            height: innerHeight, // 只截取可视区域的高度
+                            // foreignObjectRendering: true,
+                            // render: function (element, proto) {
+                            //     if (element.id === 'element-to-ignore') {
+                            //         // 设置高度为0，这样html2canvas在渲染时会忽略这个元素的高度
+                            //         proto.height = 0;
+                            //     }
+                            //     return proto;
+                            // },
+                        }).then(canvas => {
+                            // 创建一个图片元素
+                            var img = document.createElement('img');
+                            img.width = innerWidth;
+                            // img.height = height;
+                            img.src = canvas.toDataURL('image/jpeg');
+                            // 清空原来的内容，并插入新的图片
+                            // document.body.innerHTML = '';
+                            // document.body.appendChild(img);
+                            resolve(img.src)
+                        });
+                    })
+                }
+                // 微信操作
+                const gotoWXshare = (canvasSrc = '') => { // 去到一个特定页面 navigateTo  switchTab redirectTo
+                    // &canvasSrc=${encodeURIComponent(canvasSrc)}
+                    window.wx.miniProgram.redirectTo({
+                        url: `/pages/shareGuide/index${shareParams.value}&getStarAuth=${getStarAuth.value}`
+                    })
+                }
+                const judgmentIsMiniProgram = () => {
+                    let isMiniProgram = false;
+                    if (typeof window.wx !== 'undefined') {
+                        window.wx.miniProgram.getEnv((res) => {
+                            isMiniProgram = res.miniprogram;
+                        });
+                    }
+                    return isMiniProgram;
+                }
+                // JSSDK不能再页面初始化的时候就调用，没授权的时候调用会报congig:promision dnied错误；
+                // 并且如果要设置自定义分享的时候，不能带着从https://open.weixin.qq.com/connect/oauth2/authorize 授权后的url中的code，否则会报错；
+                const getWxSDKSign = () => {
+                    return new Promise(resolve => {
+                        window.axios.get(`/api/wechat/get/JSSDK/sign`, {
+                            params: {
+                                url: location.href.split("#")[0],
+                            }
+                        }).then(response => {
+                            const res = response.data.content
+                            appid.value = res.appId;
+                            resolve(res)
+                            window.wx.config({
+                                debug: location.origin === 'https://steam.fun' ? false : false, //调试的时候打开 
+                                appId: res.appId,
+                                timestamp: res.timestamp,
+                                nonceStr: res.nonceStr,
+                                signature: res.signature,
+                                jsApiList: [
+                                    "checkJsApi",
+                                    "onMenuShareTimeline",
+                                    "onMenuShareAppMessage",
+                                    "onMenuShareQQ",
+                                ],
+                            });
+                            window.wx.ready(() => {
+                                console.log('wx ready...')
+                                var shareData = {
+                                    // title: shareTitle.value,
+                                    title: window.evaCopy,
+                                    desc: shareDesc.value,
+                                    link: authParams.value + `&isShare=true`,
+                                    imgUrl: shareImgUrl.value || 'https://wugecdn.steam.fun/resources/static/school_course_cover1.jpeg',
+                                    success: function (shareRes) {
+                                        console.log('分享成功之后')
+                                        // alert(JSON.stringify(shareData))
+                                        // alert(JSON.stringify(shareRes))
+                                        updateShareState({ id: stuTchPlanEvaId.value })
+                                    }
+                                };
+                                console.log("微信分享数据");
+                                console.log(shareData);
+                                window.wx.onMenuShareAppMessage(shareData);
+                                window.wx.onMenuShareTimeline(shareData);
+                                window.wx.onMenuShareQQ(shareData);
+                            });
+                            window.wx.error((err) => {
+                                // if (process && process.env.NODE_ENV === "development") {
+                                // alert(err.errMsg); // 正式环境记得关闭啊！！！！
+                                // }
+                            });
+                        })
+                    })
+                }
+
+                // 课堂操作
+                const playAudio = () => {
+                    if (window.navigator.userAgent.match(/(iPod|iPhone|iPad)/)) {
+                        audioPlayer.value.play();
+                    }
+                }
+                // 切换代码块
+                const handleChangeClassCode = (item) => {
+                    classCodeData.value.code = item ? item.code || '' : '';
+                    classCodeData.value.codeId = item ? item.id : '';
+
+                    // 使用新的编辑器更新函数
+                    try {
+                        updateEditorContent('monaco_editor', classCodeData.value.code);
+                    } catch (error) {
+                        console.error('更新课堂代码失败:', error);
+                    }
+                }
+                const handleChangeAfterClassCode = (item) => {
+                    afterClassCodeData.value.code = item ? item.code || '' : '';
+                    afterClassCodeData.value.codeId = item ? item.id : '';
+
+                    // 使用新的编辑器更新函数
+                    try {
+                        updateEditorContent('monaco_editor_after', afterClassCodeData.value.code);
+                    } catch (error) {
+                        console.error('更新课后代码失败:', error);
+                    }
+                }
+
+                const handleShareStep = (val) => {
+                    shareStep.value = val;
+                }
+
+                // 监听Storage设置高度
+                const handleStorageChange = (event) => {
+                    if (event.key == 'isShowType') {
+                        if (event.newValue == 'true') {
+                            iframeShowTools.value = true;
+                            const oIframe = document.getElementById('bdIframe');
+                            const deviceWidth = document.querySelector('.iframe-box').clientWidth - 10;
+                            // const deviceHeight = document.documentElement.clientHeight;
+                            // 计算小程序边框需要减去的宽度 40*2
+                            // const miniDiffPadding = Number(deviceWidth) / baseWidth.value * 30 * 2
+                            const miniDiffPadding = 0
+                            oIframe.style.width = (Number(deviceWidth) - miniDiffPadding) + 'px'; //数字是页面布局宽度差值
+                            // oIframe.style.width = '100%'; //数字是页面布局宽度差值
+                            // oIframe.style.height = (Number(deviceHeight) - 515) + 'vw'; //数字是页面布局高度差
+                            // oIframe.style.height = (Number(deviceHeight) - 80) + 'px'; //数字是页面布局高度差
+                            oIframe.style.height = (Number(deviceWidth) * 1.55) + 'px'; //数字是页面布局高度差
+
+                            console.log(`打开手柄之后的宽高：width--${oIframe.style.width},height--${oIframe.style.height}`)
+
+                        } else {
+                            iframeShowTools.value = false;
+                            const oIframe = document.getElementById('bdIframe');
+                            const deviceWidth = document.querySelector('.iframe-box').clientWidth - 10;
+                            // const deviceHeight = document.documentElement.clientHeight;
+                            // 计算小程序边框需要减去的宽度
+                            const miniDiffPadding = 0
+                            oIframe.style.width = (Number(deviceWidth) - miniDiffPadding) + 'px'; //数字是页面布局宽度差值
+                            // oIframe.style.width = '100%'; //数字是页面布局宽度差值
+                            // oIframe.style.height = (Number(deviceHeight) - 335) + 'px'; //数字是页面布局高度差
+                            oIframe.style.height = (Number(deviceWidth) * 0.75 + 55) + 'px'; //数字是页面布局高度差
+
+                            console.log(`关闭手柄之后的宽高：width--${oIframe.style.width},height--${oIframe.style.height}`)
+                        }
+                    } else {
+                        if (event.newValue == 'true') {
+                            const oIframe = document.getElementById('scrrame');
+                            const deviceWidth = document.querySelector('.iframe-box').clientWidth - 10;
+                            // const deviceHeight = document.documentElement.clientHeight;
+                            const miniDiffPadding = 0
+                            oIframe.style.width = (Number(deviceWidth) - miniDiffPadding) + 'px'; //数字是页面布局宽度差值
+                            // oIframe.style.height = (Number(deviceHeight) - 515) + 'vw'; //数字是页面布局高度差
+                            // oIframe.style.height = (Number(deviceHeight) - 80) + 'px'; //数字是页面布局高度差
+                            oIframe.style.height = (Number(deviceWidth) * 1.55) + 'px'; //数字是页面布局高度差
+
+                        } else {
+                            const oIframe = document.getElementById('scrrame');
+                            const deviceWidth = document.querySelector('.iframe-box').clientWidth - 10;
+                            // const deviceHeight = document.documentElement.clientHeight;
+                            const miniDiffPadding = 0
+                            oIframe.style.width = (Number(deviceWidth) - miniDiffPadding) + 'px'; //数字是页面布局宽度差值
+                            // oIframe.style.height = (Number(deviceHeight) - 335) + 'px'; //数字是页面布局高度差
+                            oIframe.style.height = (Number(deviceWidth) * 0.75 + 55) + 'px'; //数字是页面布局高度差
+                        }
+                    }
+                }
+
+                window.addEventListener('storage', handleStorageChange)
+
+                function handleShowAlert(content, show) {
+                    wgHandleShowAlert(content, show,)
+                }
+                // 调起二维码
+                function handleShowQRCode() {
+                    if (refWgQRAlert.value) {
+                        const qrcode = document.getElementById('qrcode')
+                        const qrcodeStyle = getComputedStyle(qrcode, null)
+                        const width = parseFloat(qrcodeStyle.width), height = parseFloat(qrcodeStyle.height);
+                        if (qrcodebox.value) {
+                            qrcodebox.value.clear();
+                            qrcodebox.value.makeCode(shareUrl.value)
+                        } else {
+                            qrcodebox.value = new QRCode(qrcode, {
+                                text: shareUrl.value,
+                                width: width,
+                                height: height,
+                                colorDark: "#000000",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                        refWgQRAlert.value.classList.add('show')
+                    }
+                    // const wgAlertDom = document.getElementById('wgAlert')
+                    // const wgAlertContent = wgAlertDom.querySelector('.alert-content')
+                    // if (show) {
+                    //     wgAlertDom.classList.add('show')
+                    //     wgAlertContent.textContent = content;
+                    // } else {
+                    //     wgAlertDom.classList.remove('show')
+                    //     wgAlertContent.textContent = '无内容';
+                    // }
+                }
+                function handleCloseQRCode() {
+                    if (refWgQRAlert.value) {
+                        refWgQRAlert.value.classList.remove('show')
+                    }
+                }
+
+                /*点击展示更多点赞头像*/
+                async function getMoreZanList() {
+                    zanListIndex.value++;
+                    let limit = 6 + (zanListIndex.value * 7);
+                    await wxUserCheckZan({ stuTchPlanEvaId: stuTchPlanEvaId.value, limit }).then(res => {
+                        zanNum.value = res.content.zanNum;
+                        zanState.value = res.content.zanState;
+                        headList.value = res.content.headList || []
+                        // if (headList.value.length <= 21) {
+                        //     zanListUnfold.value = true
+                        // }
+                        zanListUnfold.value = !(headList.value.length === zanNum.value)
+                    })
+                }
+                /*计算属性*/
+                const computedHeadList = computed({
+                    get() {
+                        // if (zanListUnfold.value) {
+                        //     return headList.value;
+                        // } else {
+                        //     return headList.value.slice(0, 20);
+                        // }
+                        return headList.value
+                    }
+                })
+
+                return {
+                    initViewportHeight,
+                    baseWidth,
+                    globalLoading,
+                    loading,
+                    platform,
+                    stuWorkDetail,
+                    phoneNum,
+                    code,
+                    codeMsg,
+                    codeDisabled,
+                    zanState,
+                    zanNum,
+                    headList,
+                    zanListUnfold,
+                    computedHeadList,
+                    isShare,
+                    getStarAuth,
+                    shareReportType,
+                    shareReportZanNum,
+                    shareReportReward,
+                    classCodeData,
+                    afterClassCodeData,
+                    iframeWidth,
+                    iframeHeight,
+                    audioPlayer,
+                    shareStep,
+                    iframeShowTools,
+                    refWgQRAlert,
+                    shareReportShow,
+                    shareReportClueType,
+                    shareReportQrCodeImg,
+                    evaCopy,
+                    showSignUp,
+                    sendCode,
+                    handleGiveLike,
+                    handleSignUp,
+                    handleShare,
+                    playAudio,
+                    handleChangeClassCode,
+                    handleChangeAfterClassCode,
+                    handleShareStep,
+                    handleShowAlert,
+                    handleCloseQRCode,
+                    getMoreZanList,
+                }
+            }
+        }).mount('#mobileApp')
+    </script>
+
+    <!-- <script>
+            // ./js/rem.js 路径
+            (function (win, doc) {
+                if (!win.addEventListener) return
+                function setFont() {
+                    let screenWidth = document.querySelector('html').offsetWidth
+                    screenWidth = screenWidth > 750 ? 750 : screenWidth
+                    const baseSize = 75 // 我的设计稿是750px，如果是375px则写37.5
+                    const pageWidth = 750
+                    let fontSize = (baseSize * screenWidth) / pageWidth
+                    document.querySelector('html').style.fontSize = `${fontSize}px`
+                }
+                setFont()
+                setTimeout(() => {
+                    setFont()
+                }, 300)
+                doc.addEventListener('DOMContentLoaded', setFont, false)
+                win.addEventListener('resize', setFont, false)
+                win.addEventListener('load', setFont, false)
+            })(window, document)
+
+    </script> -->
+
+</body>
+
+</html>

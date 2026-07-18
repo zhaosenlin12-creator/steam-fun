@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>考试报告</title>
+    <link rel="stylesheet" href="./style.css">
+    <script src="https://res2.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+    <!-- 引入 ECharts -->
+    <script src="https://wugecdn.steam.fun/resources/tools/echarts.min.js"></script>
+    <!-- <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script> -->
+</head>
+
+<body>
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 顶部背景图 -->
+        <div class="top-banner">
+            <img src="https://wugecdn.steam.fun/resources/static/exam_h5page_img.png" alt="banner" class="banner-img">
+        </div>
+
+        <!-- 学生信息卡片 -->
+        <div class="student-info-card">
+            <div class="card-header">
+                <img src="./images/title-student-info.svg" alt="" class="header-bg">
+                <span class="header-title">学生信息</span>
+            </div>
+
+            <div class="student-detail">
+                <img src="" alt="avatar" class="avatar">
+                <div class="student-text">
+                    <div class="student-name"></div>
+                    <div class="exam-time"></div>
+                </div>
+            </div>
+
+            <div class="exam-title"></div>
+
+            <!-- 考试数据统计 -->
+            <div class="exam-stats">
+                <div class="stat-item">
+                    <div class="stat-value">0<span class="stat-unit">分</span></div>
+                    <div class="stat-label">考试分数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">0/0</div>
+                    <div class="stat-label">答对数量</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">作答时间</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据查看卡片 -->
+        <div class="data-view-card">
+            <div class="card-header">
+                <img src="./images/title-data-view.svg" alt="" class="header-bg">
+                <span class="header-title">数据查看</span>
+            </div>
+
+            <!-- 知识点掌握情况 -->
+            <div class="section-content section-content-fit">
+                <!-- <div class="section-title">
+                    <svg class="title-icon" viewBox="0 0 12 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd"
+                            d="M6.00064 0H5.99064C2.66641 0.006375 -0.0287701 2.90169 0.000231886 6.43131C0.0132775 8.22253 0.736561 9.9249 1.99237 11.1201C2.79041 11.8774 3.24781 12.9594 3.25045 14.0962V15.0418C3.25045 16.1234 4.07551 17 5.09258 17H6.9087C7.92608 17 8.75083 16.1238 8.75083 15.0429V14.0972C8.75083 12.9572 9.21386 11.8787 10.0109 11.1159C11.8588 9.35092 12.4916 6.55847 11.6023 4.09337C10.7129 1.62827 8.4855 0.000573478 6.00064 0ZM5.00057 15.1406C4.86249 15.1406 4.75056 15.0217 4.75056 14.875C4.75056 14.7283 4.86249 14.6094 5.00057 14.6094H7.00071C7.13879 14.6094 7.25073 14.7283 7.25073 14.875C7.25073 15.0217 7.13879 15.1406 7.00071 15.1406H5.00057ZM4.75056 13.8125C4.75056 13.9592 4.86249 14.0781 5.00057 14.0781H7.00071C7.13879 14.0781 7.25073 13.9592 7.25073 13.8125C7.25073 13.6658 7.13879 13.5469 7.00071 13.5469H5.00057C4.86249 13.5469 4.75056 13.6658 4.75056 13.8125ZM4.75056 13.0156C4.61248 13.0156 4.50054 12.8967 4.50054 12.75C4.50054 12.6033 4.61248 12.4844 4.75056 12.4844H7.25073C7.38881 12.4844 7.50074 12.6033 7.50074 12.75C7.50074 12.8967 7.38881 13.0156 7.25073 13.0156H4.75056ZM6.69169 7.48212L6.38767 10.3594L9.00085 6.33037H7.81177L8.11479 3.45312L5.50061 7.48212H6.69169Z"
+                            fill="#FA541C" />
+                    </svg>
+                    知识点掌握情况
+                </div> -->
+                <div class="knowledge-tabs">
+                    <button class="tab-button active" type="button" data-tab="knowledge">知识点掌握情况</button>
+                    <button class="tab-button" type="button" data-tab="programming">编程能力知识点</button>
+                </div>
+                <div class="chart-container">
+                    <!-- ECharts 雷达图容器 -->
+                    <div id="radarChart" class="chart-panel active" style="width: 100%; height: 350px;"></div>
+                    <div id="programmingRadarChart" class="chart-panel" style="width: 100%; height: 350px;"></div>
+                    <!-- <div class="chart-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background: #00D3A8;"></span>
+                            <span class="legend-text">我的正确率</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background: #009BFF;"></span>
+                            <span class="legend-text">平均正确率</span>
+                        </div>
+                    </div> -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 题型表现分析卡片 -->
+        <div class="question-type-card">
+            <!-- <div class="card-header">
+                <img src="./images/title-data-view.svg" alt="" class="header-bg">
+                <span class="header-title">题型表现分析</span>
+            </div> -->
+
+            <div class="section-content">
+                <div class="section-title">
+                    <svg class="title-icon" viewBox="0 0 13 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path opacity="0.7"
+                            d="M12.4378 14H10.5622C10.2532 14 10 13.3998 10 12.6672V6.33277C10 5.60024 10.2532 5 10.5622 5H12.4378C12.7468 5 13 5.60024 13 6.33277V12.6663C13 13.3989 12.7468 13.9991 12.4378 13.9991"
+                            fill="#11CCCC" />
+                        <path
+                            d="M2.24858 15C1.00807 14.997 0.00324318 14.0561 0 12.8945V2.10553C0 0.947368 1.01173 0 2.24858 0H9.75227C10.9883 0 12 0.947368 12 2.10553V12.8945C12 14.0526 10.9883 15 9.75227 15H2.24858Z"
+                            fill="#00DC80" fill-opacity="0.7" />
+                        <path fill-rule="evenodd" clip-rule="evenodd"
+                            d="M1.39978 3.95388H4.77475C4.99975 3.95388 5.17524 3.74469 5.17524 3.47649C5.17524 3.2083 4.99975 3 4.77475 3H1.39978C1.17478 3 1.00004 3.2083 1.00004 3.47649C0.998613 3.60346 1.04025 3.72574 1.1155 3.81561C1.19076 3.90548 1.29326 3.95534 1.39978 3.95388ZM1.41703 11.9997H6.58073C6.81548 11.9997 7.02398 11.761 6.99773 11.5223C6.99773 11.2541 6.81548 11.0458 6.58073 11.0458H1.41703C1.18228 11.0458 1.00004 11.2541 1.00004 11.5223C1.00078 11.6521 1.0455 11.776 1.12402 11.8659C1.20255 11.9558 1.30822 12.0041 1.41703 11.9997ZM6.58073 9.31778H1.41703C1.30822 9.32212 1.20255 9.27387 1.12402 9.18397C1.0455 9.09408 1.00078 8.97017 1.00004 8.84039C1.00004 8.5722 1.18228 8.3639 1.41703 8.3639H6.58073C6.81548 8.3639 6.99773 8.5722 6.99773 8.84039C7.02398 9.07909 6.81548 9.31778 6.58073 9.31778ZM1.41703 6.63583H6.58073C6.81548 6.63583 7.02398 6.39714 6.99773 6.15844C6.99773 5.89025 6.81548 5.68195 6.58073 5.68195H1.41703C1.18228 5.68195 1.00004 5.89025 1.00004 6.15844C1.00078 6.28822 1.0455 6.41213 1.12402 6.50202C1.20255 6.59192 1.30822 6.64018 1.41703 6.63583Z"
+                            fill="white" />
+                    </svg>
+                    题型表现分析
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>题型</th>
+                                <th>题目数量</th>
+                                <th>通过率</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>单选题</td>
+                                <td>20</td>
+                                <td class="pass-rate">40%</td>
+                            </tr>
+                            <tr>
+                                <td>多选题</td>
+                                <td>20</td>
+                                <td class="pass-rate">40%</td>
+                            </tr>
+                            <tr>
+                                <td>填空题</td>
+                                <td>20</td>
+                                <td class="pass-rate">40%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 考试点评卡片 -->
+        <div class="comment-card">
+            <div class="card-header">
+                <img src="./images/title-data-view.svg" alt="" class="header-bg">
+                <span class="header-title">考试点评</span>
+            </div>
+            <div class="comment-content">
+            </div>
+        </div>
+
+    </div>
+
+    <script src="./script.js"></script>
+    <script>
+        // var vConsole = new window.VConsole();
+    </script>
+</body>
+
+</html>

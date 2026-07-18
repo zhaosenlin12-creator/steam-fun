@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="google" value="notranslate" />
+    <link rel="shortcut icon" href="static/favicon.ico" />
+
+    <link rel="stylesheet" href="../css/scratch.css" />
+
+    <link rel="stylesheet" href="../css/toastr.css" />
+    <title>图形化编程-老师创作区</title>
+    <script src="../js/oss/aliyun-oss-sdk.min.js"></script>
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/jquery.cokie.min.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/toastr.js"></script>
+
+    <!--引入 element-ui 的样式，-->
+    <link rel="stylesheet" href="../css/element-ui/lib/theme-chalk/index.css" />
+    <!-- 必须先引入vue，  后使用element-ui -->
+    <script src="../js/vue/vue.min.js"></script>
+    <!-- 引入element 的组件库-->
+    <script src="../css/element-ui/lib/index.js"></script>
+
+    <script>
+        var access_token = getUserToken();
+        var userInfo = UserStuInfo();
+        var workurl = uncompileStr(urlParams("workurl"));
+        var workname = urlParams("workname");
+        var tchPlanId = urlParams("tchPlanId");
+        var lessonId = urlParams("lessonId");
+        var work_id = urlParams("work_id");
+        var type = urlParams("type");
+        var mode = urlParams("mode");
+        var stu_user_id = urlParams("stu_user_id");
+        var stu_tch_plan_id = urlParams("stu_tch_plan_id");
+        var work_type = urlParams("work_type");
+        var uploadParam = {}; //提交参数
+        // 配置 toastr 插件
+    toastr.options = {
+      positionClass: "toast-center", // 设置通知弹窗显示在屏幕中间
+    };
+        window.scratchConfig = {
+            session: {
+                token: "", // 用户Token
+                username: "", //用户名
+            },
+            cloudData: {
+                enable: false
+            },
+            logo: {
+                show: true,
+                url:
+                    "https://steamfun-cdn.oss-cn-zhangjiakou.aliyuncs.com/resources/static/homepage/images/logo/scratch_logo.svg", //logo地址，支持base64图片
+
+                handleClickLogo: () => { },
+            },
+            menuBar: {
+                //菜单栏样式
+                style: {
+                    background: "hsla(215, 100%, 65%, 1)",
+                },
+                //切换语言按钮
+                languageButton: {
+                    show: true, //是否显示
+                    defaultLanguage: 'zh-cn' //默认语言 en zh-cn zh-tw
+                },
+                //新建按钮
+                newButton: {
+                    show: true,
+                    handleBefore() {
+                        return true;
+                    },
+                },
+                //从计算机加载按钮
+                loadFileButton: {
+                    show: true,
+                    handleBefore() {
+                        return true;
+                    },
+                },
+                //保存到计算机按钮
+                saveFileButton: {
+                    show: false,
+                    handleBefore() {
+                        return true;
+                    },
+                },
+                //加速模式按钮
+                turboModeButton: {
+                    show: true,
+                },
+                //教程按钮
+                helpButton: {
+                    show: true,
+                    handleBefore: () => {
+                        //console.log("显示自己的教程")
+                        return true;
+                    },
+                },
+                //我的物品按钮
+                myStuff: {
+                    show: false,
+                    url: "/myProject",
+                },
+                //用户头像按钮
+                userAvatar: {
+                    show: false,
+                    username: "未登录",
+                    avatar: "./static/avatar.png",
+                    handleClick() {
+                        //弹出登录框等操作
+                        //console.log("点击头像")
+                    },
+                },
+                customButtons: [
+                    {
+                        show: true,
+                        buttonName:
+                            mode == 1
+                                ? "保存模板"
+                                : mode == 2 || mode == 3
+                                    ? "保存作品"
+                                    : "提交修改",
+                        //mode 1 修改模板 mode 2 保存备课作品 mode 3 保存课堂作品  mode 4 修改学生课堂作品
+
+                        style: {
+                            display: !mode ? "none" : "",
+                            color: "#4d98ff",
+                            border: "1px solid #4281d9",
+                            background: "white",
+                        },
+                        handleClick: () => {
+                            //console.log("操作");
+                            //console.log(mode);
+                            if (mode == "3") {
+                                //console.log('老师保存课堂作品');
+                                // 获取到项目名
+                                var projectName = window.scratch.getProjectName();
+                                if (!projectName) {
+                                    // return toastr.success("请输入标题", "提示", { timeOut: 1000 });
+                                    return window.ToastWarning("作品名不能为空");
+                                }
+                                InitOss(access_token, function (res) {
+                                    if (res.error) {
+                                        window.ToastWarning(res.error.message);
+                                    } else {
+                                        window.Loading("1");
+                                        //console.log("初始化OSS");
+                                        //console.log(res);
+                                        client = new OSS({
+                                            region: "oss-cn-zhangjiakou",
+                                            accessKeyId: res.AccessKeyId,
+                                            accessKeySecret: res.AccessKeySecret,
+                                            stsToken: res.SecurityToken,
+                                            bucket: "steamfun",
+                                            secure: true,
+                                        });
+
+                                        var arg = new Array();
+                                        arg[0] =
+                                            "works/scratch/coursetemplate/" +
+                                            userInfo.eduId;
+                                        arg[1] = userInfo.code;
+                                        arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+                                        window.scratch.getProjectCover((cover) => {
+                                            //TODO 获取到作品截图
+                                            //console.log("cover")
+                                            //console.log(cover)
+                                            arg[3] = cover;
+                                            uploadpng(arg, function (pngurl) {
+                                                //console.log(pngurl);
+
+                                                window.scratch.getProjectFile((file) => {
+                                                    //TODO 获取到项目文件
+                                                    //console.log("获取到的项目文件")
+                                                    //console.log(file)
+                                                    arg[4] = file;
+                                                    uploadsb3(arg, function (sb3url) {
+                                                        ////console.log("项目链接");
+                                                        ////console.log(sb3url);
+
+                                                        uploadParam.tchPlanId = tchPlanId;
+                                                        uploadParam.lessonId = lessonId;
+                                                        uploadParam.work_url = sb3url;
+                                                        uploadParam.covers_url = pngurl;
+                                                        uploadParam.title = projectName;
+                                                        uploadParam.work_id = work_id;
+                                                        uploadParam.type = "1";
+
+                                                        //console.log("提交参数");
+                                                        //console.log(uploadParam);
+
+                                                        saveTchLessonWork(
+                                                            access_token,
+                                                            uploadParam,
+                                                            function (res) {
+                                                                //console.log('老师保存课堂作品返回');
+                                                                //console.log(res);
+
+                                                                if (res.success) {
+                                                                    uploadParam.work_id = res.content.work_id;
+                                                                    work_id = res.content.work_id;
+                                                                    // uploadParam.work_id = res.work_id;
+                                                                    // work_id = res.work_id;
+                                                                    window.Loading("2");
+                                                                    toastr.success("作品保存成功", "成功", {
+                                                                        timeOut: 1000,
+                                                                    });
+                                                                } else {
+                                                                    window.Loading("2");
+                                                                    window.ToastWarning("保存失败");
+                                                                }
+                                                            }
+                                                        );
+                                                    });
+                                                });
+                                            });
+                                        });
+                                    }
+                                });
+                            } else if (mode == "2") {
+                                //console.log('老师保存备课作品');
+                                // 获取到项目名
+                                var projectName = window.scratch.getProjectName();
+                                if (!projectName) {
+                                    return window.ToastWarning("作品名不能为空");
+                                    // return toastr.success("请输入标题", "提示", { timeOut: 1000 });
+                                }
+                                InitOss(access_token, function (res) {
+                                    if (res.error) {
+                                        window.ToastWarning(res.error.message);
+                                    } else {
+                                        window.Loading("1");
+                                        //console.log("初始化OSS");
+                                        //console.log(res);
+                                        client = new OSS({
+                                            region: "oss-cn-zhangjiakou",
+                                            accessKeyId: res.AccessKeyId,
+                                            accessKeySecret: res.AccessKeySecret,
+                                            stsToken: res.SecurityToken,
+                                            bucket: "steamfun",
+                                            secure: true,
+                                        });
+                                        var arg = new Array();
+                                        arg[0] =
+                                            "works/scratch/coursetemplate/" +
+                                            userInfo.eduId;
+                                        arg[1] = userInfo.code;
+                                        arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+                                        window.scratch.getProjectCover((cover) => {
+                                            //TODO 获取到作品截图
+                                            //console.log("cover")
+                                            //console.log(cover)
+                                            arg[3] = cover;
+                                            uploadpng(arg, function (pngurl) {
+                                                //console.log(pngurl);
+
+                                                window.scratch.getProjectFile((file) => {
+                                                    //TODO 获取到项目文件
+                                                    //console.log("获取到的项目文件")
+                                                    //console.log(file)
+                                                    arg[4] = file;
+                                                    uploadsb3(arg, function (sb3url) {
+                                                        ////console.log("项目链接");
+                                                        ////console.log(sb3url);
+
+                                                        uploadParam.lessonId = lessonId;
+                                                        uploadParam.work_url = sb3url;
+                                                        uploadParam.covers_url = pngurl;
+                                                        uploadParam.title = projectName;
+                                                        uploadParam.work_id = work_id;
+                                                        uploadParam.type = "2";
+
+                                                        //console.log("提交参数");
+                                                        //console.log(uploadParam);
+
+                                                        saveTchLessonWork(
+                                                            access_token,
+                                                            uploadParam,
+                                                            function (res) {
+                                                                //console.log('老师保存课堂作品返回');
+                                                                //console.log(res);
+
+                                                                if (res.success) {
+                                                                    uploadParam.work_id = res.content.work_id;
+                                                                    work_id = res.content.work_id;
+                                                                    window.Loading("2");
+                                                                    toastr.success("作品保存成功", "成功", {
+                                                                        timeOut: 1000,
+                                                                    });
+                                                                } else {
+                                                                    window.Loading("2");
+                                                                    window.ToastWarning("保存失败");
+                                                                }
+                                                            }
+                                                        );
+                                                    });
+                                                });
+                                            });
+                                        });
+                                    }
+                                });
+                            } else if (mode == "1") {
+                                //console.log('老师修改课程模板');
+                                // 获取到项目名
+                                var projectName = window.scratch.getProjectName();
+                                console.log('projectName:', projectName)
+                                if (!projectName) {
+                                    // return toastr.success("请输入标题", "提示", { timeOut: 1000 });
+                                    return window.ToastWarning("作品名不能为空");
+                                }
+                                InitOss(access_token, function (res) {
+                                    if (res.error) {
+                                        window.ToastWarning(res.error.message);
+                                    } else {
+                                        window.Loading("1");
+                                        //console.log("初始化OSS");
+                                        //console.log(res);
+                                        client = new OSS({
+                                            region: "oss-cn-zhangjiakou",
+                                            accessKeyId: res.AccessKeyId,
+                                            accessKeySecret: res.AccessKeySecret,
+                                            stsToken: res.SecurityToken,
+                                            bucket: "steamfun",
+                                            secure: true,
+                                        });
+
+                                        var arg = new Array();
+                                        arg[0] =
+                                            "works/scratch/coursetemplate/" +
+                                            userInfo.eduId;
+                                        arg[1] = userInfo.code;
+                                        arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+                                        window.scratch.getProjectCover((cover) => {
+                                            //TODO 获取到作品截图
+                                            //console.log("cover")
+                                            //console.log(cover)
+                                            arg[3] = cover;
+                                            uploadpng(arg, function (pngurl) {
+                                                //console.log(pngurl);
+
+                                                window.scratch.getProjectFile((file) => {
+                                                    //TODO 获取到项目文件
+                                                    //console.log("获取到的项目文件")
+                                                    //console.log(file)
+                                                    arg[4] = file;
+                                                    uploadsb3(arg, function (sb3url) {
+                                                        ////console.log("项目链接");
+                                                        ////console.log(sb3url);
+
+                                                        uploadParam.tchPlanId = tchPlanId;
+                                                        uploadParam.work_url = sb3url;
+                                                        uploadParam.covers_url = pngurl;
+                                                        uploadParam.title = projectName;
+                                                        uploadParam.template_type = type;
+
+                                                        //console.log("提交的保存模板参数");
+                                                        //console.log(uploadParam);
+
+                                                        updateTchPlanTemplate(
+                                                            access_token,
+                                                            uploadParam,
+                                                            function (res) {
+                                                                //console.log('修改模板返回');
+                                                                //console.log(res);
+
+                                                                window.Loading("2");
+                                                                window.ToastSuccess("保存模板成功");
+                                                            }
+                                                        );
+                                                    });
+                                                });
+                                            });
+                                        });
+                                    }
+                                });
+                            } else if (mode == "4") {
+                                //console.log('老师修改学生课堂作品');
+                                // 获取到项目名
+                                var projectName = window.scratch.getProjectName();
+                                if (!projectName) {
+                                    // return toastr.success("请输入标题", "提示", { timeOut: 1000 });
+                                    return window.ToastWarning("作品名不能为空");
+                                }
+                                InitOss(access_token, function (res) {
+                                    if (res.error) {
+                                        window.ToastWarning(res.error.message);
+                                    } else {
+                                        window.Loading("1");
+                                        //console.log("初始化OSS");
+                                        //console.log(res);
+                                        client = new OSS({
+                                            region: "oss-cn-zhangjiakou",
+                                            accessKeyId: res.AccessKeyId,
+                                            accessKeySecret: res.AccessKeySecret,
+                                            stsToken: res.SecurityToken,
+                                            bucket: "steamfun",
+                                            secure: true,
+                                        });
+
+                                        uploadParam.title = projectName; //作品名称
+                                        uploadParam.stu_user_id = stu_user_id;
+                                        uploadParam.stu_tch_plan_id = stu_tch_plan_id; //讲次id
+                                        uploadParam.is_local = false; //是否暂存
+                                        uploadParam.work_type = work_type; //课堂作品
+
+                                        var arg = new Array();
+                                        arg[0] =
+                                            "works/scratch/coursework/" +
+                                            userInfo.eduId;
+                                        arg[1] = userInfo.code;
+                                        arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+                                        window.scratch.getProjectCover((cover) => {
+                                            //TODO 获取到作品截图
+                                            //console.log("cover")
+                                            //console.log(cover)
+                                            arg[3] = cover;
+                                            uploadpng(arg, function (pngurl) {
+                                                //console.log(pngurl);
+
+                                                uploadParam.covers = pngurl; //作品封面图地址
+
+                                                window.scratch.getProjectFile((file) => {
+                                                    //TODO 获取到项目文件
+                                                    //console.log("获取到的项目文件")
+                                                    //console.log(file)
+                                                    arg[4] = file;
+                                                    uploadsb3(arg, function (sb3url) {
+                                                        ////console.log("项目链接");
+                                                        ////console.log(sb3url);
+                                                        uploadParam.work_url = sb3url; //项目sb3地址
+                                                        upload_flag = true; //上传完毕
+
+                                                        UploadWorks(access_token, uploadParam, function (
+                                                            res
+                                                        ) {
+                                                            if (res.success) {
+                                                                //console.log("老师修改学生课堂作品");
+                                                                //console.log(res);
+                                                                window.Loading("2");
+
+                                                                toastr.success("修改提交成功", "成功", {
+                                                                    timeOut: 1000,
+                                                                });
+                                                            } else {
+                                                                window.ToastWarning("修改失败");
+                                                                window.Loading("2");
+                                                            }
+                                                        });
+                                                    });
+                                                });
+                                            });
+                                        });
+                                    }
+                                });
+                            }
+                        },
+                    },
+                    {
+                        show: true,
+                        buttonName: "重置",
+                        style: {
+                            color: "white",
+                            border: "1px solid white",
+                            display: !mode
+                                ? "none"
+                                : mode !== "4" && mode !== "3"
+                                    ? ""
+                                    : "none",
+                        },
+                        handleClick: () => {
+                            //console.log("重置操作");
+                            //console.log(mode);
+                            window.Loading("1");
+                            if (mode == "1") {
+                                //console.log('重置模板');
+                                uploadParam.tchPlanId = tchPlanId;
+                                uploadParam.work_url = "";
+                                uploadParam.covers_url = "";
+                                uploadParam.title = "";
+                                uploadParam.template_type = type;
+                                //console.log("提交的保存模板参数");
+                                //console.log(uploadParam);
+                                updateTchPlanTemplate(access_token, uploadParam, function (
+                                    res
+                                ) {
+                                    //console.log('修改模板返回');
+                                    //console.log(res);
+
+                                    window.Loading("2");
+                                    window.ToastSuccess("重置成功");
+                                });
+                            } else if (mode == "4") {
+                                //console.log('老师修改学生课堂作品');
+                                window.ToastSuccess("暂未开放");
+                                window.Loading("2");
+                            } else {
+                                //console.log('重置课堂作品');
+                                if (work_id) {
+                                    uploadParam.id = work_id;
+                                    deleteTchLessonWork(access_token, uploadParam, function (
+                                        res
+                                    ) {
+                                        //console.log('删除课堂作品返回');
+                                        //console.log(res);
+                                        if (res.is_delete) {
+                                            window.Loading("2");
+                                            window.ToastSuccess("重置成功");
+                                            uploadParam.work_id = null;
+                                            uploadParam.id = null;
+                                        }
+                                    });
+                                } else {
+                                    window.ToastSuccess("项目还未保存");
+                                    window.Loading("2");
+                                }
+                            }
+                        },
+                    },
+                ],
+            },
+            //弃用
+            shareButton: {
+                show: false,
+                buttonName: "分享",
+                handleClick: () => {
+                    //点击分享按钮
+                },
+            },
+            //弃用
+            profileButton: {
+                show: false,
+                buttonName: "我的作品",
+                handleClick: () => {
+                    //点击profile按钮
+                },
+            },
+            blocks: {
+                scale: 0.8, // 积木缩放比例
+                hideCatagorys: [],
+                hideBlocks: [],
+            },
+            stageArea: {
+                //舞台设置
+                fullscreenButton: {
+                    //全屏按钮
+                    show: true,
+                    handleBeforeSetStageUnFull() {
+                        //退出全屏前的操作
+                        postParentMessage('showBack');
+                        return true;
+                    },
+                    handleBeforeSetStageFull() {
+                        //全屏前的操作
+                        postParentMessage('hideBack');
+                        return true;
+                    },
+                },
+                startButton: {
+                    //开始按钮
+                    show: true,
+                    handleBeforeStart() {
+                        //开始前的操作
+                        return true;
+                    },
+                },
+                stopButton: {
+                    // 停止按钮
+                    show: true,
+                    handleBeforeStop() {
+                        //停止前的操作
+                        return true;
+                    },
+                },
+            },
+            handleVmInitialized: (vm) => {
+                window.vm = vm;
+                ////console.log("VM初始化完毕")
+            },
+            handleProjectLoaded: () => {
+                ////console.log("作品载入完毕")
+            },
+            handleDefaultProjectLoaded: () => {
+                //默认作品加载完毕，可以在这里控制项目加载
+                window.scratch.loadProject(workurl, (e) => {
+                    if (e === undefined) {
+                        ////console.log("项目加载完毕")
+                        window.scratch.setProjectName(workname);
+                    } else {
+                        // //console.log("项目加载失败")
+                        ////console.log(e);
+                    }
+                });
+            },
+            //若使用官方素材库请删除本配置项, 默认为/static下的素材库
+
+            //素材库配置
+            assets: {
+                //素材库地址，默认为/static下的素材库
+                assetHost: 'https://wugecdn.steam.fun/resources/scratch/static',
+                //素材库索引地址
+                defaultIndex: {
+                    sprites: "static/json_index/sprites.json",
+                    costumes: "static/json_index/costumes.json",
+                    backdrops: "static/json_index/backdrops.json",
+                    sounds: "static/json_index/sounds.json"
+                },
+                //拦截角色库打开
+                handleBeforeSpriteLibraryOpen() {
+                    postParentMessage('hideBack');
+                    return true;
+                },
+                handleAfterSpriteLibraryClose() {
+                    postParentMessage('showBack');
+                    return true;
+                },
+                //拦截造型库打开
+                handleBeforeCostumesLibraryOpen() {
+                    postParentMessage('hideBack');
+                    return true;
+                },
+                handleAfterCostumeLibraryClose() {
+                    postParentMessage('showBack');
+                    return true;
+                },
+                //拦截背景库打开
+                handleBeforeBackdropsLibraryOpen() {
+                    postParentMessage('hideBack');
+                    return true;
+                },
+                handleAfterBackdropLibraryClose() {
+                    postParentMessage('showBack');
+                    return true;
+                },
+                //拦截声音库打开
+                handleBeforeSoundLibraryOpen() {
+                    postParentMessage('hideBack');
+                    return true;
+                },
+                //拦截声音库关闭
+                handleAfterSoundLibraryClose() {
+                    postParentMessage('showBack');
+                    return true;
+                }
+            },
+
+
+
+        };
+
+        function uploadpng(arg, callback) {
+            //console.log("上传项目缩略图");
+            //console.log(arg);
+            var url = arg[0] + "/" + arg[1] + "/" + "cover/" + arg[2] + ".png";
+            //console.log(url);
+            try {
+                let result = client.put(url, dataURLtoBlob(arg[3]));
+                result
+                    .then(function (res) {
+                        //console.log(res);
+                        callback(res.url);
+                    })
+                    .catch(function (error) {
+                        //console.log(error);
+                    });
+            } catch (e) {
+                //console.log(e);
+            }
+        }
+        //上传sb3到OSS
+        function uploadsb3(arg, callback) {
+            //console.log("上传项目SJR");
+            //console.log(arg);
+            var url = arg[0] + "/" + arg[1] + "/" + "release/" + arg[2] + ".sb3";
+            //console.log(url);
+            try {
+                let result = client.put(url, arg[4]);
+                result
+                    .then(function (res) {
+                        //console.log(res);
+                        callback(res.url);
+                    })
+                    .catch(function (error) {
+                        //console.log(error);
+                    });
+            } catch (e) {
+                //console.log(e);
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <script type="text/javascript">
+        if (window.Event) {
+            document.captureEvents(Event.MOUSEUP);
+        }
+        function nocontextmenu() {
+            event.cancelBubble = true;
+            event.returnValue = false;
+            return false;
+        }
+        function norightclick(e) {
+            if (window.Event) {
+                if (e.which == 2 || e.which == 3) return false;
+            } else if (event.button == 2 || event.button == 3) {
+                event.cancelBubble = true;
+                event.returnValue = false;
+                return false;
+            }
+        }
+        document.oncontextmenu = nocontextmenu; // for IE5+
+        document.onmousedown = norightclick; // for all others
+    </script>
+
+    <div class="scratch-filter">
+        <div class="loading">
+            <div class="con-box">
+                <h4>请稍后</h4>
+                <span>正在加载中……</span>
+            </div>
+        </div>
+    </div>
+    <div id="scratch"></div>
+
+    <script type="text/javascript"
+        src="https://wugecdn.steam.fun/resources/scratch/editor/course.min.20250906.js"></script>
+    <script type="text/javascript" src="https://wugecdn.steam.fun/resources/scratch/editor/gui.20250906.js"></script>
+
+    <div id="app"></div>
+
+    <script>
+        new Vue({
+            el: "#app",
+            data: {
+                message: "Hello Jrcode",
+            },
+            mounted() {
+                // 将vue中的方法赋值给window
+                window.goHome = this.goHome;
+                window.Loading = this.Loading;
+                window.ToastSuccess = this.ToastSuccess;
+                window.ToastWarning = this.ToastWarning;
+            },
+            methods: {
+                goHome() {
+                    this.$confirm("即将返回,记得保存作品哦！", "提示", {
+                        confirmButtonText: "确定",
+                        cancelButtonText: "取消",
+                        type: "warning",
+                    }).then(() => {
+                        //点击确定后操作
+                        if (window.userInfo.studentUserInfo) {
+                            window.location.href = "/code-classroom/classroom-index-stu";
+                        } else {
+                            window.location.href = "/code-classroom/classroom-index";
+                        }
+                    });
+                },
+
+                ToastSuccess(msg) {
+                    this.$message.success({
+                        message: msg,
+                        type: "success",
+                        customClass: "toast_success",
+                        center: true,
+                        offset: 100,
+                    });
+                },
+
+                ToastWarning(msg) {
+                    this.$message.warning(msg);
+                },
+
+                Loading(cmd) {
+                    if (cmd == "1") {
+                        this.$loading({
+                            lock: false,
+                            text: "数据传输中...按ESC退出",
+                            spinner: "el-icon-loading",
+                            background: "rgba(237, 241, 253,0.7 )",
+                        });
+                    } else if (cmd == "2") {
+                        this.$loading({
+                            lock: false,
+                            text: "",
+                            spinner: "el-icon-loading",
+                            background: "rgba(0, 0, 0, 0)",
+                        }).close();
+                    }
+                },
+            },
+        });
+    </script>
+
+    <script>
+        //当前页面监视键盘输入
+        document.onkeydown = function (e) {
+            //事件对象兼容
+            //console.log('键盘输入');
+            //console.log(e);
+            let e1 =
+                e || event || window.event || arguments.callee.caller.arguments[0];
+            //键盘按键判断:左箭头-37;上箭头-38；右箭头-39;下箭头-40
+            //左
+            if (e1 && e1.keyCode == 27) {
+                //console.log('终止数据传输');
+                window.Loading("2");
+            }
+        };
+    </script>
+    <style>
+        .toast_success {
+            z-index: 12000 !important;
+            background: #e6f0ff !important;
+        }
+
+        .el-message--success .el-message__content {
+            color: #4d98ff !important;
+        }
+    </style>
+
+    <script>
+        window.onbeforeunload = function (e) {
+            window.onbeforeunload = null;
+        };
+
+        function postParentMessage(message) {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'watchScratchIframe',
+                    message: message
+                }, '*');
+            }
+        }
+    </script>
+</body>
+
+</html>

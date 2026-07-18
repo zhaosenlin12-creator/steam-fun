@@ -1,0 +1,637 @@
+/* 重置样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 1px;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #fff;
+    color: #333;
+    line-height: 1.5;
+}
+
+.page {
+    max-width: 750px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: #fff;
+    position: relative;
+}
+
+/* 主图区域 */
+.main-image {
+    padding: 0 4vw;
+}
+
+.image-container {
+    width: 100%;
+    height: 50vw;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 3vw;
+    position: relative;
+    overflow: hidden;
+    display: none;
+    /* 默认隐藏，由JavaScript控制显示 */
+    align-items: center;
+    justify-content: center;
+}
+
+.camping-scene {
+    width: 80%;
+    height: 80%;
+    position: relative;
+}
+
+/* 天空 */
+.sky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(to bottom, #1a237e, #3949ab);
+    border-radius: 2vw 2vw 0 0;
+}
+
+.stars {
+    position: absolute;
+    top: 1vw;
+    left: 0;
+    right: 0;
+    height: 20%;
+}
+
+.star {
+    position: absolute;
+    width: 0.5vw;
+    height: 0.5vw;
+    background: #fff;
+    border-radius: 50%;
+}
+
+.star:nth-child(1) {
+    top: 2vw;
+    left: 10%;
+}
+
+.star:nth-child(2) {
+    top: 1vw;
+    left: 25%;
+}
+
+.star:nth-child(3) {
+    top: 3vw;
+    left: 40%;
+}
+
+.star:nth-child(4) {
+    top: 0.5vw;
+    left: 55%;
+}
+
+.star:nth-child(5) {
+    top: 2.5vw;
+    left: 70%;
+}
+
+.star:nth-child(6) {
+    top: 1.5vw;
+    left: 85%;
+}
+
+/* 树木 */
+.trees {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+}
+
+.tree {
+    position: absolute;
+    bottom: 0;
+    width: 8vw;
+    height: 25vw;
+    background: #2e7d32;
+    border-radius: 50% 50% 0 0;
+}
+
+.tree:nth-child(1) {
+    left: 5%;
+}
+
+.tree:nth-child(2) {
+    left: 25%;
+}
+
+.tree:nth-child(3) {
+    left: 45%;
+}
+
+.tree:nth-child(4) {
+    left: 65%;
+}
+
+.tree:nth-child(5) {
+    left: 85%;
+}
+
+/* 帐篷 */
+.tent {
+    position: absolute;
+    bottom: 15vw;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12vw;
+    height: 8vw;
+    background: #8d6e63;
+    border-radius: 50% 50% 0 0;
+    z-index: 2;
+}
+
+.tent-flag {
+    position: absolute;
+    top: -2vw;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2vw;
+    height: 3vw;
+    background: #ffd700;
+    border-radius: 0.5vw;
+}
+
+/* 篝火 */
+.campfire {
+    position: absolute;
+    bottom: 8vw;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6vw;
+    height: 4vw;
+    background: radial-gradient(circle, #ff9800, #f57c00);
+    border-radius: 50%;
+    z-index: 3;
+}
+
+/* 动物们 */
+.animals {
+    position: absolute;
+    bottom: 5vw;
+    left: 0;
+    right: 0;
+    height: 15vw;
+    z-index: 4;
+}
+
+.animal {
+    position: absolute;
+    width: 8vw;
+    height: 8vw;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4vw;
+}
+
+.monkey {
+    left: 15%;
+}
+
+.fox {
+    left: 35%;
+}
+
+.raccoon {
+    left: 55%;
+}
+
+.squirrel {
+    left: 75%;
+}
+
+/* 地面 */
+.ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20%;
+    background: linear-gradient(to bottom, #8d6e63, #6d4c41);
+    border-radius: 0 0 2vw 2vw;
+}
+
+.work-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8vw;
+    background: #F9FAFB;
+}
+
+.work-info .work-info-left {
+    display: flex;
+    align-items: center;
+    max-width: 88%;
+}
+
+.work-info .work-info-left .work-img {
+    width: 12.564vw;
+    height: 12.564vw;
+    border-radius: 1.5vw;
+    background-color: #eee;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.work-info .work-info-left .work-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.work-info .work-info-left .work-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 12.564vw;
+    padding: 1vw 3.5vw;
+    max-width: 83%;
+}
+
+.work-info .work-info-left .work-title span {
+    font-size: 2.8985507246376816vw;
+    color: #585D69;
+}
+
+.work-info .work-info-left .work-title strong {
+    font-size: 3.8647342995169085vw;
+    color: #282F3E;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 尺寸等于px/4.14=vw */
+.work-info .work-info-right span.work-type {
+    width: 9vw;
+    height: 4.347826086956522vw;
+    background-color: #DCEAFE;
+    border-radius: 2px;
+    font-size: 2.8985507246376816vw;
+    color: #1778FF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 项目标题 */
+.project-title {
+    padding: 0 4vw 4vw 4vw;
+}
+
+.title-text {
+    font-size: 6vw;
+    font-weight: bold;
+    color: #333;
+}
+
+/* 项目信息 */
+.project-info {
+    padding: 0 4vw;
+}
+
+.info-item {
+    display: none;
+    align-items: center;
+    margin-bottom: 3vw;
+}
+
+.work-info-item {
+    display: none;
+    align-items: center;
+    margin-bottom: 3vw;
+}
+
+.info-icon {
+    width: 6.5vw;
+    height: 6.5vw;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3vw;
+    margin-right: 3vw;
+    background: #f0f0f0;
+}
+
+.info-icon.purple {
+    background: #e1bee7;
+}
+
+.info-icon.orange {
+    background: #ffcc80;
+}
+
+.info-icon.green {
+    background: #c8e6c9;
+}
+
+.info-text {
+    font-size: 4vw;
+    color: #666;
+}
+
+.info-text span {
+    margin-right: 2vw;
+}
+
+/* 项目标签  */
+.project-tag {
+    display: flex;
+    padding: 4vw;
+}
+
+.tag-item {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 14vw;
+    height: 6vw;
+    font-size: 3.5vw;
+    color: #666;
+    background: #f0f0f0;
+    border-radius: 5vw;
+    margin-right: 2vw;
+}
+
+.tag-item:last-child {
+    margin-right: 0;
+}
+
+/* 作品介绍 */
+.work-intro {
+    position: relative;
+    padding: 4vw;
+}
+
+.intro-title {
+    display: flex;
+    align-items: center;
+    font-size: 4vw;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 2vw;
+}
+
+.intro-icon {
+    width: 6vw;
+    height: 6vw;
+    border-radius: 50%;
+    background: #E3F2FD;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3vw;
+    margin-right: 2vw;
+}
+
+.intro-text {
+    white-space: pre-wrap;
+    font-size: 4vw;
+    color: #666;
+    line-height: 1.6;
+    background: #f9f9f9;
+    padding: 3vw;
+    border-radius: 2vw;
+    min-height: 15vw;
+}
+
+/* 操作说明 */
+.work-operation {
+    position: relative;
+    padding: 4vw;
+}
+
+.operation-title {
+    display: flex;
+    align-items: center;
+    font-size: 4vw;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 2vw;
+}
+
+.operation-icon {
+    width: 6vw;
+    height: 6vw;
+    border-radius: 50%;
+    background: #FFF3E0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3vw;
+    margin-right: 2vw;
+}
+
+.operation-text {
+    white-space: pre-wrap;
+    font-size: 4vw;
+    color: #666;
+    line-height: 1.6;
+    background: #f9f9f9;
+    padding: 3vw;
+    border-radius: 2vw;
+    min-height: 15vw;
+}
+
+
+/* 星级评价 */
+.rating-section {
+    position: relative;
+    padding: 4vw;
+}
+
+.rating-title {
+    font-size: 4vw;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 2vw;
+}
+
+.stars-container {
+    display: flex;
+    gap: 1vw;
+}
+
+.star-icon {
+    margin-right: 1vw;
+    font-size: 6vw;
+    color: #ffd700;
+}
+
+.star-icon.empty {
+    color: #ddd;
+}
+
+/* 评语 */
+.review-section {
+    position: relative;
+    padding: 4vw;
+}
+
+.review-title {
+    font-size: 4vw;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 2vw;
+}
+
+.review-text {
+    white-space: pre-wrap;
+    font-size: 3.75vw;
+    color: #333;
+    line-height: 1.6;
+    background: #f9f9f9;
+    padding: 3vw;
+    border-radius: 2vw;
+    min-height: 20vw;
+}
+
+/* 底部按钮 */
+.bottom-button {
+    padding: 4vw;
+    text-align: center;
+}
+
+.cta-button {
+    display: inline-flex;
+    width: 100%;
+    background: #F87417;
+    color: white;
+    border: none;
+    padding: 4vw 8vw;
+    border-radius: 3vw;
+    font-size: 5vw;
+    font-weight: bold;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    gap: 2vw;
+    transition: transform 0.2s;
+}
+
+.cta-button:hover {
+    transform: translateY(-2px);
+}
+
+.button-icon {
+    font-size: 5vw;
+}
+
+/* 代码编辑器样式 */
+.code-box {
+    display: none;
+    /* 默认隐藏，由JavaScript控制显示 */
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 20rem 10rem 0;
+    margin-bottom: 4vw;
+}
+
+/* work-box样式 */
+.work-box {
+    width: 100vw;
+    max-width: 750px;
+    height: 95vw;
+    display: none;
+    overflow: hidden;
+    /* 默认隐藏，由JavaScript控制显示 */
+}
+
+.work-box iframe {
+    width: 100%;
+    height: 100vh;
+    border: none;
+    background-color: #fff;
+}
+
+/* JR容器样式 */
+.jr-container {
+    display: none;
+    /* 默认隐藏，由JavaScript控制显示 */
+    width: 100%;
+    height: 100%;
+}
+
+
+/* SC容器样式 */
+.sc-container {
+    display: none;
+    /* 默认隐藏，由JavaScript控制显示 */
+    width: 100%;
+    height: 100%;
+}
+
+
+.code-box .code-tag-box {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 0 10rem;
+}
+
+.code-box .code-tag-box .code-tag {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5rem 12rem;
+    margin-right: 10rem;
+    margin-bottom: 20rem;
+    border: 2px solid #1778FF;
+    color: #1778FF;
+    font-size: 24rem;
+    border-radius: 10rem;
+    cursor: pointer;
+}
+
+.code-box .code-tag-box .code-tag.active {
+    background-color: #1778FF;
+    color: #fff;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .code-box .code-tag-box .code-tag {
+        font-size: 3vw;
+        padding: 1.5vw 3vw;
+        margin-right: 2vw;
+        margin-bottom: 2vw;
+        border-radius: 2vw;
+    }
+
+    .code-box {
+        padding: 5vw 2vw 0;
+    }
+
+    .code-box .code-tag-box {
+        padding: 0 2vw;
+    }
+}
+
+.divider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: #F9FAFB;
+}

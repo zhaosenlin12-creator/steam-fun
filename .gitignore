@@ -1,0 +1,40 @@
+# Editor and environment state
+.idea/
+.vscode/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Tooling cache
+.npm-cache/
+.playwright-browsers/
+.playwright-cli/
+node_modules/
+
+# Local agent and temp files
+.codex-tmp/
+.codex-*.log
+_tmp_review_bool/
+
+# Local runtime data and mirrors
+external/
+runtime/
+memory/
+mirror.db
+mirror.sqlite3
+steamfun_mirror.sqlite3
+
+# Logs and transient outputs
+*.log
+*.pid
+
+# Optional local snapshots
+snapshots/
+
+# OS files
+.DS_Store
+Thumbs.db

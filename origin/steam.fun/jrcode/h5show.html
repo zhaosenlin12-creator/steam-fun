@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta http-equiv="cache-control" content="no-cache">
+<meta charset="utf-8">
+
+<head>
+  <title>Jrcode</title>
+  <script src="../js/oss/aliyun-oss-sdk.min.js"></script>
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/jquery.cokie.min.js"></script>
+  <script src="../js/common.js"></script>
+  <link rel="stylesheet" href="../css/toastr.css" />
+  <script>
+    var access_token = getUserToken();
+    var userInfo = UserStuInfo();
+
+    let client;
+    var work_type = urlParams('work_type');
+    var zanState;
+    var keepState;
+
+    var operate_state;
+    var operate_state_keep;
+    var subject_code = urlParams('subject_code');
+    var operate = urlParams('operate');
+    var workinfo;
+    var uploadParam = {}; //提交参数
+    var tags = [false, false, false, false, false, false, false, false]; //标签
+
+    // 全屏事件监听相关变量
+    var isJrFullscreen = false;
+    var fullscreenEventListeners = [];
+    var lastFullscreenChangeTime = 0;
+    var fullscreenChangeDebounceTime = 300; // 防抖时间300ms
+
+    //console.log("token");
+    //console.log(access_token);
+    //console.log("用户信息");
+    //console.log(userInfo);
+
+    // 初始化全屏事件监听
+    function initFullscreenListeners() {
+      console.log('初始化JR全屏事件监听器');
+
+      // 确保初始状态为非全屏
+      isJrFullscreen = false;
+
+      // 检查当前浏览器全屏状态
+      var currentBrowserFullscreen = document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement;
+
+      if (currentBrowserFullscreen) {
+        console.log('检测到浏览器已处于全屏状态');
+        isJrFullscreen = true;
+      }
+
+      // 监听浏览器全屏事件
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+      // 监听ScratchJr全屏状态变化
+      if (window.ScratchJr) {
+        // 监听ScratchJr的全屏状态
+        monitorScratchJrFullscreen();
+      } else {
+        // 如果ScratchJr还没加载完成，等待加载
+        var checkScratchJrInterval = setInterval(function () {
+          if (window.ScratchJr) {
+            clearInterval(checkScratchJrInterval);
+            monitorScratchJrFullscreen();
+          }
+        }, 100);
+      }
+
+      // 监听页面消息事件（用于跨iframe通信）
+      window.addEventListener('message', handleMessageEvent);
+
+      console.log('全屏监听器初始化完成，当前状态:', isJrFullscreen);
+    }
+
+    // 处理全屏状态变化（带防抖）
+    function handleFullscreenChange(event) {
+      var currentTime = Date.now();
+      if (currentTime - lastFullscreenChangeTime < fullscreenChangeDebounceTime) {
+        console.log('防抖：忽略过于频繁的全屏状态变化');
+        return;
+      }
+
+      var isFullscreen = document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement;
+
+      if (isFullscreen !== isJrFullscreen) {
+        lastFullscreenChangeTime = currentTime;
+        console.log('浏览器全屏状态变化:', isFullscreen ? '进入全屏' : '退出全屏');
+        isJrFullscreen = isFullscreen;
+
+        // 触发自定义事件
+        triggerFullscreenEvent(isFullscreen);
+
+        // 显示通知
+        showFullscreenNotification(isFullscreen ? 'JR作品已进入全屏模式' : 'JR作品已退出全屏模式');
+      }
+    }
+
+    // 监听ScratchJr全屏状态
+    function monitorScratchJrFullscreen() {
+      if (!window.ScratchJr) return;
+
+      console.log('开始监听ScratchJr全屏状态');
+
+      // 检查ScratchJr当前全屏状态
+      if (window.ScratchJr.inFullscreen !== undefined) {
+        var currentScratchJrFullscreen = window.ScratchJr.inFullscreen;
+        if (currentScratchJrFullscreen !== isJrFullscreen) {
+          console.log('ScratchJr当前全屏状态:', currentScratchJrFullscreen);
+          isJrFullscreen = currentScratchJrFullscreen;
+        }
+      }
+
+      // 方法1: 监听ScratchJr的inFullscreen属性
+      var originalInFullscreen = window.ScratchJr.inFullscreen;
+      Object.defineProperty(window.ScratchJr, 'inFullscreen', {
+        get: function () {
+          return originalInFullscreen;
+        },
+        set: function (value) {
+          if (value !== originalInFullscreen) {
+            var currentTime = Date.now();
+            if (currentTime - lastFullscreenChangeTime < fullscreenChangeDebounceTime) {
+              console.log('防抖：忽略ScratchJr过于频繁的全屏状态变化');
+              return;
+            }
+
+            console.log('ScratchJr全屏状态变化:', value ? '进入全屏' : '退出全屏');
+            lastFullscreenChangeTime = currentTime;
+            originalInFullscreen = value;
+            isJrFullscreen = value;
+            triggerFullscreenEvent(value);
+            showFullscreenNotification(value ? 'JR作品已进入全屏模式' : 'JR作品已退出全屏模式');
+          }
+        }
+      });
+
+      // 方法2: 重写ScratchJr的全屏方法
+      if (window.ScratchJr.enterFullScreen) {
+        var originalEnterFullScreen = window.ScratchJr.enterFullScreen;
+        window.ScratchJr.enterFullScreen = function (event) {
+          var currentTime = Date.now();
+          if (currentTime - lastFullscreenChangeTime < fullscreenChangeDebounceTime) {
+            console.log('防抖：忽略过于频繁的进入全屏操作');
+            return originalEnterFullScreen.call(this, event);
+          }
+
+          console.log('ScratchJr进入全屏');
+          lastFullscreenChangeTime = currentTime;
+          isJrFullscreen = true;
+          triggerFullscreenEvent(true);
+          showFullscreenNotification('JR作品已进入全屏模式');
+          return originalEnterFullScreen.call(this, event);
+        };
+      }
+
+      if (window.ScratchJr.quitFullScreen) {
+        var originalQuitFullScreen = window.ScratchJr.quitFullScreen;
+        window.ScratchJr.quitFullScreen = function (event) {
+          var currentTime = Date.now();
+          if (currentTime - lastFullscreenChangeTime < fullscreenChangeDebounceTime) {
+            console.log('防抖：忽略过于频繁的退出全屏操作');
+            return originalQuitFullScreen.call(this, event);
+          }
+
+          console.log('ScratchJr退出全屏');
+          lastFullscreenChangeTime = currentTime;
+          isJrFullscreen = false;
+          triggerFullscreenEvent(false);
+          showFullscreenNotification('JR作品已退出全屏模式');
+          return originalQuitFullScreen.call(this, event);
+        };
+      }
+
+      // 方法3: 监听DOM变化，检测全屏按钮状态（改进版）
+      var domObserver = null;
+      var lastDomFullscreenState = false;
+
+      function setupDOMObserver() {
+        if (domObserver) {
+          domObserver.disconnect();
+        }
+
+        domObserver = new MutationObserver(function (mutations) {
+          var fullButton = document.getElementById('full');
+          if (!fullButton) return;
+
+          var isFullscreenClass = fullButton.className.includes('fullscreen');
+
+          // 只有当DOM状态真正发生变化时才处理
+          if (isFullscreenClass !== lastDomFullscreenState) {
+            var currentTime = Date.now();
+            if (currentTime - lastFullscreenChangeTime < fullscreenChangeDebounceTime) {
+              console.log('防抖：忽略DOM过于频繁的全屏状态变化');
+              return;
+            }
+
+            // 验证状态变化是否合理
+            var browserFullscreen = document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.mozFullScreenElement ||
+              document.msFullscreenElement;
+
+            // 只有当DOM状态与浏览器状态一致时才触发事件
+            if (isFullscreenClass === !!browserFullscreen) {
+              console.log('通过DOM变化检测到全屏状态变化:', isFullscreenClass ? '进入全屏' : '退出全屏');
+              lastFullscreenChangeTime = currentTime;
+              lastDomFullscreenState = isFullscreenClass;
+              isJrFullscreen = isFullscreenClass;
+              triggerFullscreenEvent(isFullscreenClass);
+              showFullscreenNotification(isFullscreenClass ? 'JR作品已进入全屏模式' : 'JR作品已退出全屏模式');
+            } else {
+              console.log('DOM状态与浏览器状态不一致，忽略DOM变化');
+            }
+          }
+        });
+
+        // 开始观察DOM变化
+        domObserver.observe(document.body, {
+          attributes: true,
+          subtree: true,
+          attributeFilter: ['class']
+        });
+
+        // 初始化DOM状态
+        var fullButton = document.getElementById('full');
+        if (fullButton) {
+          lastDomFullscreenState = fullButton.className.includes('fullscreen');
+        }
+      }
+
+      // 延迟设置DOM观察器，确保DOM已加载
+      setTimeout(setupDOMObserver, 500);
+
+      console.log('ScratchJr全屏监听设置完成，当前状态:', isJrFullscreen);
+    }
+
+    // 处理消息事件
+    function handleMessageEvent(event) {
+      if (event.data && event.data.type === 'fullscreen') {
+        console.log('收到全屏消息:', event.data);
+        isJrFullscreen = event.data.isFullscreen;
+        triggerFullscreenEvent(event.data.isFullscreen);
+        showFullscreenNotification(event.data.isFullscreen ? 'JR作品已进入全屏模式' : 'JR作品已退出全屏模式');
+      }
+    }
+
+    // 触发自定义全屏事件
+    function triggerFullscreenEvent(isFullscreen) {
+      var event = new CustomEvent('jrFullscreenChange', {
+        detail: {
+          isFullscreen: isFullscreen,
+          timestamp: Date.now()
+        }
+      });
+      document.dispatchEvent(event);
+
+      // 调用注册的监听器
+      fullscreenEventListeners.forEach(function (listener) {
+        try {
+          listener(isFullscreen);
+        } catch (error) {
+          console.error('全屏事件监听器执行错误:', error);
+        }
+      });
+    }
+
+    // 显示全屏通知
+    function showFullscreenNotification(message) {
+      // if (typeof toastr !== 'undefined') {
+      //   toastr.info(message, '全屏状态', {
+      //     timeOut: 2000,
+      //     positionClass: 'toast-top-center'
+      //   });
+      // } else {
+      //   console.log('全屏通知:', message);
+      // }
+    }
+
+    // 添加全屏事件监听器
+    function addFullscreenListener(callback) {
+      if (typeof callback === 'function') {
+        fullscreenEventListeners.push(callback);
+      }
+    }
+
+    // 移除全屏事件监听器
+    function removeFullscreenListener(callback) {
+      var index = fullscreenEventListeners.indexOf(callback);
+      if (index > -1) {
+        fullscreenEventListeners.splice(index, 1);
+      }
+    }
+
+    // 获取当前全屏状态
+    function getFullscreenState() {
+      return isJrFullscreen;
+    }
+
+    // 检查并同步当前全屏状态
+    function checkAndSyncFullscreenState() {
+      // 检查浏览器全屏状态
+      var browserFullscreen = document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement;
+
+      // 检查ScratchJr全屏状态
+      var scratchJrFullscreen = false;
+      if (window.ScratchJr && window.ScratchJr.inFullscreen !== undefined) {
+        scratchJrFullscreen = window.ScratchJr.inFullscreen;
+      }
+
+      // 检查DOM全屏按钮状态
+      var domFullscreen = false;
+      var fullButton = document.getElementById('full');
+      if (fullButton) {
+        domFullscreen = fullButton.className.includes('fullscreen');
+      }
+
+      // 综合判断全屏状态（优先使用浏览器状态）
+      var newFullscreenState = browserFullscreen || (scratchJrFullscreen && domFullscreen);
+
+      console.log('全屏状态检查:', {
+        browser: browserFullscreen,
+        scratchJr: scratchJrFullscreen,
+        dom: domFullscreen,
+        current: isJrFullscreen,
+        new: newFullscreenState
+      });
+
+      if (newFullscreenState !== isJrFullscreen) {
+        var currentTime = Date.now();
+        if (currentTime - lastFullscreenChangeTime < fullscreenChangeDebounceTime) {
+          console.log('防抖：状态检查中忽略过于频繁的变化');
+          return isJrFullscreen;
+        }
+
+        console.log('全屏状态需要同步:', isJrFullscreen, '->', newFullscreenState);
+        lastFullscreenChangeTime = currentTime;
+        isJrFullscreen = newFullscreenState;
+        triggerFullscreenEvent(newFullscreenState);
+      }
+
+      return newFullscreenState;
+    }
+
+    // 页面加载完成后初始化全屏监听
+    document.addEventListener('DOMContentLoaded', function () {
+      // 延迟初始化，确保ScratchJr加载完成
+      setTimeout(function () {
+        initFullscreenListeners();
+
+        // 初始化后再次检查状态
+        setTimeout(function () {
+          checkAndSyncFullscreenState();
+        }, 500);
+      }, 1000);
+    });
+
+    // 将全屏相关方法暴露到全局
+    window.JrFullscreenManager = {
+      addListener: addFullscreenListener,
+      removeListener: removeFullscreenListener,
+      getState: getFullscreenState,
+      isFullscreen: getFullscreenState,
+      checkState: checkAndSyncFullscreenState,
+      forceSync: function () {
+        console.log('强制同步全屏状态');
+        return checkAndSyncFullscreenState();
+      }
+    };
+
+    //STS
+    $.ajax({
+      url: '/api/get/aliyun/sts',
+      type: 'GET',
+      dataType: 'json',
+      contentType: 'application/json',
+      async: false,
+      beforeSend: function (request) {
+        request.setRequestHeader('Authorization', access_token);
+      },
+
+      success: function (res) {
+        //console.log(res);
+        client = new OSS({
+          region: "oss-cn-zhangjiakou",
+          accessKeyId: res.AccessKeyId,
+          accessKeySecret: res.AccessKeySecret,
+          stsToken: res.SecurityToken,
+          bucket: "jrcodework",
+          secure: true
+        });
+
+      },
+      error: function () { },
+      complete: function () { }
+    })
+
+
+    var observer = {
+      next(res) { },
+      error(err) {
+        //console.log(1, err)
+      },
+      complete(res) {
+        //console.log(res)
+        if (res.key.includes('png')) {
+          uploadParam.coverKey = uploadFile(res.key, '学生作业-封面', res.key)
+        } else {
+          uploadParam.projectKey = uploadFile(res.key, '学生作业-sjr', res.key)
+        }
+        if (uploadParam.projectKey && uploadParam.coverKey) {
+          uploadWork(uploadParam.projectKey, uploadParam.coverKey, uploadParam.projectTitle)
+        }
+      }
+    }
+
+
+    window.scratchJrPage = 'editor';
+    window.JrConfig = {
+      onSaveCloud: function (contents, name) {
+
+        uploadParam.work_type = '2'; //1保存项目 2发布项目
+        //console.log("发布项目");
+        uploadParam.title = name;
+
+        //console.log("发布参数");
+        //console.log(uploadParam);
+        //console.log(userInfo);
+
+        //console.log("content:" + contents);
+
+        if (!uploadParam.work_id) {
+          var arg = new Array()
+          arg[0] = 'works/jrcode/freeworks/' + userInfo
+            .educational_institution_id;
+          arg[1] = userInfo.code;
+          arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+          window.ScratchJr.getProjectCover(cover => {
+            //TODO 获取到作品截图
+            //console.log("cover")
+            //console.log(cover)
+            arg[3] = cover;
+            uploadpng(arg, function (pngurl) {
+              //console.log(pngurl);
+              uploadParam.covers = pngurl; //作品封面图地址
+
+              arg[4] = contents;
+
+              uploadsjr(arg, function (
+                sjrurl) {
+                ////console.log("项目链接");
+                //console.log(sjrurl);
+                uploadParam.work_url =
+                  sjrurl; //项目sb3地址
+                upload_flag =
+                  true; //上传完毕
+
+
+                PublishJrWorks(access_token,
+                  uploadParam,
+                  function (res) {
+
+                    if (res.is_create) {
+                      //console.log("作品发布成功");
+                      //console.log(res);
+
+                      toastr.success('作品发布成功', '成功', {
+                        timeOut: 1000
+                      });
+
+                      uploadParam.work_id = res.work_id;
+
+                    } else {
+                      alert("作品发布失败");
+
+                    }
+
+                  })
+
+
+
+              });
+
+            });
+          })
+        } else {
+
+          //console.log("有work_id,进行更新操作");
+          window.ScratchJr.getProjectCover(cover => {
+            //console.log("cover")
+            //console.log(cover)
+            updatepng(uploadParam.covers.slice(49), cover, function (pngurl) {
+              //console.log("更新作业作品封面");
+              //console.log(pngurl);
+
+              updatesjr(uploadParam.work_url.slice(49), contents,
+                function (
+                  sjrurl) {
+                  //console.log("更新作业作品SJR");
+                  //console.log(sjrurl);
+                  upload_flag = false; //上传完毕
+
+                  PublishJrWorks(access_token,
+                    uploadParam,
+                    function (res) {
+                      if (res.is_update) {
+                        //console.log("作业作品更新成功");
+                        toastr.success('作品更新成功', '成功', {
+                          timeOut: 1000
+                        });
+                        //console.log(res);
+
+
+                      } else {
+                        alert("作业更新失败");
+
+                      }
+
+                    })
+
+                });
+
+            });
+          })
+
+        }
+
+
+
+        /*
+
+                var uuid = window.uuid()
+                uploadParam.projectTitle = name
+                upload2Qiniu(contents, 'scratchjr/' + uuid + '.sjr', name, observer)
+
+                window.ScratchJr.getProjectCover((r) => {
+                  blob = dataURLtoBlob(r)
+                  upload2Qiniu(blob, 'scratchjr/' + uuid + '.png', name, observer)
+                })
+
+                */
+
+      },
+
+      onSaveLocal: function (contents, name) {
+
+        //console.log("保存本地");
+        //console.log(name);
+        //console.log(contents);
+
+        uploadParam.title = name; //作品名称
+        uploadParam.work_type = '1';
+
+        if (uploadParam.work_id) {
+
+          //console.log("有work_id,进行更新操作");
+          window.ScratchJr.getProjectCover(cover => {
+            //console.log("cover")
+            //console.log(cover)
+            updatepng(uploadParam.covers.slice(49), cover, function (pngurl) {
+              //console.log("更新作品封面");
+              //console.log(pngurl);
+
+              updatesjr(uploadParam.work_url.slice(49), contents,
+                function (
+                  sjrurl) {
+                  //console.log("更新作品SJR");
+                  //console.log(sjrurl);
+                  upload_flag = false; //上传完毕
+
+                  PublishJrWorks(access_token,
+                    uploadParam,
+                    function (res) {
+                      if (res.is_update) {
+                        //console.log("作品更新成功");
+                        toastr.success('更新成功', '成功', {
+                          timeOut: 1000
+                        });
+                        //console.log(res);
+                      } else {
+                        alert("作品更新失败");
+                      }
+                    })
+                });
+
+            });
+          })
+
+        } else {
+
+          //console.log("新建项目,存为未发布项目");
+
+          var arg = new Array()
+          arg[0] = 'works/jrcode/freeworks/' + userInfo
+            .educational_institution_id;
+          arg[1] = userInfo.code;
+          arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+
+          window.ScratchJr.getProjectCover(cover => {
+            //TODO 获取到作品截图
+            //console.log("cover")
+            //console.log(cover)
+            arg[3] = cover;
+            uploadpng(arg, function (pngurl) {
+              //console.log(pngurl);
+              uploadParam.covers = pngurl; //作品封面图地址
+
+              arg[4] = contents;
+
+              uploadsjr(arg, function (
+                sjrurl) {
+                ////console.log("项目链接");
+                //console.log(sjrurl);
+                uploadParam.work_url =
+                  sjrurl; //项目sb3地址
+                upload_flag =
+                  true; //上传完毕
+
+
+                PublishJrWorks(access_token,
+                  uploadParam,
+                  function (res) {
+
+                    if (res.is_create) {
+                      //console.log("作品保存成功");
+                      //console.log(res);
+
+                      toastr.success('作品保存成功', '成功', {
+                        timeOut: 1000
+                      });
+
+                      uploadParam.work_id = res.work_id;
+
+                    } else {
+                      alert("作品保存失败");
+
+                    }
+
+                  })
+
+
+
+              });
+
+            });
+          })
+
+
+
+
+        }
+
+
+      },
+
+      // 添加全屏事件监听回调
+      onFullscreenEnter: function () {
+        console.log('JR作品进入全屏模式');
+        // 可以在这里添加进入全屏时的自定义逻辑
+        showFullscreenNotification('JR作品已进入全屏模式');
+      },
+
+      onFullscreenExit: function () {
+        console.log('JR作品退出全屏模式');
+        // 可以在这里添加退出全屏时的自定义逻辑
+        showFullscreenNotification('JR作品已退出全屏模式');
+      },
+
+      // 编辑器加载完成后的回调
+      onEditorLoaded: function () {
+        console.log('JR编辑器加载完成');
+        // 编辑器加载完成后重新初始化全屏监听
+        setTimeout(function () {
+          if (window.ScratchJr) {
+            monitorScratchJrFullscreen();
+          }
+        }, 500);
+      }
+    }
+
+
+    function uploadpng(arg, callback) {
+      //console.log("上传项目缩略图");
+      //console.log(arg);
+      var url = arg[0] + '/' + arg[1] + '/' + 'cover/' + arg[2] + '.png';
+      //console.log(url);
+      try {
+        let result = client.put(url, dataURLtoBlob(arg[3]));
+        result.then(
+          function (res) {
+            //console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+    //更新缩略图
+    function updatepng(url, cover, callback) {
+      //console.log("更新缩略图");
+      //console.log(url);
+      try {
+        let result = client.put(url, dataURLtoBlob(cover));
+        result.then(
+          function (res) {
+            //console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+    //上传sjr到OSS
+    function uploadsjr(arg, callback) {
+      //console.log("上传项目SJR");
+      //console.log(arg);
+      var url = arg[0] + '/' + arg[1] + '/' + 'release/' + arg[2] + '.sjr';
+      //console.log(url);
+      try {
+        let result = client.put(url, arg[4]);
+        result.then(
+          function (res) {
+            //console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+
+    //更新sjr
+    function updatesjr(url, file, callback) {
+      //console.log("更新SJR");
+      //console.log(url);
+
+      try {
+        let result = client.put(url, file);
+        result.then(
+          function (res) {
+            //console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+
+    //上传文件
+    function uploadFile(fileName, fileTag, filePath) {
+      var id = null;
+      $.ajax({
+        url: '/api/system/sysFile/add',
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        async: false,
+        beforeSend: function (request) {
+          request.setRequestHeader('X-Access-Token', access_token)
+        },
+        data: JSON.stringify({
+          fileType: 2,
+          fileName: fileName,
+          filePath: filePath,
+          fileLocation: 2,
+          fileTag: fileTag
+        }),
+        success: function (res) {
+          if (res.success) {
+            id = res.result.id
+          }
+        },
+        error: function () { },
+        complete: function () { }
+      })
+      return id;
+    }
+
+    //上传作业
+    function uploadWork(projectKey, coverKey, projectTitle) {
+      $.ajax({
+        url: '/api/teaching/teachingWork/submit',
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        beforeSend: function (request) {
+          request.setRequestHeader('X-Access-Token', access_token)
+        },
+        data: JSON.stringify({
+          courseId: unitId,
+          workCover: coverKey,
+          workFile: projectKey,
+          workName: projectTitle,
+          id: workId,
+          workType: 2
+        }),
+        success: function (res) {
+          canShare = true
+          if (res.code == 200) {
+            alert("上传成功")
+          } else { }
+        },
+        error: function () {
+
+        },
+        complete: function () { }
+      })
+    }
+
+    function upload2Qiniu(zip, key, fileName, observer) {
+      var config = {
+        useCdnDomain: true,
+        region: qiniu.region.z0,
+        disableStatisticsReport: true
+      }
+      var putExtra = {
+        fname: fileName, //文件原名
+        params: {},
+        mimeType: null
+      }
+      // var observable = qiniu.upload(zip, key, qn_token, putExtra, config)
+      var subscription = observable.subscribe(observer)
+    }
+  </script>
+  <script type="text/javascript" src="appa.bundle.js"></script>
+  <script src="../js/toastr.js"></script>
+</head>
+
+<body style="background: white; overflow: hidden;">
+  <div class="frame" id="frame"></div>
+  <div class="libframe" id="libframe"></div>
+  <div class="paintframe" id="paintframe"></div>
+
+</body>
+
+</html>

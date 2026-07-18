@@ -1,0 +1,500 @@
+/* frame */
+
+.libframe {
+    position: absolute;
+    z-index: 10000;
+    background: url('../assets/libbkg.png');
+    background-size: 100%;
+    display: none;
+    width: ${css_vw(100)};
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.libframe.appear {display: block;}
+
+.libframe.disappear {display: none;}
+
+/* Header */
+
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: ${css_vh(9.77)};
+    overflow: hidden;
+    text-shadow: none;
+    z-index: 11000;
+    background: url('../assets/pagebkg.png');
+    background-size: 100%;
+    -webkit-box-shadow: 0px ${1 * scaleMultiplier}px ${3 * scaleMultiplier}px rgba(166, 168, 171, 1);
+    border: 0px solid #fff;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: rgba(166, 168, 171, 1);
+}
+
+.topbar .actions {
+    margin: ${css_vh(0.65)} ${css_vh(0.00)} ${css_vh(0.00)};
+    height: ${css_vh(8.46)};
+}
+
+.assetname-container {
+    position: absolute;
+    top: ${css_vh(3)};
+    width: 100%;
+    pointer-events: none;
+}
+
+.assetname {
+    top:  0px;
+    height: ${css_vh(6.51)};
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.assetname p{
+    text-align: right;
+    font-size: ${css_vh(3)};
+    margin-right:${css_vh(40)};
+    /*  font-weight: bold;  */
+    color:  #4682B5;
+    font-weight: 500 !important;
+    text-shadow: 0px -${1 * scaleMultiplier}px #0D1D28;
+    font-family: Roboto;
+    line-height: ${css_vh(4.69)};
+    cursor: default;
+    outline: ${css_vh(0.00)};
+    height: ${css_vh(5.21)};
+}
+
+.actions .bkgbuttons {
+    float: right;
+    display: block;
+    margin: ${css_vh(0.00)};
+    padding: ${css_vh(0.00)};
+    width: ${css_vh(31.25)};
+    height: ${css_vh(8.46)};
+}
+
+.actions .shapebuttons {
+    float: right;
+    display: block;
+    margin: ${css_vh(0.00)};
+    padding: ${css_vh(0.00)};
+    width: ${css_vh(54.30)};
+    height: ${css_vh(8.46)};
+    background: like
+}
+
+.painticon {
+    display: inline-block;
+    position: relative;
+    margin: ${css_vh(0.00)} ${css_vh(0.91)} ${css_vh(0.00)};
+    width: ${css_vh(8.46)};
+    height: ${css_vh(8.46)};
+    background: url('../assets/paint/paintbrush.svg');
+    background-size: ${css_vh(8.46)} ${css_vh(8.46)};
+    background-size: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.okicon {
+    display: inline-block;
+    position: relative;
+    margin: ${css_vh(0.00)} ${css_vh(0.91)} ${css_vh(0.00)};
+    width: ${css_vh(8.46)};
+    height: ${css_vh(8.46)};
+    background: url('../assets/paint/ok.svg');
+    background-size: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.cancelicon {
+    display: inline-block;
+    position: relative;
+    margin: ${css_vh(0.00)} ${css_vh(0.91)} ${css_vh(0.00)};
+    width: ${css_vh(8.46)};
+    height: ${css_vh(8.46)};
+    background: url('../assets/paint/cancel.svg');
+    background-size: 100.5%; /* webview pixelates the image unless we do this */
+    -webkit-tap-highlight-color: transparent;
+}
+
+.okicon:active {
+     background: url('../assets/paint/okPressed.svg');
+     background-size: 100%;
+}
+.cancelicon:active {
+     background: url('../assets/paint/cancelPressed.svg');
+     background-size: 100.5%; /* webview pixelates the image unless we do this */
+}
+.painticon:active {
+     background: url('../assets/paint/paintbrushPressed.svg');
+     background-size: 100%;
+}
+
+/*
+Assets chooser
+*/
+
+*.innerlibrary {
+    margin: ${css_vh(0.00)};
+    margin-left: auto;
+    margin-right: auto;
+    height: ${css_vh(70)};
+    overflow-y: scroll;
+    padding-top:${css_vh(10.41)};
+    padding-bottom:${css_vh(10.41)};
+}
+
+*.scrollarea{
+    position: relative;
+    padding: ${css_vh(0.00)};
+    margin: ${css_vh(0.00)} auto;
+    width: ${css_vw(92.77)};
+
+}
+
+hr.bigdivide{
+    height: ${css_vh(0.52)};
+    border: 0;
+    box-shadow: inset 0 ${4 * scaleMultiplier}px ${4 * scaleMultiplier}px -${4 * scaleMultiplier}px rgba(166, 168, 171, 1);
+}
+
+.assetbox {
+    display: inline-block;
+    vertical-align: top;
+    width: ${css_vh(17.84)};
+    height: ${css_vh(14.45)};
+    margin: ${css_vh(0.65)};
+    padding: ${css_vh(0.65)};
+}
+
+.assetbox.off {
+    background: url('../assets/paint/thumbOff.png') no-repeat center top;
+    background-size: 100%;
+}
+
+.assetbox.on {
+    background: url('../assets/paint/thumbOn.png') no-repeat center top;
+    background-size: 100%;
+}
+
+
+.libtags{
+    position: absolute;
+    float: left;
+    display: block;
+    margin: ${css_vh(0.00)};
+    padding: ${css_vh(0.00)};
+    width: ${css_vw(67)};
+    margin-top:${css_vh(2.6)};
+    height: ${css_vh(8.46)};
+    
+}
+
+.badge {
+
+	cursor: default;
+    display: inline-block;
+    min-width: 10px;
+    margin-left:10px;
+    padding: 4px;
+    font-size: ${14 * scaleMultiplier}px;
+    font-weight: 400;
+    line-height: 1;
+    color: #000;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    background-color: rgb(255, 255, 255);
+    border-radius: 6px;
+
+    border:1px solid #8c8c8c;
+
+    
+
+}
+
+.badge.on{
+    background-color: #75a1c6;
+    color: #fcfbf8;
+}
+
+.assetbox {
+    position: relative !important;
+}
+
+/* 分页控件样式 */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    flex-direction: row !important;
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    padding: 10px 15px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 12000;
+    width: 100%;
+    user-select: none;
+    border-top: 1px solid #e0e0e0;
+    height: 56px;
+    box-sizing: border-box;
+}
+
+.paginationButtonsContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 10px;
+    text-align: center;
+    width: 100%;
+    z-index: 1;
+}
+
+.page-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 36px;
+    height: 36px;
+    margin: 0 5px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    color: #333;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    flex: 0 0 auto;
+}
+
+.page-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.page-btn.active {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.page-btn.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.prev-btn, .next-btn {
+    font-weight: bold;
+}
+
+/* 搜索相关样式 */
+.searchForm {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.searchContainer {
+    display: flex;
+    align-items: center;
+    position: relative;
+    height: 36px;
+    min-width: 200px;
+    margin-left: 15px;
+    z-index: 2;
+}
+
+.searchInput {
+    width: 150px;
+    height: 36px;
+    padding: 5px 25px 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 18px;
+    background-color: #f5f5f5;
+    font-size: 14px;
+    color: #333;
+    outline: none;
+    box-sizing: border-box;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
+.searchInput:focus {
+    border-color: #5f87c9;
+    box-shadow: 0 0 5px rgba(95, 135, 201, 0.3);
+}
+
+.searchicon {
+    width: 36px;
+    height: 36px;
+    background-image: url('../assets/lobby/search.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 60%;
+    cursor: pointer;
+    z-index: 10;
+    position: relative;
+    background-color: #f0f0f0;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-left: 8px;
+}
+
+.searchicon:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 2px rgba(0,0,0,0.1);
+}
+
+.clearButton {
+    position: absolute;
+    left: 130px;
+    top: 9px;
+    width: 18px;
+    height: 18px;
+    background-image: url('../assets/lobby/close.png');
+    background-size: 90%;
+    background-repeat: no-repeat;
+    background-position: center;
+    cursor: pointer;
+    z-index: 15;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    display: none;
+}
+
+.clearButton.visible {
+    display: block;
+}
+
+.clearButton:hover,
+.clearButton:active {
+    opacity: 1;
+}
+
+/* 清空全部按钮样式 */
+.clearAllButton {
+    width: 36px;
+    height: 36px;
+    margin-left: 8px;
+    background-image: url('../assets/lobby/delete.png');
+    background-size: 60%;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+    z-index: 10;
+    position: relative;
+    background-color: #f0f0f0;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    opacity: 0.8;
+}
+
+.clearAllButton:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 2px rgba(0,0,0,0.1);
+}
+
+.clearAllButton:hover {
+    opacity: 1;
+}
+
+/* 确认弹窗样式 */
+.confirmation-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20000;
+}
+
+.confirmation-dialog {
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    width: 80%;
+    max-width: 400px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.confirmation-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+    text-align: center;
+}
+
+.confirmation-message {
+    margin-bottom: 20px;
+    line-height: 1.5;
+    color: #555;
+    text-align: center;
+    white-space: pre-line;
+}
+
+.confirmation-buttons {
+    display: flex;
+    justify-content: space-around;
+}
+
+.confirmation-button {
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
+    min-width: 100px;
+}
+
+.confirmation-button.cancel {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.confirmation-button.confirm {
+    background-color: #ff4d4f;
+    color: white;
+}
+
+.confirmation-button:hover {
+    opacity: 0.9;
+}
+
+/* 空白角色/背景卡片描述文字样式 */
+.empty-asset-description {
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10px;
+    color: #555;
+    padding: 3px;
+    line-height: 1.2;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 0 0 5px 5px;
+    pointer-events: none;
+}

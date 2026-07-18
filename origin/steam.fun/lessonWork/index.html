@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>课堂作品</title>
+    <!-- 优先加载marked.js，不使用defer确保优先执行 -->
+    <script src="https://wugecdn.steam.fun/resources/tools/marked.min.js"></script>
+    <!-- 其他脚本使用defer -->
+    <script src="https://res2.wx.qq.com/open/js/jweixin-1.6.0.js" defer></script>
+    <script src="https://wugecdn.steam.fun/resources/tools/axios.js" defer></script>
+    <script src="../js/jquery.min.js" defer></script>
+    <script src="../js/jquery.cokie.min.js" defer></script>
+    <script src="../js/common.js" defer></script>
+    <script src="./simple-code-editor.js" defer></script>
+    <link rel="stylesheet" href="style/index.css">
+</head>
+
+<body>
+    <div class="page">
+        <!-- 作品信息 -->
+        <div class="work-info">
+            <div class="work-info-left">
+                <div class="work-img">
+                    <img src="" alt="">
+                </div>
+                <div class="work-title">
+                    <span class="work-title-desc">作品名称：</span>
+                    <strong class="work-title-text"></strong>
+                </div>
+            </div>
+            <div class="work-info-right">
+                <span class="work-type">课堂</span>
+            </div>
+        </div>
+        <!-- 作业容器 -->
+        <div class="work-container">
+            <!-- subjectCode等于3或4显示： py/cpp -->
+            <div class="code-box">
+                <div class="code-tag-box">
+                    <!-- 代码标签将通过JavaScript动态生成 -->
+                </div>
+                <div id="monaco_editor" style="width:100%;height: 100%;padding-top: 10rem"></div>
+            </div>
+            <!-- subjectCode等于1或2显示： jr/sc -->
+            <div class="work-box">
+                <!-- subjectCode等于1显示： jr -->
+                <div class="jr-container">
+                    <iframe style="border: 0px" frameborder="0" scrolling="no"></iframe>
+                </div>
+
+                <!-- subjectCode等于2显示： sc -->
+                <div class="sc-container" style="display: flex;justify-content: center;">
+                    <iframe style="border: 0;" frameborder="0" scrolling="no" id="bdIframe"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+                </div>
+            </div>
+            <!-- 否则默认显示 -->
+            <div class="image-container">
+                <div class="camping-scene">
+                    <!-- 天空和星星 -->
+                    <div class="sky">
+                        <div class="stars">
+                            <i class="star"></i>
+                            <i class="star"></i>
+                            <i class="star"></i>
+                            <i class="star"></i>
+                            <i class="star"></i>
+                            <i class="star"></i>
+                        </div>
+                    </div>
+
+                    <!-- 树木 -->
+                    <div class="trees">
+                        <div class="tree"></div>
+                        <div class="tree"></div>
+                        <div class="tree"></div>
+                        <div class="tree"></div>
+                        <div class="tree"></div>
+                    </div>
+
+                    <!-- 帐篷 -->
+                    <div class="tent">
+                        <div class="tent-flag"></div>
+                    </div>
+
+                    <!-- 篝火 -->
+                    <div class="campfire"></div>
+
+                    <!-- 动物们 -->
+                    <div class="animals">
+                        <div class="animal monkey">🐒</div>
+                        <div class="animal fox">🦊</div>
+                        <div class="animal raccoon">🦝</div>
+                        <div class="animal squirrel">🐿️</div>
+                    </div>
+
+                    <!-- 地面 -->
+                    <div class="ground"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 项目标题 -->
+        <div class="project-title">
+            <div class="title-text">标题</div>
+        </div>
+
+        <!-- 项目信息 -->
+        <div class="project-info">
+            <div class="info-item">
+                <div class="info-icon purple">👨‍🏫</div>
+                <div class="info-text">
+                    <span>指导老师</span>
+                    <b></b>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon orange">📅</div>
+                <div class="info-text">
+                    <span>发布时间</span>
+                    <b></b>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon green">🎓</div>
+                <div class="info-text">
+                    <span>学生作者</span>
+                    <b></b>
+                </div>
+            </div>
+            <!-- projectInfo -->
+            <div class="project-info-item">
+                <div class="info-icon purple">👨‍🏫</div>
+                <div class="info-text"></div>
+            </div>
+            <div class="project-info-item">
+                <div class="info-icon orange">📅</div>
+                <div class="info-text"></div>
+            </div>
+        </div>
+
+        <!-- 项目标签 -->
+        <div class="project-tag">
+            <div class="tag-item"></div>
+        </div>
+
+
+        <!-- 作品介绍 -->
+        <div class="work-intro">
+            <div class="divider"></div>
+            <div class="intro-title">
+                <div class="intro-icon">💡</div>
+                <span>作品介绍</span>
+            </div>
+            <div class="intro-text">
+
+            </div>
+        </div>
+        <!-- 操作说明 -->
+        <div class="work-operation">
+            <div class="divider"></div>
+            <div class="operation-title">
+                <div class="operation-icon">🎮</div>
+                <span>操作说明</span>
+            </div>
+            <div class="operation-text">
+
+            </div>
+        </div>
+        <!-- 星级评价 -->
+        <div class="rating-section">
+            <div class="divider"></div>
+            <div class="rating-title">星级评价</div>
+            <div class="stars-container">
+            </div>
+        </div>
+        <!-- 评语 -->
+        <div class="review-section">
+            <div class="divider"></div>
+            <div class="review-title">作品评语</div>
+            <div class="review-text">
+
+            </div>
+        </div>
+
+        <!-- 底部按钮 -->
+        <div class="bottom-button">
+            <button class="cta-button">
+                <span class="button-icon">🎓</span>
+                <span>点击这里,学习同款课程</span>
+            </button>
+        </div>
+    </div>
+    <script src="./script/index.js" defer></script>
+</body>
+
+</html>

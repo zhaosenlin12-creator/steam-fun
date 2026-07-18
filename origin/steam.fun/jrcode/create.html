@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:xlink="http://www.w3.org/1999/xlink">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta http-equiv="cache-control" content="no-cache">
+<meta charset="utf-8">
+<!--引入 element-ui 的样式，-->
+<link rel="stylesheet" href="../css/element-ui/lib/theme-chalk/index.css">
+<!-- 必须先引入vue，  后使用element-ui -->
+<script src="../js/vue/vue.min.js"></script>
+<!-- 引入element 的组件库-->
+<script src="../css/element-ui/lib/index.js"></script>
+
+<head>
+  <title>Jrcode</title>
+  <script src="../js/oss/aliyun-oss-sdk.min.js"></script>
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/jquery.cokie.min.js"></script>
+  <script src="../js/common.js"></script>
+  <link rel="stylesheet" href="../css/toastr.css" />
+  <script>
+    let iframeReferer = sessionStorage.getItem('iframeReferer')
+    if (!iframeReferer) {
+      sessionStorage.setItem('iframeReferer', iframeReferer = document.referrer)
+    }
+    var access_token = getUserToken();
+    var userInfo = UserStuInfo();
+
+
+    let client;
+    var work_id = urlParams('work_id');
+    var work_type = urlParams('work_type');
+    var subject_code = urlParams('subject_code');
+    var operate = urlParams('operate');
+    var worktype = urlParams('worktype');
+    /** worktype=4：禁止发布作品（进入页提示 + onSaveCloud 拦截） */
+    var publishWorkDisabled = String(worktype) === '4'
+    var workinfo;
+    var uploadParam = {}; //提交参数
+    var tags = [false, false, false, false, false, false, false, false]; //标签
+
+    /*
+    //console.log("token");
+    //console.log(access_token);
+    //console.log("用户信息");
+    //console.log(userInfo);
+
+
+    //console.log("页面接收到的参数");
+    //console.log("work_id");
+    //console.log(work_id);
+    //console.log("work_type");
+    //console.log(work_type);
+    //console.log("subject_code");
+    //console.log(subject_code);
+    */
+    //根据ID查询自由创作作品详情
+
+    if (work_type == '1') {
+      h5GetWorkContent(work_id, subject_code, function (info) {
+        ////console.log("根据ID查询自由创作作品详情");
+        workinfo = info.work;
+        console.log(workinfo);
+
+      });
+    }
+
+    if (operate == 'edit') {
+      this.uploadParam.work_id = work_id;
+      this.uploadParam.covers = workinfo.covers;
+      this.uploadParam.work_url = workinfo.work_url;
+
+    }
+
+    var observer = {
+      next(res) { },
+      error(err) {
+        //console.log(1, err)
+      },
+      complete(res) {
+        //console.log(res)
+        if (res.key.includes('png')) {
+          uploadParam.coverKey = uploadFile(res.key, '学生作业-封面', res.key)
+        } else {
+          uploadParam.projectKey = uploadFile(res.key, '学生作业-sjr', res.key)
+        }
+        if (uploadParam.projectKey && uploadParam.coverKey) {
+          uploadWork(uploadParam.projectKey, uploadParam.coverKey, uploadParam.projectTitle)
+        }
+      }
+    }
+
+
+    window.scratchJrPage = 'editor';
+    window.JrConfig = {
+      onSaveCloud: function (contents, name, role, type, cb) {
+        if (typeof publishWorkDisabled !== 'undefined' && publishWorkDisabled) {
+          alert('违规发布不当内容，作品已被封禁，不可再次发布')
+          cb('success')
+          return
+        }
+        // name 为编辑器传入；敏感词通过后见下方，改为 res.content.title（若接口有返回）
+        //console.log('提交类型');
+        //console.log(role);
+        //console.log(type);
+        let params = {
+         title :name
+        }
+        window.checkCommunitySensitiveWord(params).then((res) => {
+          if (res.content.passState !== true) {
+            //  window.ToastWarning("作品名中包含敏感词，请修改后重新发布");
+            let alertTitle = `作品名中包含敏感词【${res.content.word == undefined ? '' : res.content.word}】，请修改后重新发布`
+            alert(alertTitle);
+            cb('success');
+          }else{
+        var _c = res && res.content ? res.content : {}
+        // 通过后：用接口返回的 res.content.title 覆盖 name（与 uploadParam 一致）；无有效 title 时仍用编辑器传入的 name
+        if (_c.title != null && String(_c.title).trim() !== '') {
+          name = String(_c.title).trim()
+        }
+        uploadParam.title = name
+        uploadParam.projectTitle = name
+
+        InitOss(access_token, function (res) {
+
+          //console.log("初始化OSS");
+          //console.log(res);
+          client = new OSS({
+            region: "oss-cn-zhangjiakou",
+            accessKeyId: res.AccessKeyId,
+            accessKeySecret: res.AccessKeySecret,
+            stsToken: res.SecurityToken,
+            bucket: "jrcodework",
+            secure: true
+          });
+
+
+          uploadParam.work_type = '2'; //1保存项目 2发布项目
+          //console.log("发布项目");
+
+          //console.log("发布参数");
+          //console.log(uploadParam);
+          //console.log(userInfo);
+
+          //console.log("content:" + contents);
+
+          if (!uploadParam.work_id) {
+            var arg = new Array()
+            arg[0] = 'works/jrcode/freeworks/' + userInfo.eduId;
+            arg[1] = userInfo.code;
+            arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+            window.ScratchJr.getProjectCover(cover => {
+              //TODO 获取到作品截图
+              //console.log("cover")
+              //console.log(cover)
+              arg[3] = cover;
+              uploadpng(arg, function (pngurl) {
+                //console.log(pngurl);
+                uploadParam.covers = pngurl; //作品封面图地址
+
+                arg[4] = contents;
+
+                uploadsjr(arg, function (
+                  sjrurl) {
+                  ////console.log("项目链接");
+                  //console.log(sjrurl);
+                  uploadParam.work_url =
+                    sjrurl; //项目sb3地址
+                  upload_flag =
+                    true; //上传完毕
+
+
+                  PublishJrWorks(access_token,
+                    uploadParam,
+                    function (res) {
+
+                      if (res.is_create) {
+                        console.log("作品发布成功");
+                        console.log(res);
+                        /*
+                        toastr.success('作品发布成功', '成功', {
+                          timeOut: 1000
+                        });*/
+                        // _yxx
+                        window.ToastSuccess('作品发布成功');
+
+                        uploadParam.work_id = res.work_id;
+                        cb('success');
+
+                      } else {
+                        alert("作品发布失败");
+                      }
+                    })
+                });
+
+              });
+            })
+          } else {
+
+            //console.log("有work_id,进行更新操作");
+
+            if (uploadParam.covers.indexOf('jrcode.oss-cn-beijing') !== -1) {
+              //console.log('scratch3.fun平台作品更新');
+
+
+              var arg = new Array()
+              arg[0] = 'works/jrcode/freeworks/' + userInfo.eduId;
+              arg[1] = userInfo.code;
+              arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+              window.ScratchJr.getProjectCover(cover => {
+                //TODO 获取到作品截图
+                //console.log("cover")
+                //console.log(cover)
+                arg[3] = cover;
+                uploadpng(arg, function (pngurl) {
+                  //console.log(pngurl);
+                  uploadParam.covers = pngurl; //作品封面图地址
+
+                  arg[4] = contents;
+
+                  uploadsjr(arg, function (
+                    sjrurl) {
+                    ////console.log("项目链接");
+                    //console.log(sjrurl);
+                    uploadParam.work_url =
+                      sjrurl; //项目sb3地址
+                    upload_flag =
+                      true; //上传完毕
+
+
+                    PublishJrWorks(access_token,
+                      uploadParam,
+                      function (res) {
+
+                        if (res.is_update) {
+                          //console.log("作业作品更新成功");
+                          /*
+                          toastr.success('作品更新成功', '成功', {
+                            timeOut: 1000
+                          });
+                          */
+                          window.ToastSuccess('作品更新成功');
+                          //console.log(res);
+                          cb('success');
+                        } else {
+                          alert("作品更新失败");
+                        }
+                      })
+                  });
+
+                });
+              })
+
+
+            }
+            else {
+              //console.log('steam.fun平台作品更新111111111');
+
+              var arg = new Array()
+              arg[0] = 'works/jrcode/freeworks/' + userInfo.eduId;
+              arg[1] = userInfo.code;
+              arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+              window.ScratchJr.getProjectCover(cover => {
+                //console.log("cover")
+                //console.log(cover)
+                arg[3] = cover;
+                uploadpng(arg, function (pngurl) {
+                  //console.log("更新作业作品封面");
+                  //console.log(pngurl);
+
+                  uploadParam.covers = pngurl; //作品封面图地址
+
+                  updatesjr(uploadParam.work_url.indexOf('steamfun') !== -1 ? uploadParam.work_url.slice(49) : uploadParam.work_url.slice(51), contents,
+                    function (
+                      sjrurl) {
+                      //console.log("更新作业作品SJR");
+                      //console.log(sjrurl);
+                      upload_flag = false; //上传完毕
+
+                      PublishJrWorks(access_token,
+                        uploadParam,
+                        function (res) {
+                          if (res.is_update) {
+                            //console.log("作业作品更新成功");
+                            /*
+                            toastr.success('作品更新成功', '成功', {
+                              timeOut: 1000
+                            });
+                            */
+                            window.ToastSuccess('作品更新成功');
+                            //console.log(res);
+                            cb('success');
+
+                          } else {
+                            alert("作品更新失败");
+                          }
+
+                        })
+
+                    });
+
+                });
+              })
+            }
+
+
+
+
+
+          }
+
+
+        });
+
+        }
+        });
+      },
+
+      onSaveLocal: function (contents, name, role, type, cb) {
+        //console.log('提交类型');
+        //console.log(role);
+        //console.log(type);
+
+        InitOss(access_token, function (res) {
+          //console.log("初始化OSS");
+          //console.log(res);
+          client = new OSS({
+            region: "oss-cn-zhangjiakou",
+            accessKeyId: res.AccessKeyId,
+            accessKeySecret: res.AccessKeySecret,
+            stsToken: res.SecurityToken,
+            bucket: "jrcodework",
+            secure: true
+          });
+
+          //console.log("保存本地");
+          //console.log(name);
+          //console.log(contents);
+
+          uploadParam.title = name; //作品名称
+
+          uploadParam.work_type = '1';
+
+          if (uploadParam.work_id) {
+            //console.log("有work_id,进行更新操作");
+
+
+            if (uploadParam.covers.indexOf('jrcode.oss-cn-beijing') !== -1) {
+              //console.log('scratch3.fun平台作品更新');
+
+              var arg = new Array()
+              arg[0] = 'works/jrcode/freeworks/' + userInfo.eduId;
+              arg[1] = userInfo.code;
+              arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+              window.ScratchJr.getProjectCover(cover => {
+                //TODO 获取到作品截图
+                //console.log("cover")
+                //console.log(cover)
+                arg[3] = cover;
+                uploadpng(arg, function (pngurl) {
+                  //console.log(pngurl);
+                  uploadParam.covers = pngurl; //作品封面图地址
+                  arg[4] = contents;
+                  uploadsjr(arg, function (
+                    sjrurl) {
+                    ////console.log("项目链接");
+                    //console.log(sjrurl);
+                    uploadParam.work_url =
+                      sjrurl; //项目sb3地址
+                    upload_flag =
+                      true; //上传完毕
+                    PublishJrWorks(access_token,
+                      uploadParam,
+                      function (res) {
+                        if (res.is_update) {
+                          //console.log("作品保存成功");
+                          //console.log(res);
+                          /*
+                          toastr.success('作品保存成功', '成功', {
+                            timeOut: 1000
+                          });
+                          */
+                          window.ToastSuccess('作品更新成功');
+                          cb('success');
+                        } else {
+                          alert("作品保存失败");
+                        }
+                      })
+                  });
+                });
+              })
+            }
+            else {
+              //console.log('steam.fun平台作品更新');
+
+              var arg = new Array()
+              arg[0] = 'works/jrcode/freeworks/' + userInfo.eduId;
+              arg[1] = userInfo.code;
+              arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+              window.ScratchJr.getProjectCover(cover => {
+                //console.log("cover")
+                //console.log(cover)
+                arg[3] = cover;
+
+                uploadpng(arg, function (pngurl) {
+                  //console.log("更新作品封面");
+                  //console.log(pngurl);
+
+                  uploadParam.covers = pngurl; //作品封面图地址
+
+                  updatesjr(uploadParam.work_url.indexOf('steamfun') !== -1 ? uploadParam.work_url.slice(49) : uploadParam.work_url.slice(51), contents,
+                    function (
+                      sjrurl) {
+                      //console.log("更新作品SJR111111");
+                      //console.log(sjrurl);
+                      upload_flag = false; //上传完毕
+
+                      //console.log(uploadParam);
+
+                      PublishJrWorks(access_token,
+                        uploadParam,
+                        function (res) {
+                          if (res.is_update) {
+                            //console.log("作品更新成功");
+                            /*
+                             toastr.success('更新成功', '成功', {
+                               timeOut: 1000
+                             });
+                            */
+                            window.ToastSuccess('作品更新成功');
+                            cb('success');
+                            //console.log(res);
+                          } else {
+                            alert("作品更新失败");
+                          }
+                        })
+                    });
+
+                });
+              })
+
+            }
+
+
+          } else {
+            //console.log("新建项目,存为未发布项目");
+            var arg = new Array()
+            arg[0] = 'works/jrcode/freeworks/' + userInfo.eduId;
+            arg[1] = userInfo.code;
+            arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+            window.ScratchJr.getProjectCover(cover => {
+              //TODO 获取到作品截图
+              //console.log("cover")
+              //console.log(cover)
+              arg[3] = cover;
+              uploadpng(arg, function (pngurl) {
+                //console.log(pngurl);
+                uploadParam.covers = pngurl; //作品封面图地址
+                arg[4] = contents;
+                uploadsjr(arg, function (
+                  sjrurl) {
+                  ////console.log("项目链接");
+                  //console.log(sjrurl);
+                  uploadParam.work_url =
+                    sjrurl; //项目sb3地址
+                  upload_flag =
+                    true; //上传完毕
+                  PublishJrWorks(access_token,
+                    uploadParam,
+                    function (res) {
+                      if (res.is_create) {
+                        //console.log("作品保存成功");
+                        //console.log(res);
+                        /*
+                        toastr.success('作品保存成功', '成功', {
+                          timeOut: 1000
+                        });
+                        */
+                        window.ToastSuccess('作品保存成功');
+                        cb('success');
+                        uploadParam.work_id = res.work_id;
+                      } else {
+                        alert("作品保存失败");
+                      }
+                    })
+                });
+              });
+            })
+          }
+        });
+      },
+      goHome: function () {
+        //console.log("返回上一个页面");
+        window.goHome();
+      }
+    }
+
+    function uploadpng(arg, callback) {
+      ////console.log("上传项目缩略图");
+      ////console.log(arg);
+      var url = arg[0] + '/' + arg[1] + '/' + 'cover/' + arg[2] + '.png';
+      ////console.log(url);
+      try {
+        let result = client.put(url, dataURLtoBlob(arg[3]));
+        result.then(
+          function (res) {
+            ////console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+    //更新缩略图
+    function updatepng(url, cover, callback) {
+      ////console.log("更新缩略图");
+      ////console.log(url);
+      try {
+        let result = client.put(url, dataURLtoBlob(cover));
+        result.then(
+          function (res) {
+            ////console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+    //上传sjr到OSS
+    function uploadsjr(arg, callback) {
+      ////console.log("上传项目SJR");
+      ////console.log(arg);
+      var url = arg[0] + '/' + arg[1] + '/' + 'release/' + arg[2] + '.sjr';
+      ////console.log(url);
+      try {
+        let result = client.put(url, arg[4]);
+        result.then(
+          function (res) {
+            ////console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+
+    //更新sjr
+    function updatesjr(url, file, callback) {
+      ////console.log("更新SJR");
+      ////console.log(url);
+
+      try {
+        let result = client.put(url, file);
+        result.then(
+          function (res) {
+            ////console.log(res);
+            callback(res.url);
+          }).catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+
+    //上传文件
+    function uploadFile(fileName, fileTag, filePath) {
+      var id = null;
+      $.ajax({
+        url: '/api/system/sysFile/add',
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        async: false,
+        beforeSend: function (request) {
+          request.setRequestHeader('X-Access-Token', access_token)
+        },
+        data: JSON.stringify({
+          fileType: 2,
+          fileName: fileName,
+          filePath: filePath,
+          fileLocation: 2,
+          fileTag: fileTag
+        }),
+        success: function (res) {
+          if (res.success) {
+            id = res.result.id
+          }
+        },
+        error: function () { },
+        complete: function () { }
+      })
+      return id;
+    }
+
+    //上传作业
+    function uploadWork(projectKey, coverKey, projectTitle) {
+      $.ajax({
+        url: '/api/teaching/teachingWork/submit',
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        beforeSend: function (request) {
+          request.setRequestHeader('X-Access-Token', access_token)
+        },
+        data: JSON.stringify({
+          courseId: unitId,
+          workCover: coverKey,
+          workFile: projectKey,
+          workName: projectTitle,
+          id: workId,
+          workType: 2
+        }),
+        success: function (res) {
+          canShare = true
+          if (res.code == 200) {
+            alert("上传成功")
+          } else { }
+        },
+        error: function () {
+
+        },
+        complete: function () { }
+      })
+    }
+
+    function upload2Qiniu(zip, key, fileName, observer) {
+      var config = {
+        useCdnDomain: true,
+        region: qiniu.region.z0,
+        disableStatisticsReport: true
+      }
+      var putExtra = {
+        fname: fileName, //文件原名
+        params: {},
+        mimeType: null
+      }
+      // var observable = qiniu.upload(zip, key, qn_token, putExtra, config)
+      var subscription = observable.subscribe(observer)
+    }
+  </script>
+  <script type="text/javascript" src="app.bundle.js"></script>
+  <script src="../js/toastr.js"></script>
+
+</head>
+
+<body style="background: white; overflow: hidden;">
+
+  <div class="frame" id="frame"></div>
+  <div class="libframe" id="libframe"></div>
+  <div class="paintframe" id="paintframe"></div>
+  <!--代码折叠-->
+  
+
+  <div id="app">
+  </div>
+
+  <script language="Javascript">
+    document.oncontextmenu = new Function("event.returnValue=false");
+    document.onselectstart = new Function("event.returnValue=false");
+  </script>
+
+  <script>
+
+    new Vue({
+      el: '#app',
+      data: {
+        message: 'Hello Jrcode'
+      },
+      mounted() {
+        // 将vue中的方法赋值给window
+        window.goHome = this.goHome;
+        window.ToastSuccess = this.ToastSuccess;
+
+        if (typeof publishWorkDisabled !== 'undefined' && publishWorkDisabled) {
+          document.body.classList.add('jrcode-publish-banned')
+          this.$alert(
+            '违规发布不当内容，作品已被封禁，不可再次发布',
+            '提示',
+            {
+              confirmButtonText: '确定',
+              type: 'warning',
+            }
+          )
+        }
+      },
+      methods: {
+        goHome() {
+          this.$confirm("即将返回,记得保存作品哦！", "提示", {
+            confirmButtonText: "确定",
+            cancelButtonText: "取消",
+            type: "warning",
+          }).then(() => {
+            // window.history.go(-1);
+            window.location.replace(iframeReferer)
+            sessionStorage.removeItem('iframeReferer')
+          });
+        },
+
+        ToastSuccess(msg) {
+          this.$message.success({
+            message: msg, type: 'success', customClass: 'toast_success', center: true
+          });
+        }
+
+
+      }
+
+    })
+
+  </script>
+  <style>
+    .toast_success {
+      z-index: 12000 !important;
+      background: #f9cf37 !important;
+      color: white !important;
+    }
+
+    .el-message--success .el-message__content {
+      color: white !important;
+      font-size: 18px !important;
+      font-weight: bold !important;
+    }
+
+    /* worktype=4：禁用「发布项目/发布到云」—— app.bundle 中对应 #infoboxParentsSectionButton2 */
+    body.jrcode-publish-banned #infoboxParentsSectionButton2 {
+      opacity: 0.45 !important;
+      pointer-events: none !important;
+      cursor: not-allowed !important;
+      /* filter: grayscale(0.4); */
+      box-shadow: none !important;
+    }
+  </style>
+
+</body>
+
+</html>

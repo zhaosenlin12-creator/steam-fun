@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="google" value="notranslate">
+
+  <link rel="stylesheet" href="css/keyboard.css" />
+  <link rel="shortcut icon" href="static/favicon.ico">
+
+  <!-- import CSS -->
+  <!--
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+-->
+  <link rel="stylesheet" href="https://wugecdn.steam.fun/resources/static/h5/lib/theme-chalk/index.css">
+
+  <title>手机预览</title>
+  <script src="../js/oss/aliyun-oss-sdk.min.js"></script>
+
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/jquery.cokie.min.js"></script>
+  <script src="../js/common.js"></script>
+  <script src="https://res2.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
+
+  <script>
+
+
+
+    var work_id = urlParams('work_id');
+    var work_type = urlParams('work_type');
+    var subject_code = urlParams('subject_code');
+    var schoolIdTest = urlParams('schoolIdTest');
+    var stuTchPlanIdTest = urlParams('stuTchPlanIdTest');
+    var workinfo;
+    var worklist = [];
+    var teachinfo;
+    var page_no = 1;
+    var page_size = 9;
+    var total = 0;
+
+    console.log("H5页面接收到的参数");
+    console.log("work_id");
+    console.log(work_id);
+    console.log("work_type");
+    console.log(work_type);
+    console.log("subject_code");
+    console.log(subject_code);
+    //根据ID查询自由创作作品详情
+
+    if (work_type == '1') {
+      console.log("获取自由创作作品");
+      h5GetWorkContent(work_id, subject_code, function (info) {
+        console.log("根据ID查询自由创作作品详情");
+        console.log(info);
+        workinfo = info.work;
+      });
+    } else if (work_type == '2') {
+      console.log("获取课堂作品");
+      h5GetTchWorkContent(work_id, subject_code, schoolIdTest, stuTchPlanIdTest, function (info) {
+        console.log("根据ID查询课堂作品详情");
+        console.log(info);
+        workinfo = info.tchWork;
+        teachinfo = info.tchInfo;
+      });
+    }
+
+
+    //获得个人其他作品
+    h5GetOneUserWorkList(subject_code, workinfo.userCode, page_no, page_size, function (info) {
+      console.log("查询作者其他作品列表");
+      console.log(info);
+      worklist = info.workList;
+      total = info.total
+    })
+
+    window.scratchConfig = {
+      stageArea: {
+        scale: window.screen.width / 480,
+        width: 480,
+        height: 360,
+        showControl: true, //是否显示舞台区控制按钮
+        fullscreenButton: { //全屏按钮
+          show: false,
+          handleBeforeSetStageUnFull() { //退出全屏前的操作
+            return true
+          },
+          handleBeforeSetStageFull() { //全屏前的操作
+            return true
+          }
+        },
+        startButton: { //开始按钮
+          show: true,
+          handleBeforeStart() { //开始前的操作
+            console.log("游戏要开始啦!")
+            $(".keyboard_wrapper").css("display", 'block')
+            $(".workdesc").css("display", 'none')
+            $(".workinfo").css("display", 'none')
+
+            return true
+          }
+        },
+        stopButton: { // 停止按钮
+          show: true,
+          handleBeforeStop() { //停止前的操作
+            console.log("游戏要结束啦!")
+            $(".keyboard_wrapper").css("display", 'none')
+            $(".workdesc").css("display", 'block')
+            $(".workinfo").css("display", 'block')
+
+            return true
+          }
+        }
+      },
+      handleVmInitialized: (vm) => {
+        window.vm = vm
+        console.log("VM初始化完毕")
+
+      },
+      handleProjectLoaded: () => {
+        console.log("作品载入完毕1")
+
+      },
+      handleDefaultProjectLoaded: () => {
+        //默认作品加载完毕，一般在这里控制项目加载
+        $("#scratch").css('display', 'block');
+        $("#app").css('display', 'block');
+        $("body").css("background", '');
+      },
+      //默认项目地址,不需要修请删除本配置项
+      defaultProjectURL: workinfo.work_url,
+
+    }
+  </script>
+
+  <script>
+    $.ajax({
+      url: "/api/wechat/get/JSSDK/sign",
+      type: 'get',
+      data: { url: location.href.split('#')[0] },
+      success: function (res) {
+
+        console.log('返回');
+        console.log(res);
+
+        wx.config({
+          debug: false,
+          appId: res.content.appId,
+          timestamp: res.content.timestamp,
+          nonceStr: res.content.nonceStr,
+          signature: res.content.signature,
+          jsApiList: [
+            'checkJsApi',
+            'onMenuShareTimeline',
+            'onMenuShareAppMessage',
+            'onMenuShareQQ'
+          ]
+        });
+        wx.ready(function () {
+
+          var desc = '编程达人' + workinfo.name + '创作了一个很棒的编程作品,快来体验一下吧!';
+
+          var shareData = {
+            title: workinfo.title + '-' + workinfo.name + '-' + workinfo.schoolName,
+            desc: desc,
+            link: res.content.url,
+            imgUrl: workinfo.covers
+          };
+          wx.onMenuShareAppMessage(shareData);
+          wx.onMenuShareTimeline(shareData);
+          wx.onMenuShareQQ(shareData);
+        });
+        wx.error(function (res) {
+          alert(res.errMsg);  // 正式环境记得关闭啊！！！！
+        });
+      }
+    });
+
+
+  </script>
+
+
+</head>
+
+<body>
+
+
+  <div style="display: none;" id="scratch">
+  </div>
+  <div id="app" style="display: none;" class="wrapper">
+    <div class="keyboard_wrapper">
+      <div class="keyboard_type">
+        <i style="font-size:16px;" class="el-icon-s-grid"></i>
+        <el-tag type="success" @click="SelectKeyboard('1')" style="margin-left: 10px;" size="mini">M档</el-tag>
+        <el-tag @click="SelectKeyboard('2')" size="mini" type="success">N档</el-tag>
+        <el-tag @click="SelectKeyboard('3')" size="mini" type="success">游戏</el-tag>
+        <el-tag @click="SelectKeyboard('4')" size="mini" type="success">音乐</el-tag>
+      </div>
+
+      <div style="width: 100%;height:10px;"></div>
+
+      <div v-if="key1_show">
+        <el-row>
+          <el-col :span="12">
+            <div class="keyboard_m_left">
+              <el-row>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+
+                    <div @touchstart="KeyboardClick(38,'ArrowUp')" @touchend="KeyboardUp(38,'ArrowUp')">
+                      <el-image class="btn_up" src="static/up.png" fit="fill">
+                      </el-image>
+                    </div>
+
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(37,'ArrowLeft')" @touchend="KeyboardUp(37,'ArrowLeft')">
+                      <el-image class="btn_left" src="static/left.png" fit="fill">
+                      </el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(39,'ArrowRight')" @touchend="KeyboardUp(39,'ArrowRight')">
+                      <el-image class="btn_right" src="static/right.png" fit="fill"></el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(40,'ArrowDown')" @touchend="KeyboardUp(40,'ArrowDown')">
+                      <el-image class="btn_down" src="static/down.png" fit="fill">
+                      </el-image>
+                    </div>
+
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+              </el-row>
+
+
+
+            </div>
+          </el-col>
+
+          <el-col :span="12">
+            <div class="keyboard_m_right">
+
+              <el-row>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(87,'w')" @touchend="KeyboardUp(87,'w')" class="btn_w"
+                      src="static/w.png" fit="fill"></el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(68,'d')" @touchend="KeyboardUp(68,'d')" class="btn_d"
+                      src="static/d.png" fit="fill"></el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(65,'a')" @touchend="KeyboardUp(65,'a')" class="btn_a"
+                      src="static/a.png" fit="fill"></el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+                    <el-image @touchstart="KeyboardClick(70,'f')" @touchend="KeyboardUp(70,'f')" class="btn_f"
+                      src="static/f.png" fit="fill"></el-image>
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(63,'s')" @touchend="KeyboardUp(63,'s')" class="btn_s"
+                      src="static/s.png" fit="fill"></el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+                    <el-image @touchstart="KeyboardClick(71,'g')" @touchend="KeyboardUp(71,'g')" class="btn_g"
+                      src="static/g.png" fit="fill"></el-image>
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+                    <el-image @touchstart="KeyboardClick(32,' ')" @touchend="KeyboardUp(32,' ')" class="btn_space"
+                      src="static/space.png" fit="fill">
+                    </el-image>
+                  </div>
+                </el-col>
+              </el-row>
+
+
+
+              </el-button>
+            </div>
+          </el-col>
+        </el-row>
+
+
+      </div>
+
+
+      <div v-if="key2_show">
+
+        <el-row>
+          <el-col :span="12">
+            <div class="keyboard_m_left">
+              <el-row>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+
+                    <div @touchstart="KeyboardClick(75,'u')" @touchend="KeyboardUp(75,'u')">
+                      <el-image class="btn_u" src="static/u.png" fit="fill">
+                      </el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+
+                    <div @touchstart="KeyboardClick(68,'h')" @touchend="KeyboardUp(68,'h')">
+                      <el-image class="btn_h" src="static/h.png" fit="fill">
+                      </el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(107,'k')" @touchend="KeyboardUp(107,'k')">
+                      <el-image class="btn_k" src="static/k.png" fit="fill"></el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(106,'j')" @touchend="KeyboardUp(106,'j')">
+                      <el-image class="btn_j" src="static/j.png" fit="fill">
+                      </el-image>
+                    </div>
+
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+              </el-row>
+
+
+
+            </div>
+          </el-col>
+
+          <el-col :span="12">
+            <div class="keyboard_m_right">
+
+              <el-row>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(31,'1')" @touchend="KeyboardUp(31,'1')" class="btn_1"
+                      src="static/1.png" fit="fill"></el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(34,'4')" @touchend="KeyboardUp(34,'4')" class="btn_4"
+                      src="static/4.png" fit="fill"></el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(32,'2')" @touchend="KeyboardUp(32,'2')" class="btn_2"
+                      src="static/2.png" fit="fill"></el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+                    <el-image @touchstart="KeyboardClick(35,'5')" @touchend="KeyboardUp(35,'5')" class="btn_5"
+                      src="static/5.png" fit="fill"></el-image>
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(33,'3')" @touchend="KeyboardUp(33,'3')" class="btn_3"
+                      src="static/3.png" fit="fill"></el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+                    <el-image @touchstart="KeyboardClick(36,'6')" @touchend="KeyboardUp(36,'6')" class="btn_6"
+                      src="static/6.png" fit="fill"></el-image>
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+                    <el-image @touchstart="KeyboardClick(30,'0')" @touchend="KeyboardUp(30,'0')" class="btn_0"
+                      src="static/0.png" fit="fill">
+                    </el-image>
+                  </div>
+                </el-col>
+              </el-row>
+              </el-button>
+            </div>
+          </el-col>
+        </el-row>
+
+      </div>
+
+      <div v-if="key3_show">
+
+        <el-row>
+          <el-col :span="12">
+            <div class="keyboard_m_left">
+              <el-row>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+
+                    <div @touchstart="KeyboardClick(38,'ArrowUp')" @touchend="KeyboardUp(38,'ArrowUp')">
+                      <el-image class="btn_up" src="static/up.png" fit="fill">
+                      </el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(37,'ArrowLeft')" @touchend="KeyboardUp(37,'ArrowLeft')">
+                      <el-image class="btn_left" src="static/left.png" fit="fill">
+                      </el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(39,'ArrowRight')" @touchend="KeyboardUp(39,'ArrowRight')">
+                      <el-image class="btn_right" src="static/right.png" fit="fill"></el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(40,'ArrowDown')" @touchend="KeyboardUp(40,'ArrowDown')">
+                      <el-image class="btn_down" src="static/down.png" fit="fill">
+                      </el-image>
+                    </div>
+
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+              </el-row>
+
+
+
+            </div>
+          </el-col>
+
+          <el-col :span="12">
+            <div class="keyboard_m_left">
+              <el-row>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+
+                    <div @touchstart="KeyboardClick(87,'w')" @touchend="KeyboardUp(87,'w')">
+                      <el-image class="btn_up" src="static/w.png" fit="fill">
+                      </el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(65,'a')" @touchend="KeyboardUp(65,'a')">
+                      <el-image class="btn_left" src="static/a.png" fit="fill">
+                      </el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(68,'d')" @touchend="KeyboardUp(68,'d')">
+                      <el-image class="btn_right" src="static/d.png" fit="fill"></el-image>
+                    </div>
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell">
+                    <div @touchstart="KeyboardClick(63,'s')" @touchend="KeyboardUp(63,'s')">
+                      <el-image class="btn_down" src="static/s.png" fit="fill">
+                      </el-image>
+                    </div>
+
+                  </div>
+                </el-col>
+                <el-col :span="8">
+                  <div class="keyboard_m_left_cell"></div>
+                </el-col>
+              </el-row>
+
+
+
+            </div>
+          </el-col>
+
+
+        </el-row>
+
+
+      </div>
+      <div v-if="key4_show">
+
+
+        <el-row>
+          <el-col :span="12">
+            <div class="keyboard_m_right">
+
+              <el-row>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(31,'1')" @touchend="KeyboardUp(31,'1')" class="btn_music_1"
+                      src="static/1.png" fit="fill">
+                    </el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(32,'2')" @touchend="KeyboardUp(32,'2')" class="btn_music_2"
+                      src="static/2.png" fit="fill">
+                    </el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+                    <el-image @touchstart="KeyboardClick(33,'3')" @touchend="KeyboardUp(33,'3')" class="btn_music_3"
+                      src="static/3.png" fit="fill">
+                    </el-image>
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(34,'4')" @touchend="KeyboardUp(34,'4')" class="btn_music_4"
+                      src="static/4.png" fit="fill">
+                    </el-image>
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    </el-image>
+                  </div>
+                </el-col>
+              </el-row>
+              </el-button>
+            </div>
+          </el-col>
+
+          <el-col :span="12">
+            <div class="keyboard_m_right">
+
+              <el-row>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(35,'5')" @touchend="KeyboardUp(35,'5')" class="btn_music_5"
+                      src="static/5.png" fit="fill">
+                    </el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    <el-image @touchstart="KeyboardClick(36,'6')" @touchend="KeyboardUp(36,'6')" class="btn_music_6"
+                      src="static/6.png" fit="fill">
+                    </el-image>
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+                    <el-image @touchstart="KeyboardClick(37,'7')" @touchend="KeyboardUp(37,'7')" class="btn_music_7"
+                      src="static/7.png" fit="fill">
+                    </el-image>
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell"></div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                  </div>
+                </el-col>
+                <el-col :span="6">
+                  <div class="keyboard_m_right_cell">
+
+                    </el-image>
+                  </div>
+                </el-col>
+              </el-row>
+              </el-button>
+            </div>
+          </el-col>
+        </el-row>
+
+      </div>
+
+      <div style="width: 100%;height:10px;"></div>
+    </div>
+
+    <div class="workdesc">
+
+      <el-form :model="workinfo" label-position="right" size="mini">
+
+        <el-form-item label="名称">
+          <span style="color:burlywood;font-weight:bold;">{{workinfo.title}} </span>
+        </el-form-item>
+        <el-form-item label="作者">
+          <span> {{workinfo.name}} </span>
+        </el-form-item>
+
+        <el-form-item v-if="work_type=='2'" label="指导老师">
+          <span style="color:#4d98ff;font-weight:bold;" class="el-icon-user-solid"
+            @click="GetCardImg">{{teachinfo.realname}} </span>
+        </el-form-item>
+
+        <el-form-item label="发布于">
+          <span>{{workinfo.update_time}} </span>
+        </el-form-item>
+
+
+      </el-form>
+
+
+
+
+    </div>
+    <div class="workinfo">
+      <el-tabs size="mini" v-model="activeName">
+        <el-tab-pane v-if="work_type=='2'" label="老师点评" name="first">
+
+          <el-form :model="workinfo" label-position="right" size="mini">
+            <el-form-item label="星级评价:">
+              <el-rate disabled v-model="workinfo.markpoint"> </el-rate>
+            </el-form-item>
+
+            <el-form-item label="教师评语:" v-if="workinfo.remark">
+              <span style="margin-top: 10px"> {{ workinfo.remark }}</span>
+            </el-form-item>
+
+            <el-form-item label="作品简介:">
+              <span style="margin-top: 10px"> {{ workinfo.abstract }}</span>
+            </el-form-item>
+
+            <el-form-item label="操作说明:">
+              <span style="margin-top: 10px"> {{ workinfo.explain }}</span>
+            </el-form-item>
+
+
+
+          </el-form>
+
+
+        </el-tab-pane>
+        <el-tab-pane v-if="work_type=='1'" label="作品介绍" name="second">
+
+          <el-form :model="aboutwork" label-position="right" size="mini">
+            <el-form-item label="作品介绍:">
+              <span>{{workinfo.abstract}} </span>
+            </el-form-item>
+            <el-form-item label="操作说明:">
+              <spa>{{workinfo.explain}} </span>
+            </el-form-item>
+            <el-form-item label="作品类别:">
+
+
+              <el-tag v-for="item of workinfo.tagList" :key="item.id" class="type" size="mini">{{item.workTagInfo.name}}
+              </el-tag>
+
+
+            </el-form-item>
+          </el-form>
+
+        </el-tab-pane>
+        <el-tab-pane label="Ta的作品" name="third">
+
+          <el-row :gutter="20">
+
+            <el-col style="margin-bottom: 20px;" :span="8" v-for="item of worklist" :key="item.id">
+
+              <el-card>
+                <div class="other_works">
+                  <div class="other_works_img" @click="GotoWork(item.id)">
+                    <el-image class="works_cover" :src="item.covers" fit="fill"></el-image>
+                  </div>
+                  <div class="other_works_title">
+
+
+                    <span class="other_works_title_span">{{item.title}}</span>
+
+
+                  </div>
+
+                </div>
+              </el-card>
+            </el-col>
+
+
+
+          </el-row>
+
+          <div style="margin: 20px; text-align: center">
+            <el-pagination @current-change="handleCurrentChange" :current-page="page_no" :page-size="page_size"
+              layout="total, prev, pager, next" :total="total">
+            </el-pagination>
+          </div>
+
+        </el-tab-pane>
+      </el-tabs>
+
+      <el-button v-if="work_type=='2'" @click="GetCardImg" class="market_btn" size=”mini“ type="warning" round>
+        点击这里,学习同款课程</el-button>
+
+
+      <el-dialog title="预约体验课" :visible.sync="dialogVisible" width="80%">
+
+        <el-form size="mini" ref="form" :model="intent_form" label-position="top">
+          <el-form-item label="姓名">
+            <el-input v-model="intent_form.name"></el-input>
+          </el-form-item>
+
+          <el-form-item label="在校年级">
+            <el-select style="width: 100%;" v-model="intent_form.grade" placeholder="请选择在校年级">
+              <el-option label="幼儿园小班" :value="7"></el-option>
+              <el-option label="幼儿园中班" :value="8"></el-option>
+              <el-option label="幼儿园大班" :value="9"></el-option>
+              <el-option label="一年级" :value="1"></el-option>
+              <el-option label="二年级" :value="2"></el-option>
+              <el-option label="三年级" :value="3"></el-option>
+              <el-option label="四年级" :value="4"></el-option>
+              <el-option label="五年级" :value="5"></el-option>
+              <el-option label="六年级" :value="6"></el-option>
+              <el-option label="初一" :value="7"></el-option>
+              <el-option label="初二" :value="8"></el-option>
+              <el-option label="初三" :value="9"></el-option>
+              <el-option label="高一" :value="10"></el-option>
+              <el-option label="高二" :value="11"></el-option>
+              <el-option label="高三" :value="12"></el-option>
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="手机号">
+            <el-input v-model="intent_form.phone"></el-input>
+          </el-form-item>
+        </el-form>
+
+        <span slot="footer" class="dialog-footer">
+          <el-button size="mini" type="warning" @click="dialogVisible = false">报 名</el-button>
+        </span>
+      </el-dialog>
+
+
+      <el-dialog v-if="teachinfo" title="了解课程" :visible.sync="dialogVisible1" width="80%">
+
+        <div class="contant_wrapper">
+
+          <el-image class="contant" :src="teachinfo.card_img_url" fit="fill"></el-image>
+
+        </div>
+      </el-dialog>
+
+    </div>
+
+  </div>
+  <script src="js/keyboard.js"></script>
+
+
+  <script type="text/javascript" src="https://wugecdn.steam.fun/resources/scratch/editor/lib.min.20250906.js"></script>
+  <script type="text/javascript" src="https://wugecdn.steam.fun/resources/scratch/editor/player.20250906.js"></script>
+
+
+
+</body>
+
+<!-- import Vue before Element -->
+<script src="https://steamfun-cdn.oss-cn-zhangjiakou.aliyuncs.com/resources/tools/vue/vue.min.js"></script>
+<!-- import JavaScript -->
+<script src="https://wugecdn.steam.fun/resources/static/h5/lib/index.js"></script>
+<script>
+  new Vue({
+    el: '#app',
+    data: function () {
+      return {
+        visible: false,
+        key1_show: true,
+        key2_show: false,
+        key3_show: false,
+        key4_show: false,
+        key5_show: false,
+        key6_show: false,
+        activeName: 'first',
+        value: null,
+        is_good: true,
+        markform: {},
+        workinfo: {},
+        aboutwork: {
+          desc: "游戏前必备玩法: 1:按住屏幕，可以操控史蒂夫行走 2:长按树木，可以进行砍树木",
+          how: "按上下左右键盘间操作！切换至M档"
+        },
+
+        page_no: 1,
+        page_size: 9,
+        total: 0,
+        dialogVisible: false,
+        dialogVisible1: false,
+        intent_form: {},
+        worklist: [], //用户的其他自由创作作品
+
+        work_type: "",
+        work_id: "",
+        subject_code: "",
+        teachinfo: {}
+
+      }
+    },
+    watch: {
+      activeName() {
+        if (this.activeName == 'third') {
+          $(".market_btn").css("display", 'none');
+        } else {
+          $(".market_btn").css("display", 'block');
+        }
+      }
+    },
+    mounted() {
+      var scale = window.screen.width / 480;
+      $(".wrapper").css("height", window.screen.height - scale * 360);
+
+      this.workinfo = window.workinfo;
+
+
+      if (window.teachinfo) {
+        this.teachinfo = window.teachinfo;
+      }
+
+      this.work_type = window.work_type;
+      this.work_id = window.work_id;
+      this.subject_code = window.subject_code;
+
+      this.worklist = window.worklist;
+      this.page_no = window.page_no;
+      this.page_size = window.page_size;
+      this.total = window.total;
+
+      if (this.work_type == '1') {
+        this.activeName = 'second';
+      } else {
+        this.activeName = 'first';
+      }
+
+      document.title = workinfo.title + '-' + workinfo.name
+    },
+    methods: {
+
+      //得到老师名片
+      GetCardImg() {
+
+        if (this.teachinfo.card_img_url) {
+          this.dialogVisible1 = true;
+        } else {
+          this.$message.warning("老师未上传名片");
+          console.log("老师为上传名片");
+        }
+
+
+      },
+
+      KeyboardClick(keyCode, key) {
+        vm.postIOData("keyboard", {
+          keyCode: keyCode, //38
+          key: key, //ArrowUp
+          isDown: true,
+        });
+        event.preventDefault();
+      },
+
+      KeyboardUp(keyCode, key) {
+        vm.postIOData("keyboard", {
+          keyCode: keyCode, //38
+          key: key, //ArrowUp
+          isDown: false,
+        });
+        event.preventDefault();
+      },
+
+      SelectKeyboard(cmd) {
+        if (cmd == '1') {
+
+          this.key1_show = true;
+          this.key2_show = false;
+          this.key3_show = false;
+          this.key4_show = false;
+          this.key5_show = false;
+          this.key6_show = false;
+        } else if (cmd == '2') {
+          this.key1_show = false;
+          this.key2_show = true;
+          this.key3_show = false;
+          this.key4_show = false;
+          this.key5_show = false;
+          this.key6_show = false;
+        } else if (cmd == '3') {
+          this.key1_show = false;
+          this.key2_show = false;
+          this.key3_show = true;
+          this.key4_show = false;
+          this.key5_show = false;
+          this.key6_show = false;
+        } else if (cmd == '4') {
+          this.key1_show = false;
+          this.key2_show = false;
+          this.key3_show = false;
+          this.key4_show = true;
+          this.key5_show = false;
+          this.key6_show = false;
+        } else if (cmd == '5') {
+          this.key1_show = false;
+          this.key2_show = false;
+          this.key3_show = false;
+          this.key4_show = false;
+          this.key5_show = true;
+          this.key6_show = false;
+        } else if (cmd == '6') {
+          this.key1_show = false;
+          this.key2_show = false;
+          this.key3_show = false;
+          this.key4_show = false;
+          this.key5_show = false;
+          this.key6_show = true;
+        }
+
+
+      },
+
+      handleCurrentChange(val) {
+        this.page_no = val;
+        //获得个人其他作品
+        window.h5GetOneUserWorkList(window.subject_code, window.workinfo.userCode, this.page_no,
+          this.page_size,
+          function (info) {
+            console.log("VUE查询作者其他作品列表");
+            console.log(info);
+            worklist = info.workList;
+            total = info.total;
+          })
+        this.worklist = window.worklist;
+
+      },
+
+      GotoWork(work_id) {
+        console.log("其他作品信息");
+        console.log(work_id);
+        //window.open  新开页面
+        /*     window.open(
+             "/scratch/h5player.html?work_id=" +work_id+"&subject_code="+this.subject_code+"&work_type="+this.work_type
+           );*/
+
+
+        window.location.href = "/scratch/h5player.html?work_id=" + work_id + "&subject_code=" + this.subject_code +
+          "&work_type=1";
+
+      }
+
+
+    }
+  })
+</script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+
+    width: 100%;
+    height: calc(100vh);
+    position: absolute;
+    left: 0;
+    top: 0;
+    overflow: hidden;
+    overflow-y: auto;
+    margin: 0px;
+    overflow: hidden;
+    overflow-y: auto;
+    background: #e6e6e6 url(https://steamfun-cdn.oss-cn-zhangjiakou.aliyuncs.com/resources/static/m_homepage/loading-h5.gif) no-repeat center center;
+    background-size: 50%;
+
+  }
+
+
+  .wrapper {
+    background: white;
+  }
+
+  .keyboard_wrapper {
+    display: none;
+  }
+
+  .keyboard_type {
+    padding: 10px;
+    background: white;
+  }
+
+  .keyboard_m_left {
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+
+  }
+
+  .keyboard_m_left_cell {
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+
+  }
+
+  .btn_up {
+    width: 100%;
+    margin-top: 20%;
+    pointer-events: none;
+
+  }
+
+  .btn_u {
+    width: 100%;
+    margin-top: 20%;
+    pointer-events: none;
+
+  }
+
+  .btn_j {
+    width: 100%;
+    margin-top: -20%;
+    pointer-events: none;
+
+  }
+
+  .btn_down {
+    width: 100%;
+    margin-top: -20%;
+    pointer-events: none;
+
+  }
+
+  .btn_left {
+    width: 100%;
+    margin-left: 20%;
+    pointer-events: none;
+
+  }
+
+  .btn_h {
+    width: 100%;
+    margin-left: 20%;
+    pointer-events: none;
+
+  }
+
+  .btn_right {
+    width: 100%;
+    margin-left: -20%;
+    pointer-events: none;
+
+  }
+
+  .btn_k {
+    width: 100%;
+    margin-left: -20%;
+    pointer-events: none;
+
+  }
+
+
+  .keyboard_m_right {
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+
+  }
+
+  .keyboard_m_right_cell {
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+  }
+
+  .btn_w {
+    width: 100%;
+
+
+  }
+
+  .btn_1 {
+    width: 100%;
+
+
+  }
+
+  .btn_d {
+    width: 100%;
+    margin-left: 50%;
+
+  }
+
+  .btn_4 {
+    width: 100%;
+    margin-left: 50%;
+
+  }
+
+  .btn_a {
+    width: 100%;
+    margin-left: 50%;
+
+  }
+
+  .btn_2 {
+    width: 100%;
+    margin-left: 50%;
+
+  }
+
+  .btn_f {
+    width: 100%;
+
+  }
+
+  .btn_5 {
+    width: 100%;
+
+  }
+
+  .btn_s {
+    width: 100%;
+
+  }
+
+  .btn_3 {
+    width: 100%;
+
+  }
+
+  .btn_g {
+    width: 100%;
+    margin-left: 50%;
+  }
+
+  .btn_6 {
+    width: 100%;
+    margin-left: 50%;
+  }
+
+  .btn_space {
+    width: 100%;
+    margin-left: -10%;
+  }
+
+  .btn_0 {
+    width: 100%;
+    margin-left: -10%;
+  }
+
+  .btn_music_1 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+  }
+
+  .btn_music_2 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+  }
+
+  .btn_music_3 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+  }
+
+  .btn_music_4 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+    z-index: 100;
+  }
+
+  .btn_music_5 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+  }
+
+  .btn_music_6 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+  }
+
+  .btn_music_7 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+  }
+
+  .btn_jisuan_1 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+  }
+
+  .btn_jisuan_2 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+  }
+
+  .btn_jisuan_3 {
+    width: 100%;
+    margin-left: 50%;
+    margin-top: 50%;
+  }
+
+
+  .workdesc {
+    padding: 10px;
+    background-color: white;
+    border-bottom: 1px solid #f1f1e9;
+  }
+
+  .avatar {
+    width: 100%;
+    height: 0;
+    padding-bottom: 12.5%;
+  }
+
+  .avatar_img {
+    width: 40px;
+  }
+
+  .avatar_name {
+    line-height: 40px;
+  }
+
+  .avatar_school {
+    line-height: 40px;
+    color: rgb(5, 99, 116)
+  }
+
+  .workinfo {
+    padding: 10px;
+    padding-bottom: 200px;
+    background-color: white;
+  }
+
+  .el-form-item--mini.el-form-item {
+    margin-bottom: 0px;
+  }
+
+  .other_works {
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+    border-radius: 5px;
+    background: white;
+
+  }
+
+  .other_works_img {
+    width: 100%;
+    height: 0;
+    padding-bottom: 75%;
+    border-radius: 5px;
+  }
+
+  .works_cover {
+    border-radius: 5px 5px 0px 0px;
+  }
+
+  .other_works_title {
+    width: 100%;
+    height: 0;
+    padding-bottom: 25%;
+    text-align: center;
+    line-height: 150%;
+    padding-left: 5px;
+    padding-right: 5px;
+
+    overflow: hidden;
+    /*溢出的部分隐藏*/
+    white-space: nowrap;
+    /*文本不换行*/
+    text-overflow: ellipsis;
+
+  }
+
+  .works_cover {
+    width: 100%;
+  }
+
+  .other_works_title_span {
+    margin-top: 50%;
+    font-size: 12px;
+  }
+
+  .pages {
+    text-align: center;
+    padding: 10px;
+  }
+
+  .market_btn {
+    position: fixed;
+    width: 80%;
+    bottom: 10px;
+    margin-left: 8%;
+
+  }
+
+  .workvideo {
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%;
+  }
+
+  .work_video {
+    width: 100%;
+  }
+
+  .dialog-footer {
+    text-align: center;
+  }
+
+  .leader_weixin {
+    width: 20px;
+    height: 20px;
+  }
+
+  .contant_wrapper {
+    width: 100%;
+    height: 0;
+    padding-bottom: 133%;
+  }
+
+  .contant {
+    width: 100%;
+  }
+
+  .el-card__body {
+    padding: 0px;
+  }
+</style>
+
+
+</html>

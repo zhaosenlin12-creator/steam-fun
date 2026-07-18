@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "steamfun-mirror"
+version = "0.1.0"
+description = "Authenticated steam.fun mirror and local replay runtime."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "brotli>=1.1.0",
+    "fastapi>=0.115.0",
+    "httpx>=0.28.0",
+    "orjson>=3.10.0",
+    "requests>=2.32.0",
+    "uvicorn>=0.32.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3.0"]
+
+[project.scripts]
+steamfun-mirror = "steamfun_mirror.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

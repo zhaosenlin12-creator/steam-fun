@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="google" value="notranslate" />
+  <link rel="shortcut icon" href="static/favicon.ico" />
+  <link rel="stylesheet" href="../css/scratch.css" />
+  <title>图形化编程-自由创作区</title>
+
+  <!-- 引入 jQuery 库 -->
+  <script src="../js/jquery-3.6.0.min.js"></script>
+
+  <link rel="stylesheet" href="../css/toastr.css" />
+  <script src="../js/toastr.js"></script>
+  <script src="../js/oss/aliyun-oss-sdk.min.js"></script>
+  <script  src="../js/common.js"></script>
+
+  <!--引入 element-ui 的样式，-->
+  <link rel="stylesheet" href="../css/element-ui/lib/theme-chalk/index.css" />
+  <!-- 必须先引入vue，  后使用element-ui -->
+  <script src="../js/vue/vue.min.js"></script>
+  <!-- 引入element 的组件库-->
+  <script src="../css/element-ui/lib/index.js"></script>
+
+  <script>
+    let iframeReferer = sessionStorage.getItem('iframeReferer')
+    // console.log('iframeReferer ==>',window.getzk())
+    if (!iframeReferer) {
+      sessionStorage.setItem('iframeReferer', iframeReferer = document.referrer)
+    }
+    // 本页面从sessionStorage中取值historylength
+    // 进入页面先判断有没有historylength，有的话不再存值
+    // 避免用户在本页面进行刷新，会增加新的历史记录
+    const initHistoryLength = window.history.length;
+    let originHistoryLength = 0;
+    const storeOriginHistoryLength = sessionStorage.getItem('originHistoryLength')
+    if (storeOriginHistoryLength) {
+      sessionStorage.setItem('originHistoryLength', originHistoryLength = Number(storeOriginHistoryLength) + 1)
+    } else {
+      sessionStorage.setItem('originHistoryLength', originHistoryLength = 0)
+    }
+
+    var access_token = getUserToken();
+    var userInfo = UserStuInfo();
+
+    let client;
+    var work_id = urlParams("work_id");
+    var work_type = urlParams("work_type");
+    var subject_code = urlParams("subject_code");
+    var operate = urlParams("operate");
+    var hideBack = urlParams("hideBack");
+    var worktype = urlParams("worktype");
+    var workinfo;
+    var uploadParam = {}; //提交参数
+    var tags = [false, false, false, false, false, false, false, false]; //标签
+    /** worktype=4：禁止发布作品（禁用按钮样式 + 不执行发布） */
+    var publishWorkDisabled = String(worktype) === '4'
+    // 配置 toastr 插件
+    toastr.options = {
+      positionClass: "toast-center", // 设置通知弹窗显示在屏幕中间
+    };
+
+    //根据ID查询自由创作作品详情
+    if (work_id) {
+      h5GetWorkContent(work_id, subject_code, function (info) {
+        //console.log("根据ID查询自由创作作品详情");
+        //console.log(info);
+        workinfo = info.work;
+        if (operate == "edit") {
+          uploadParam.work_id = work_id;
+          uploadParam.covers = workinfo.covers;
+          uploadParam.work_url = workinfo.work_url;
+        }
+      });
+    }
+    // checkCommunitySensitiveWord(
+    //     {
+    //       field: 'title',
+    //       checkScope: 'TITLE',
+    //       text: '这是一个正常标题'
+    //     },
+    //     function (data) {
+    //       console.log('通过', data)
+    //     },
+    //     function (err) {
+    //       console.error('失败', err)
+    //     }
+    //   )
+    window.scratchConfig = {
+      session: {
+        token: "", // 用户Token
+        username: "", //用户名
+      },
+      cloudData: {
+        enable: false
+      },
+      logo: {
+        show: true,
+        url:
+          "https://steamfun-cdn.oss-cn-zhangjiakou.aliyuncs.com/resources/static/homepage/images/logo/scratch_logo.svg", //logo地址，支持base64图片
+
+        handleClickLogo: () => {
+          //window.location.href = "/community/home";
+          window.goClass();
+        },
+      },
+      menuBar: {
+        //菜单栏样式
+        style: {
+          background: "hsla(215, 100%, 65%, 1)",
+        },
+        //切换语言按钮
+        languageButton: {
+          show: true, //是否显示
+          defaultLanguage: 'zh-cn' //默认语言 en zh-cn zh-tw
+        },
+        //新建按钮
+        newButton: {
+          show: true,
+          handleBefore() {
+            return true;
+          },
+        },
+        //从计算机加载按钮
+        loadFileButton: {
+          show: true,
+          handleBefore() {
+            return true;
+          },
+        },
+        //保存到计算机按钮
+        saveFileButton: {
+          show: true,
+          handleBefore() {
+            return true;
+          },
+        },
+        //加速模式按钮
+        turboModeButton: {
+          show: true,
+        },
+        //教程按钮
+        helpButton: {
+          show: true,
+          handleBefore: () => {
+            //console.log("显示自己的教程")
+            return true;
+          },
+        },
+        //我的物品按钮
+        myStuff: {
+          show: false,
+          url: "/code-classroom/classlist_works",
+        },
+
+        //用户头像按钮
+        userAvatar: {
+          show: false,
+          username: userInfo.studentUserInfo
+            ? userInfo.studentUserInfo.realname
+            : userInfo.realname,
+          avatar: userInfo.headimg_url
+            ? userInfo.headimg_url
+            : userInfo.user_image_url,
+          handleClick() {
+            //弹出登录框等操作
+            //console.log("点击头像")
+            window.goClass();
+          },
+        },
+        customButtons: [
+          {
+            show: true,
+            buttonName: "保存作品",
+            style: {
+              color: "white",
+              border: "1px solid #e6f0ff",
+            },
+            handleClick: () => {
+              //console.log("保存作品");
+              // _yxx
+              console.log('执行保存操作')
+              if (window.scratch.getProjectName() === "") {
+                // toastr.success("请输入标题", "提示", { timeOut: 1000 });
+                return window.ToastWarning("作品名不能为空");
+              } else {
+                InitOss(access_token, function (res) {
+                  if (res.error) {
+                    window.ToastWarning(res.error.message);
+                  } else {
+                    window.Loading("1");
+                    //console.log("初始化OSS");
+                    //console.log(res);
+                    client = new OSS({
+                      region: "oss-cn-zhangjiakou",
+                      accessKeyId: res.AccessKeyId,
+                      accessKeySecret: res.AccessKeySecret,
+                      stsToken: res.SecurityToken,
+                      bucket: "steamfun",
+                      secure: true,
+                    });
+
+                    //获得token
+                    //console.log("成功获取TOKEN")
+
+                    uploadParam.title = window.scratch.getProjectName(); //作品名称
+
+                    console.log(uploadParam.title, 12541512);
+                    uploadParam.work_type = "1";
+                    uploadParam.isOnly = false;
+
+                    if (uploadParam.work_id) {
+                      if (uploadParam.covers.indexOf("scratch3") !== -1) {
+                        //console.log('scratch3.fun平台作品更新');
+
+                        var arg = new Array();
+                        arg[0] =
+                          "works/scratch/freeworks/" +
+                          userInfo.eduId;
+                        arg[1] = userInfo.code;
+                        arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+                        window.scratch.getProjectCover((cover) => {
+                          //TODO 获取到作品截图
+                          //console.log("cover")
+                          ////console.log(cover)
+                          arg[3] = cover;
+                          uploadpng(arg, function (pngurl) {
+                            ////console.log(pngurl);
+                            uploadParam.covers = pngurl; //作品封面图地址
+                            window.scratch.getProjectFile((file) => {
+                              //TODO 获取到项目文件
+                              //console.log("获取到的项目文件")
+                              //console.log(file)
+                              arg[4] = file;
+                              uploadsb3(arg, function (sb3url) {
+                                ////console.log("项目链接");
+                                ////console.log(sb3url);
+                                uploadParam.work_url = sb3url; //项目sb3地址
+                                upload_flag = true; //上传完毕
+
+                                PublishWorks(
+                                  access_token,
+                                  uploadParam,
+                                  function (res) {
+                                    if (res.is_update) {
+                                      toastr.success("作品保存成功", "成功", {
+                                        timeOut: 1000,
+                                      });
+                                      window.Loading("2");
+                                      //console.log(res);
+                                      history.replaceState(
+                                        null,
+                                        document.title,
+                                        location.href.split("?")[0] +
+                                        "?work_type=1&work_id=" +
+                                        uploadParam.work_id +
+                                        "&subject_code=2"
+                                      );
+                                    } else {
+                                      window.ToastWarning("作品保存失败");
+                                      window.Loading("2");
+                                    }
+                                  }
+                                );
+                              });
+                            });
+                          });
+                        });
+                      } else {
+                        window.scratch.getProjectCover((cover) => {
+                          //console.log("cover")
+                          //////console.log(cover)
+
+                          updatepng(
+                            uploadParam.covers.slice(49),
+                            cover,
+                            function (pngurl) {
+                              //console.log("更新作品封面");
+                              ////console.log(pngurl);
+                              window.scratch.getProjectFile((file) => {
+                                updatesb3(
+                                  uploadParam.work_url.slice(49),
+                                  file,
+                                  function (sb3url) {
+                                    //console.log("更新作业作品SB31");
+                                    ////console.log(sb3url);
+                                    upload_flag = false; //上传完毕
+
+                                    PublishWorks(
+                                      access_token,
+                                      uploadParam,
+                                      function (res) {
+                                        //console.log("保存作品");
+                                        //console.log(res);
+
+                                        if (res.is_update) {
+                                          toastr.success(
+                                            "作品保存成功",
+                                            "成功",
+                                            { timeOut: 1000 }
+                                          );
+                                          history.replaceState(
+                                            null,
+                                            document.title,
+                                            location.href.split("?")[0] +
+                                            "?work_type=1&work_id=" +
+                                            uploadParam.work_id +
+                                            "&subject_code=2"
+                                          );
+                                          window.Loading("2");
+                                          //console.log(res);
+                                        } else {
+                                          window.ToastWarning("作品保存失败");
+                                          window.Loading("2");
+                                        }
+                                      }
+                                    );
+                                  }
+                                );
+                              });
+                            }
+                          );
+                        });
+                      }
+                    } else {
+                      //console.log("新建项目,存为未发布项目");
+
+                      var arg = new Array();
+                      arg[0] =
+                        "works/scratch/freeworks/" +
+                        userInfo.eduId;
+                      arg[1] = userInfo.code;
+                      arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+                      window.scratch.getProjectCover((cover) => {
+                        //TODO 获取到作品截图
+                        //console.log("cover")
+                        ////console.log(cover)
+                        arg[3] = cover;
+                        uploadpng(arg, function (pngurl) {
+                          ////console.log(pngurl);
+                          uploadParam.covers = pngurl; //作品封面图地址
+                          window.scratch.getProjectFile((file) => {
+                            //TODO 获取到项目文件
+                            //console.log("获取到的项目文件")
+                            //console.log(file)
+                            arg[4] = file;
+                            uploadsb3(arg, function (sb3url) {
+                              ////console.log("项目链接");
+                              ////console.log(sb3url);
+                              uploadParam.work_url = sb3url; //项目sb3地址
+                              upload_flag = true; //上传完毕
+                              PublishWorks(
+                                access_token,
+                                uploadParam,
+                                function (res) {
+                                  if (res.is_create) {
+                                    toastr.success("作品保存成功", "成功", {
+                                      timeOut: 1000,
+                                    });
+
+                                    window.Loading("2");
+                                    //console.log('新作品首次保存成功');
+                                    //console.log(res);
+
+                                    uploadParam.work_id = res.work_id;
+
+                                    history.replaceState(
+                                      null,
+                                      document.title,
+                                      location.href.split("?")[0] +
+                                      "?work_type=1&work_id=" +
+                                      res.work_id +
+                                      "&subject_code=2"
+                                    );
+                                  } else {
+                                    window.ToastWarning("作品保存失败");
+                                    window.Loading("2");
+                                  }
+                                }
+                              );
+                            });
+                          });
+                        });
+                      });
+                    }
+                  }
+                });
+              }
+            },
+          },
+          
+          {
+            show: true,
+            // _yxx2
+            disabled: publishWorkDisabled,
+            buttonName: "发布作品",
+            style: publishWorkDisabled
+              ? {
+                  color: "#c0c4cc",
+                  border: "1px solid #dcdfe6",
+                  background: "#f4f4f5",
+                  cursor: "not-allowed",
+                  opacity: "0.85",
+                  pointerEvents: "none",
+                }
+              : {
+                  color: "#4d98ff",
+                  border: "1px solid #4281d9",
+                  background: "white",
+                },
+            handleClick: () => {
+              if (publishWorkDisabled) {
+                return;
+              }
+              console.log("发布项目",$(".workdesc").val());
+              console.log("发布项目",$(".workoperate").val());
+              uploadParam.work_type = "2"; //1保存项目 2发布项目
+              $(".scratch-filter").show();
+              $(".uploading").show();
+            },
+          },
+
+          {
+            show: !hideBack,
+            buttonName: "⏎ 返回",
+            style: {
+              color: "white",
+              border: "1px solid rgb(123 177 255)",
+              background: "#7bb1ff",
+              position: "fixed",
+              right: "0px",
+              borderRadius: "20px",
+            },
+            handleClick: () => {
+              window.goClass();
+            },
+          },
+
+          //可继续新增按钮
+        ],
+      },
+      //弃用
+      shareButton: {
+        show: false,
+        buttonName: "分享",
+        handleClick: () => {
+          //点击分享按钮
+        },
+      },
+      //弃用
+      profileButton: {
+        show: false,
+        buttonName: "我的作品",
+        handleClick: () => {
+          //点击profile按钮
+        },
+      },
+      blocks: {
+        scale: 0.8, // 积木缩放比例
+        // 隐藏分类
+        // 分类代码:motion、looks、sound、events、control、sensing、operators、variables、myBlocks
+        // 如需动态隐藏显示分类或积木，修改此配置后需手动执行 window.vm.emitWorkspaceUpdate()
+        hideCatagorys: [],
+        //隐藏积木
+        /**积木代码：
+            motion_movesteps  motion_turnright  motion_turnleft  motion_goto  motion_gotoxy  motion_glideto
+            motion_glidesecstoxy  motion_pointindirection  motion_pointtowards  motion_changexby  motion_setx
+            motion_changeyby  motion_sety  motion_ifonedgebounce  motion_setrotationstyle  motion_xposition  motion_yposition  motion_direction
+
+            looks_sayforsecs  looks_say  looks_thinkforsecs  looks_think  looks_switchbackdropto  looks_switchbackdroptoandwait  looks_nextbackdrop
+            looks_switchcostumeto  looks_nextcostume  looks_switchbackdropto  looks_nextbackdrop  looks_changesizeby  looks_setsizeto  looks_changeeffectby
+            looks_seteffectto  looks_cleargraphiceffects  looks_show  looks_hide  looks_gotofrontback  looks_goforwardbackwardlayers  looks_backdropnumbername
+            looks_costumenumbername  looks_backdropnumbername  looks_size
+
+            sound_playuntildone  sound_play  sound_stopallsounds  sound_changeeffectby  sound_seteffectto  sound_cleareffects
+            sound_changevolumeby  sound_setvolumeto  sound_volume
+
+            event_whenflagclicked  event_whenkeypressed  event_whenstageclicked  event_whenthisspriteclicked  event_whenbackdropswitchesto
+            event_whengreaterthan  event_whenbroadcastreceived  event_broadcast  event_broadcastandwait
+
+            control_wait  control_repeat  control_forever  control_if  control_if_else  control_wait_until  control_repeat_until  control_stop
+            control_create_clone_of  control_start_as_clone  control_create_clone_of  control_delete_this_clone  
+
+            sensing_touchingobject  sensing_touchingcolor  sensing_coloristouchingcolor  sensing_distanceto  sensing_askandwait  sensing_answer
+            sensing_keypressed  sensing_mousedown  sensing_mousex  sensing_mousey  sensing_setdragmode  sensing_loudness  sensing_timer  sensing_resettimer
+            sensing_of  sensing_current  sensing_dayssince2000  sensing_username
+
+            operator_add  operator_subtract  operator_multiply  operator_divide  operator_random  operator_gt  operator_lt  operator_equals  operator_and
+            operator_or   operator_not  operator_join  operator_letter_of  operator_length  operator_contains  operator_mod  operator_round  operator_mathop
+          */
+        hideBlocks: [],
+      },
+      stageArea: {
+        //舞台设置
+        fullscreenButton: {
+          //全屏按钮
+          show: true,
+          handleBeforeSetStageUnFull() {
+            //退出全屏前的操作
+            postParentMessage('showBack');
+            return true;
+          },
+          handleBeforeSetStageFull() {
+            //全屏前的操作
+            postParentMessage('hideBack');
+            return true;
+          },
+        },
+        startButton: {
+          //开始按钮
+          show: true,
+          handleBeforeStart() {
+            //开始前的操作
+            return true;
+          },
+        },
+        stopButton: {
+          // 停止按钮
+          show: true,
+          handleBeforeStop() {
+            //停止前的操作
+            return true;
+          },
+        },
+      },
+      handleVmInitialized: (vm) => {
+        window.vm = vm;
+        //console.log("VM初始化完毕")
+      },
+      handleProjectLoaded: () => {
+        //console.log("新建项目")
+      },
+      handleDefaultProjectLoaded: () => {
+        //默认作品加载完毕，可以在这里控制项目加载
+
+        if (work_id) {
+          window.scratch.loadProject(workinfo.work_url, (e) => {
+            if (e === undefined) {
+              //console.log("项目加载完毕")
+              window.scratch.setProjectName(workinfo.title);
+            } else {
+              //console.log("项目加载失败")
+              //console.log(e);
+            }
+          });
+        } else {
+          window.scratch.loadProject("/scratch/static/project.sb3", (e) => {
+            ////console.log(e);
+          });
+        }
+      },
+      //默认项目地址,不需要修请删除本配置项
+      //defaultProjectURL: "https://scratchshop.oss-cn-shanghai.aliyuncs.com/courses/%E5%85%A8%E6%8C%89%E9%94%AE%20%283%29.sb3",
+      //若使用官方素材库请删除本配置项, 默认为/static下的素材库
+      //assetCDN: "https://wugecdn.steam.fun/resources/scratch/static",
+
+      //素材库配置
+      assets: {
+        //素材库地址，默认为/static下的素材库
+        assetHost: "https://wugecdn.steam.fun/resources/scratch/static",
+        //素材库索引地址
+        defaultIndex: {
+          sprites: "static/json_index/sprites.json",
+          costumes: "static/json_index/costumes.json",
+          backdrops: "static/json_index/backdrops.json",
+          sounds: "static/json_index/sounds.json",
+        },
+        //拦截角色库打开
+        handleBeforeSpriteLibraryOpen() {
+          postParentMessage('hideBack');
+          return true;
+        },
+        handleAfterSpriteLibraryClose() {
+          postParentMessage('showBack');
+          return true;
+        },
+        //拦截造型库打开
+        handleBeforeCostumesLibraryOpen() {
+          postParentMessage('hideBack');
+          return true;
+        },
+        handleAfterCostumeLibraryClose() {
+          postParentMessage('showBack');
+          return true;
+        },
+        //拦截背景库打开
+        handleBeforeBackdropsLibraryOpen() {
+          postParentMessage('hideBack');
+          return true;
+        },
+        handleAfterBackdropLibraryClose() {
+          postParentMessage('showBack');
+          return true;
+        },
+        //拦截声音库打开
+        handleBeforeSoundLibraryOpen() {
+          postParentMessage('hideBack');
+          return true;
+        },
+        //拦截声音库关闭
+        handleAfterSoundLibraryClose() {
+          postParentMessage('showBack');
+          return true;
+        },
+      },
+    };
+
+    function uploadpng(arg, callback) {
+      //console.log("上传项目缩略图");
+      //console.log(arg);
+      var url = arg[0] + "/" + arg[1] + "/" + "cover/" + arg[2] + ".png";
+      //console.log(url);
+      try {
+        let result = client.put(url, dataURLtoBlob(arg[3]));
+        result
+          .then(function (res) {
+            //console.log(res);
+            callback(res.url);
+          })
+          .catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+    //更新缩略图
+    function updatepng(url, cover, callback) {
+      //console.log("更新缩略图");
+      //console.log(url);
+      try {
+        let result = client.put(url, dataURLtoBlob(cover));
+        result
+          .then(function (res) {
+            //console.log(res);
+            callback(res.url);
+          })
+          .catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+    //上传sb3到OSS
+    function uploadsb3(arg, callback) {
+      //console.log("上传项目SJR");
+      //console.log(arg);
+      var url = arg[0] + "/" + arg[1] + "/" + "release/" + arg[2] + ".sb3";
+      //console.log(url);
+      try {
+        let result = client.put(url, arg[4]);
+        result
+          .then(function (res) {
+            //console.log(res);
+            callback(res.url);
+          })
+          .catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+    //更新sb3
+    function updatesb3(url, file, callback) {
+      //console.log("更新SJR");
+      //console.log(url);
+
+      try {
+        let result = client.put(url, file);
+        result
+          .then(function (res) {
+            //console.log(res);
+            callback(res.url);
+          })
+          .catch(function (error) {
+            //console.log(error);
+          });
+      } catch (e) {
+        //console.log(e);
+      }
+    }
+
+    //64位数据转Blob类型
+    function dataURLtoBlob(dataurl) {
+      var arr = dataurl.split(",");
+      //注意base64的最后面中括号和引号是不转译的
+      var _arr = arr[1].substring(0, arr[1].length - 2);
+      var mime = arr[0].match(/:(.*?);/)[1],
+        bstr = atob(_arr),
+        n = bstr.length,
+        u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new Blob([u8arr], {
+        type: mime,
+      });
+    }
+
+    //发布社区函数
+  </script>
+</head>
+
+<body>
+  <div class="scratch-filter">
+    <div class="loading">
+      <div class="con-box">
+        <h4>请稍后</h4>
+        <span>正在加载中……</span>
+      </div>
+    </div>
+
+    <div class="uploading">
+      <div class="con-box">
+        <h4>发布作品</h4>
+      </div>
+
+      <div style="padding:20px;">
+        <div>
+          <p style="margin: 0px;">作品介绍</p>
+          <textarea class="workdesc" rows="4" maxlength="200" placeholder="不超过200字"></textarea>
+        </div>
+        <div style="margin-top:10px;">
+          <p style="margin: 0px;">操作说明</p>
+          <textarea class="workoperate" rows="4" maxlength="200" placeholder="不超过200字"></textarea>
+        </div>
+
+        <div class="worktype">
+          <p style="margin: 0px;">
+            分类标签<em class="worktype_em">(请选择作品分类标签)</em>
+          </p>
+          <span id="1" data-check="0" class="worktype_span">游戏</span>
+          <span id="2" data-check="0" class="worktype_span">动画</span>
+          <span id="3" data-check="0" class="worktype_span">音乐</span>
+          <span id="4" data-check="0" class="worktype_span">模拟</span>
+          <span id="5" data-check="0" class="worktype_span">搞笑</span>
+          <span id="6" data-check="0" class="worktype_span">故事</span>
+          <span id="7" data-check="0" class="worktype_span">手柄</span>
+          <span id="8" data-check="0" class="worktype_span">鳄鱼板</span>
+        </div>
+
+        <div>
+          <label>
+            <input class="isOnlysee" name="isOnlysee" type="checkbox" />设为私密
+          </label>
+        </div>
+
+        <div class="btnwrapper">
+          <button class="close_btn" type="button">关闭</button>
+          <button class="publish_btn" type="button">确认发布</button>
+        </div>
+      </div>
+
+      <div class="fault-code">
+        <span>&times</span>
+      </div>
+    </div>
+
+    <div class="release-success">
+      <div class="con-box">
+        <h4><span id="projectTitle"></span> 提交成功</h4>
+        <!-- <p class="rights-img">
+              <img src="../images/rights.png" alt="rights" />
+            </p> -->
+        <p class="ercode-img">
+          <span id="qrcode"></span>
+        </p>
+        <div class="watch-works">
+          <span>请微信扫描二维码</span>
+        </div>
+      </div>
+      <div class="fault-code">
+        <span>&times</span>
+      </div>
+    </div>
+    <div class="release-false">
+      <div class="con-box-two">
+        <h4>作品发布失败</h4>
+        <p class="smile-img">
+          <img src="../images/smile.png" alt="smile" />
+        </p>
+        <div class="refresh-release">
+          <span>请重新发布～</span>
+        </div>
+      </div>
+      <div class="fault-code">
+        <span>&times</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="scratch"></div>
+
+  <script type="text/javascript" src="https://wugecdn.steam.fun/resources/scratch/editor/lib.min.20250906.js"></script>
+  <script type="text/javascript" src="https://wugecdn.steam.fun/resources/scratch/editor/gui.20250906.js"></script>
+
+  <div id="app"></div>
+
+  <script>
+    new Vue({
+      el: "#app",
+      data: {
+        message: "Hello Scratch",
+      },
+      mounted() {
+        // 将vue中的方法赋值给window
+        window.goClass = this.goClass;
+        window.Loading = this.Loading;
+        window.ToastSuccess = this.ToastSuccess;
+        window.ToastWarning = this.ToastWarning;
+        // worktype=4：进入页即提示不可发布（与 publishWorkDisabled 一致）
+        if (typeof publishWorkDisabled !== 'undefined' && publishWorkDisabled) {
+          this.$alert(
+            '违规发布不当内容，作品已被封禁，不可再次发布',
+            '提示',
+            {
+              confirmButtonText: '确定',
+              type: 'warning',
+            }
+          );
+        }
+      },
+      methods: {
+        goClass() {
+          console.log('history.length:', history.length)
+          console.log('originHistoryLength:', originHistoryLength)
+          console.log('history.length > (2 + originHistoryLength):', history.length > (2 + originHistoryLength))
+          this.$confirm("即将返回,记得保存作品哦！", "提示", {
+            confirmButtonText: "确定",
+            cancelButtonText: "取消",
+            type: "warning",
+          }).then(() => {
+            // 取消身份判断，从哪里进来回哪里去，并且历史记录回退对应的步数，确保不影响上级页面的路由前进后退操作
+            if (iframeReferer) {
+              window.location.replace(iframeReferer)
+            }
+            sessionStorage.removeItem('iframeReferer')
+            if (history.length > (2 + originHistoryLength)) {
+              const diffHistoryLength = history.length - (initHistoryLength + 1)
+              window.history.go(-(2 + originHistoryLength + diffHistoryLength));
+            } else {
+              window.history.go(-2);
+            }
+            sessionStorage.removeItem('originHistoryLength')
+          });
+        },
+
+        ToastSuccess(msg) {
+          this.$message.success({
+            message: msg,
+            type: "success",
+            customClass: "toast_success",
+            center: true,
+            offset: 100,
+          });
+        },
+
+        ToastWarning(msg) {
+          this.$message.warning(msg);
+        },
+
+        Loading(cmd) {
+          if (cmd == "1") {
+            this.$loading({
+              lock: false,
+              text: "数据传输中...按ESC退出",
+              spinner: "el-icon-loading",
+              background: "rgba(237, 241, 253,0.7 )",
+            });
+          } else if (cmd == "2") {
+            this.$loading({
+              lock: false,
+              text: "",
+              spinner: "el-icon-loading",
+              background: "rgba(0, 0, 0, 0)",
+            }).close();
+          }
+        },
+      },
+    });
+  </script>
+  <style>
+    .toast_success {
+      z-index: 12000 !important;
+      background: #e6f0ff !important;
+    }
+
+    .el-message--success .el-message__content {
+      color: #ffab19 !important;
+    }
+  </style>
+
+  <script>
+    window.onbeforeunload = function (e) {
+      window.onbeforeunload = null;
+    };
+  </script>
+</body>
+
+<script>
+  $(".close_btn").on("click", function () {
+    $(".scratch-filter").hide();
+    $(".scratch-middle").hide();
+    $(".release-success").hide();
+    $(".release-false").hide();
+  });
+  $(".publish_btn").on("click", function () {
+    // console.log('getzk ==>',window.getzk())
+    uploadParam.abstract = $(".workdesc").val(); //作品介绍
+    uploadParam.explain = $(".workoperate").val(); //操作说明
+    let params = {
+      title:  window.scratch.getProjectName(),
+      abstractText: uploadParam.abstract,
+    }
+    window.checkCommunitySensitiveWord(params).then((res) => {
+      if (res.content.passState !== true ) {
+        WarningTitle = `作品名或作品介绍中包含敏感词【${res.content.word == undefined ? '' : res.content.word}】，请修改后重新发布`
+        return window.ToastWarning(WarningTitle);
+      }else{
+        uploadParam.abstract = res.content.abstractText;
+        if (res.content.abstractText != null) {
+          $(".workdesc").val(res.content.abstractText);
+        }
+        if (typeof window.scratch.setProjectName === "function") {
+          window.scratch.setProjectName(res.content.title); 
+        }
+    // if(uploadParam.abstract != null){
+    //   console.log(uploadParam)
+    //   return;
+    // }
+    // _yxx
+    console.log('执行发布操作',uploadParam)
+    if (window.scratch.getProjectName() === "") {
+      // return toastr.success("请输入标题", "提示", { timeOut: 1000 });
+      return window.ToastWarning("作品名不能为空");
+    }
+    InitOss(access_token, function (res) {
+      if (res.error) {
+        window.ToastWarning(res.error.message);
+      } else {
+        window.Loading("1");
+        //console.log("初始化OSS");
+        //console.log(res);
+        client = new OSS({
+          region: "oss-cn-zhangjiakou",
+          accessKeyId: res.AccessKeyId,
+          accessKeySecret: res.AccessKeySecret,
+          stsToken: res.SecurityToken,
+          bucket: "steamfun",
+          secure: true,
+        });
+        //获取token
+
+        uploadParam.title = window.scratch.getProjectName(); //作品名称
+       // uploadParam.abstract = $(".workdesc").val(); //作品介绍
+        uploadParam.explain = $(".workoperate").val(); //操作说明
+        uploadParam.isOnly = $(".isOnlysee").prop("checked"); //是否可查看源码
+        uploadParam.work_tag = []; //作品标签
+
+        for (let k = 1; k < 9; k++) {
+          const getId = document.getElementById(k);
+          if (getId.getAttribute("data-check") == "1") {
+            uploadParam.work_tag.push(k);
+          }
+        }
+
+        //uploadParam.work_id 作品id
+        //console.log("发布参数");
+        //console.log(uploadParam);
+        //console.log(userInfo);
+
+        if (!uploadParam.work_id) {
+          var arg = new Array();
+          arg[0] =
+            "works/scratch/freeworks/" + userInfo.eduId;
+          arg[1] = userInfo.code;
+          arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+          window.scratch.getProjectCover((cover) => {
+            //TODO 获取到作品截图
+            //console.log("cover")
+            ////console.log(cover)
+            arg[3] = cover;
+            uploadpng(arg, function (pngurl) {
+              ////console.log(pngurl);
+
+              uploadParam.covers = pngurl; //作品封面图地址
+
+              window.scratch.getProjectFile((file) => {
+                //TODO 获取到项目文件
+                //console.log("获取到的项目文件")
+                //console.log(file)
+                arg[4] = file;
+                uploadsb3(arg, function (sb3url) {
+                  ////console.log("项目链接");
+                  ////console.log(sb3url);
+                  uploadParam.work_url = sb3url; //项目sb3地址
+                  upload_flag = true; //上传完毕
+
+                  PublishWorks(access_token, uploadParam, function (res) {
+                    if (res.is_create) {
+                      //console.log("作品发布成功");
+                      //console.log(res);
+
+                      toastr.success("作品发布成功", "成功", {
+                        timeOut: 1000,
+                      });
+
+                      window.Loading("2");
+
+                      uploadParam.work_id = res.work_id;
+
+                      //window.open("/community/project?work_id=" + uploadParam.work_id + '&subject_code=2&path=community-explore', "_self");
+
+                      history.replaceState(
+                        null,
+                        document.title,
+                        location.href.split("?")[0] +
+                        "?work_type=2&work_id=" +
+                        uploadParam.work_id +
+                        "&subject_code=2"
+                      );
+
+                      $(".scratch-filter").hide();
+                      $(".uploading").hide();
+                    } else {
+                      window.ToastWarning("作品发布失败");
+                      window.Loading("2");
+                      $(".scratch-filter").hide();
+                      $(".uploading").hide();
+                    }
+                  });
+                });
+              });
+            });
+          });
+        } else {
+          //console.log("有work_id,进行更新操作");
+
+          if (uploadParam.covers.indexOf("scratch3") !== -1) {
+            //console.log('scratch3.fun平台作品更新');
+
+            var arg = new Array();
+            arg[0] =
+              "works/scratch/freeworks/" +
+              userInfo.eduId;
+            arg[1] = userInfo.code;
+            arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+            window.scratch.getProjectCover((cover) => {
+              //TODO 获取到作品截图
+              //console.log("cover")
+              ////console.log(cover)
+              arg[3] = cover;
+              uploadpng(arg, function (pngurl) {
+                upload_flag;
+                ////console.log(pngurl);
+
+                uploadParam.covers = pngurl; //作品封面图地址
+
+                window.scratch.getProjectFile((file) => {
+                  //TODO 获取到项目文件
+                  //console.log("获取到的项目文件")
+                  //console.log(file)
+                  arg[4] = file;
+                  uploadsb3(arg, function (sb3url) {
+                    ////console.log("项目链接");
+                    ////console.log(sb3url);
+                    uploadParam.work_url = sb3url; //项目sb3地址
+                    upload_flag = true; //上传完毕
+
+                    PublishWorks(access_token, uploadParam, function (res) {
+                      if (res.is_update) {
+                        toastr.success("作品发布成功", "成功", {
+                          timeOut: 1000,
+                        });
+                        window.Loading("2");
+                        //console.log(res);
+
+                        //window.open("/community/project?work_id=" + uploadParam.work_id + '&subject_code=2&path=community-explore', "_self");
+                        history.replaceState(
+                          null,
+                          document.title,
+                          location.href.split("?")[0] +
+                          "?work_type=2&work_id=" +
+                          uploadParam.work_id +
+                          "&subject_code=2"
+                        );
+
+                        $(".scratch-filter").hide();
+                        $(".uploading").hide();
+                      } else {
+                        window.ToastWarning("作品发布失败");
+                        window.Loading("2");
+
+                        $(".scratch-filter").hide();
+                        $(".uploading").hide();
+                      }
+                    });
+                  });
+                });
+              });
+            });
+          } else {
+            //console.log('steam.fun平台作品更新');
+
+            var arg = new Array();
+            arg[0] =
+              "works/scratch/freeworks/" +
+              userInfo.eduId;
+            arg[1] = userInfo.code;
+            arg[2] = Date.parse(new Date()).toString(); //时间戳作为作品名字
+
+            window.scratch.getProjectCover((cover) => {
+              //console.log("cover")
+              ////console.log(cover)
+              arg[3] = cover;
+              uploadpng(arg, function (pngurl) {
+                //console.log("更新作业作品封面");
+                ////console.log(pngurl);
+                uploadParam.covers = pngurl; //作品封面图地址
+                window.scratch.getProjectFile((file) => {
+                  updatesb3(uploadParam.work_url.slice(49), file, function (
+                    sb3url
+                  ) {
+                    //console.log("更新作业作品SB3");
+                    ////console.log(sb3url);
+                    upload_flag = false; //上传完毕
+
+                    PublishWorks(access_token, uploadParam, function (res) {
+                      if (res.is_update) {
+                        toastr.success("作品发布成功", "成功", {
+                          timeOut: 1000,
+                        });
+                        window.Loading("2");
+                        //console.log(res);
+                        //window.open("/community/project?work_id=" + uploadParam.work_id + '&subject_code=2&path=community-explore', "_self");
+                        history.replaceState(
+                          null,
+                          document.title,
+                          location.href.split("?")[0] +
+                          "?work_type=2&work_id=" +
+                          uploadParam.work_id +
+                          "&subject_code=2"
+                        );
+                        $(".scratch-filter").hide();
+                        $(".uploading").hide();
+                      } else {
+                        window.ToastWarning("作品发布失败");
+                        window.Loading("2");
+
+                        $(".scratch-filter").hide();
+                        $(".uploading").hide();
+                      }
+                    });
+                  });
+                });
+              });
+            });
+          }
+        }
+      }
+
+      //获取token
+    });
+  }
+})
+  });
+
+  $(".worktype_span").on("click", function (e) {
+    const getId = document.getElementById(e.target.id);
+
+    if (e.target.id == "1") {
+      if (getId.getAttribute("data-check") == "0") {
+        $("#1").css("background", "#4C97FF");
+        $("#1").css("color", "white");
+        getId.setAttribute("data-check", "1");
+      } else {
+        $("#1").css("background", "white");
+        $("#1").css("color", "#4C97FF");
+        getId.setAttribute("data-check", "0");
+      }
+    } else if (e.target.id == "2") {
+      if (getId.getAttribute("data-check") == "0") {
+        $("#2").css("background", "#4C97FF");
+        $("#2").css("color", "white");
+        getId.setAttribute("data-check", "1");
+      } else {
+        $("#2").css("background", "white");
+        $("#2").css("color", "#4C97FF");
+        getId.setAttribute("data-check", "0");
+      }
+    } else if (e.target.id == "3") {
+      if (getId.getAttribute("data-check") == "0") {
+        $("#3").css("background", "#4C97FF");
+        $("#3").css("color", "white");
+        getId.setAttribute("data-check", "1");
+      } else {
+        $("#3").css("background", "white");
+        $("#3").css("color", "#4C97FF");
+        getId.setAttribute("data-check", "0");
+      }
+    } else if (e.target.id == "4") {
+      if (getId.getAttribute("data-check") == "0") {
+        $("#4").css("background", "#4C97FF");
+        $("#4").css("color", "white");
+        getId.setAttribute("data-check", "1");
+      } else {
+        $("#4").css("background", "white");
+        $("#4").css("color", "#4C97FF");
+        getId.setAttribute("data-check", "0");
+      }
+    } else if (e.target.id == "5") {
+      if (getId.getAttribute("data-check") == "0") {
+        $("#5").css("background", "#4C97FF");
+        $("#5").css("color", "white");
+        getId.setAttribute("data-check", "1");
+      } else {
+        $("#5").css("background", "white");
+        $("#5").css("color", "#4C97FF");
+        getId.setAttribute("data-check", "0");
+      }
+    } else if (e.target.id == "6") {
+      if (getId.getAttribute("data-check") == "0") {
+        $("#6").css("background", "#4C97FF");
+        $("#6").css("color", "white");
+        getId.setAttribute("data-check", "1");
+      } else {
+        $("#6").css("background", "white");
+        $("#6").css("color", "#4C97FF");
+        getId.setAttribute("data-check", "0");
+      }
+    } else if (e.target.id == "7") {
+      if (getId.getAttribute("data-check") == "0") {
+        $("#7").css("background", "#4C97FF");
+        $("#7").css("color", "white");
+        getId.setAttribute("data-check", "1");
+      } else {
+        $("#7").css("background", "white");
+        $("#7").css("color", "#4C97FF");
+        getId.setAttribute("data-check", "0");
+      }
+    } else if (e.target.id == "8") {
+      if (getId.getAttribute("data-check") == "0") {
+        $("#8").css("background", "#4C97FF");
+        $("#8").css("color", "white");
+        getId.setAttribute("data-check", "1");
+      } else {
+        $("#8").css("background", "white");
+        $("#8").css("color", "#4C97FF");
+        getId.setAttribute("data-check", "0");
+      }
+    }
+  });
+</script>
+
+<script>
+  //当前页面监视键盘输入
+  document.onkeydown = function (e) {
+    //事件对象兼容
+    //console.log('键盘输入');
+    //console.log(e);
+    let e1 =
+      e || event || window.event || arguments.callee.caller.arguments[0];
+    //键盘按键判断:左箭头-37;上箭头-38；右箭头-39;下箭头-40
+    //左
+    if (e1 && e1.keyCode == 27) {
+      //console.log('终止数据传输');
+      window.Loading("2");
+    }
+  };
+</script>
+
+<script>
+  if (operate == "edit") {
+    $(".workoperate").val(workinfo.explain);
+    $(".workdesc").val(workinfo.abstract);
+  }
+
+  function postParentMessage(message) {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'watchScratchIframe',
+        message: message
+      }, '*');
+    }
+  }
+</script>
+
+</html>
