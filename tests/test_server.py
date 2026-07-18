@@ -1242,9 +1242,9 @@ def test_public_root_serves_marketing_homepage(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
-    assert "乐启享机器人" in response.text
-    assert "从乐高启蒙到 AI 创造" in response.text
-    assert 'href="/login"' in response.text
+    assert "Orbis.Nft" in response.text
+    assert "Beyond earth" in response.text
+    assert "Nft collection" in response.text
 
 
 def test_root_with_teacher_cookie_still_serves_marketing_homepage(tmp_path: Path) -> None:
@@ -1257,7 +1257,7 @@ def test_root_with_teacher_cookie_still_serves_marketing_homepage(tmp_path: Path
 
     assert response.status_code == 200
     assert "location" not in response.headers
-    assert "乐启享机器人" in response.text
+    assert "Orbis.Nft" in response.text
 
 
 def test_root_with_student_cookie_still_serves_marketing_homepage(tmp_path: Path) -> None:
@@ -1270,7 +1270,7 @@ def test_root_with_student_cookie_still_serves_marketing_homepage(tmp_path: Path
 
     assert response.status_code == 200
     assert "location" not in response.headers
-    assert "乐启享机器人" in response.text
+    assert "Orbis.Nft" in response.text
 
 
 def test_root_with_admin_cookie_still_serves_marketing_homepage(tmp_path: Path) -> None:
@@ -1308,7 +1308,7 @@ def test_root_with_admin_cookie_still_serves_marketing_homepage(tmp_path: Path) 
 
     assert response.status_code == 200
     assert "location" not in response.headers
-    assert "乐启享机器人" in response.text
+    assert "Orbis.Nft" in response.text
 
 
 def test_marketing_homepage_contains_required_sections(tmp_path: Path) -> None:
@@ -1318,16 +1318,16 @@ def test_marketing_homepage_contains_required_sections(tmp_path: Path) -> None:
     response = client.get("/")
 
     assert response.status_code == 200
-    assert 'id="brand"' in response.text
-    assert 'id="faculty"' in response.text
-    assert 'id="gallery"' in response.text
-    assert 'id="courses"' in response.text
-    assert 'id="honors"' in response.text
-    assert 'id="campus"' in response.text
-    assert 'id="showreel"' in response.text
-    assert 'id="contact"' in response.text
-    assert response.text.count(">登录<") == 1
-    assert "https://codebn.cn/courses.html" in response.text
+    assert 'id="hero"' in response.text
+    assert 'id="about"' in response.text
+    assert 'id="collection"' in response.text
+    assert 'id="signal"' in response.text
+    assert "Homepage" in response.text
+    assert "Gallery" in response.text
+    assert "Buy NFT" in response.text
+    assert "SEE ALL CREATORS" in response.text
+    assert "JOIN US." in response.text
+    assert "texture.png" in response.text
 
 
 def test_homepage_static_asset_route_serves_local_css(tmp_path: Path) -> None:
@@ -1338,6 +1338,16 @@ def test_homepage_static_asset_route_serves_local_css(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/css")
+
+
+def test_homepage_static_asset_route_serves_texture_png(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get("/_site/homepage/texture.png")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/png")
 
 
 def test_frontend_route_uses_captured_html_when_available(tmp_path: Path) -> None:

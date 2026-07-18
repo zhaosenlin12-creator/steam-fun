@@ -2,146 +2,58 @@ from __future__ import annotations
 
 from html import escape
 from pathlib import Path
-from typing import Any
 
 from fastapi import Request
 
 HOMEPAGE_ASSET_PREFIX = "/_site/homepage"
 HOMEPAGE_ASSET_ROOT = Path(__file__).resolve().parent / "site_assets" / "homepage"
+GOOGLE_FONTS_URL = "https://fonts.googleapis.com/css2?family=Anton&family=Condiment&display=swap"
 
-HOMEPAGE_TITLE = "乐启享机器人"
-HOMEPAGE_SUBTITLE = "从乐高启蒙到 AI 创造，系统培养孩子的科技素养与创造力"
-HOMEPAGE_DESCRIPTION = "面向青少儿的乐高、机器人、编程与 AI 科技素养成长平台。"
+HERO_VIDEO_URL = (
+    "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/"
+    "hf_20260331_045634_e1c98c76-1265-4f5c-882a-4276f2080894.mp4"
+)
+ABOUT_VIDEO_URL = (
+    "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/"
+    "hf_20260331_151551_992053d1-3d3e-4b8c-abac-45f22158f411.mp4"
+)
+CTA_VIDEO_URL = (
+    "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/"
+    "hf_20260331_055729_72d66327-b59e-4ae9-bb70-de6ccb5ecdb0.mp4"
+)
 
-NAV_ITEMS: list[dict[str, str]] = [
-    {"href": "#brand", "label": "品牌理念"},
-    {"href": "#faculty", "label": "师资团队"},
-    {"href": "#gallery", "label": "学员展示"},
-    {"href": "#courses", "label": "课程体系"},
-    {"href": "#contact", "label": "校区联系"},
+ABOUT_COPY = "A digital object fixed beyond time and place. An exploration of distance, form, and silence in space"
+
+NAV_ITEMS = [
+    ("#hero", "Homepage"),
+    ("#collection", "Gallery"),
+    ("#collection", "Buy NFT"),
+    ("#about", "FAQ"),
+    ("#signal", "Contact"),
 ]
 
-HERO_METRICS: list[dict[str, str]] = [
-    {"value": "3-16岁", "label": "系统成长路径"},
-    {"value": "4大方向", "label": "乐高 机器人 编程 AI"},
-    {"value": "线下优先", "label": "校区体验与成果共建"},
+SOCIAL_ITEMS = [
+    ("mail", "Mail", "mailto:signal@orbis.nft"),
+    ("twitter", "Twitter", "https://twitter.com"),
+    ("github", "Github", "https://github.com"),
 ]
 
-TEACHERS: list[dict[str, str]] = [
-    {
-        "name": "刘老师",
-        "role": "校长 / 创始人",
-        "description": "负责品牌与课程总方向，把机构方法论落到孩子可持续成长上。",
-        "image": "media/teacher-liu.jpg",
-    },
-    {
-        "name": "森林老师",
-        "role": "副校长 / 合伙人",
-        "description": "把活动策划、项目展示与家校沟通整合成完整的成长体验。",
-        "image": "media/teacher-senlin.jpg",
-    },
-    {
-        "name": "杨老师",
-        "role": "教学主管",
-        "description": "把控课程节奏、课堂质量与阶段成果，让每一次学习都看得见进步。",
-        "image": "media/teacher-yang.jpg",
-    },
-    {
-        "name": "向老师",
-        "role": "乐高专家",
-        "description": "聚焦乐高启蒙、机械结构与动手表达，帮助孩子从搭建进入创造。",
-        "image": "media/teacher-xiang.jpg",
-    },
-    {
-        "name": "周老师",
-        "role": "硬件专家",
-        "description": "负责机器人、传感器与硬件创客课，把抽象原理变成真实装置。",
-        "image": "media/teacher-zhou.jpg",
-    },
-    {
-        "name": "赵老师",
-        "role": "教务 / 财务",
-        "description": "连接课程安排、家长服务与线下到校体验，保证学习旅程稳定顺畅。",
-        "image": "media/teacher-zhao.jpg",
-    },
-]
-
-STUDENT_GALLERY: list[dict[str, str]] = [
-    {"title": "课堂高光", "image": "media/student-1.webp"},
-    {"title": "项目展示", "image": "media/student-2.webp"},
-    {"title": "营地体验", "image": "media/student-3.webp"},
-    {"title": "机器人实践", "image": "media/student-4.webp"},
-    {"title": "成长纪念", "image": "media/student-5.webp"},
-    {"title": "互动现场", "image": "media/student-6.webp"},
-    {"title": "团队协作", "image": "media/student-7.webp"},
-    {"title": "作品讲述", "image": "media/student-8.webp"},
-]
-
-COURSE_CARDS: list[dict[str, str]] = [
-    {
-        "title": "乐高启蒙",
-        "ages": "3-6岁",
-        "description": "从大颗粒到机械启蒙，先建立空间感、规则感和表达欲。",
-        "image": "media/course-lego.webp",
-    },
-    {
-        "title": "机器人工程",
-        "ages": "6-10岁",
-        "description": "用结构、动力与传感器把动手能力升级为工程思维。",
-        "image": "media/course-robot.webp",
-    },
-    {
-        "title": "编程创造",
-        "ages": "8-14岁",
-        "description": "Scratch 到 Python 的系统路径，让孩子真正从会玩走向会做。",
-        "image": "media/course-python.webp",
-    },
-    {
-        "title": "AI 科技素养",
-        "ages": "10-16岁",
-        "description": "把创客、竞赛和 AI 场景结合，面向更高阶的解决问题能力。",
-        "image": "media/course-ai.webp",
-    },
-]
-
-HONORS: list[dict[str, str]] = [
-    {"title": "赛事领奖", "image": "media/honor-1.webp"},
-    {"title": "证书成果", "image": "media/honor-2.webp"},
-    {"title": "大型展演", "image": "media/honor-3.webp"},
-    {"title": "项目荣誉", "image": "media/honor-4.webp"},
-]
-
-CAMPUS: list[dict[str, str]] = [
-    {
-        "title": "校区外部形象",
-        "description": "孩子愿意走进来，家长也能一眼感受到机构气质。",
-        "image": "media/campus-1.webp",
-    },
-    {
-        "title": "真实课堂空间",
-        "description": "从课程墙到教室布局，强化到校体验和学习氛围。",
-        "image": "media/campus-2.webp",
-    },
-    {
-        "title": "活动与营地现场",
-        "description": "让品牌不只停留在网页，而是能被真实感知和参与。",
-        "image": "media/campus-3.webp",
-    },
-]
-
-CONTACT_ITEMS: list[dict[str, str]] = [
-    {
-        "title": "微信咨询",
-        "body": "一对一了解课程规划、试听安排与到校体验建议。",
-    },
-    {
-        "title": "电话咨询",
-        "body": "适合家长快速确认年龄段、课程方向与线下班型节奏。",
-    },
-    {
-        "title": "校区地址",
-        "body": "线下体验更重要，可先咨询后获取最近校区与到访指引。",
-    },
+NFT_CARDS = [
+    (
+        "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/"
+        "hf_20260331_053923_22c0a6a5-313c-474c-85ff-3b50d25e944a.mp4",
+        "8.7/10",
+    ),
+    (
+        "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/"
+        "hf_20260331_054411_511c1b7a-fb2f-42ef-bf6c-32c0b1a06e79.mp4",
+        "9/10",
+    ),
+    (
+        "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/"
+        "hf_20260331_055427_ac7035b5-9f3b-4289-86fc-941b2432317d.mp4",
+        "8.2/10",
+    ),
 ]
 
 
@@ -163,114 +75,92 @@ def homepage_asset_path(asset_path: str) -> Path | None:
     return candidate
 
 
+def _icon_svg(name: str) -> str:
+    paths = {
+        "mail": (
+            '<svg viewBox="0 0 24 24" aria-hidden="true">'
+            '<path d="M4 6h16v12H4z"></path>'
+            '<path d="m4 7 8 6 8-6"></path>'
+            "</svg>"
+        ),
+        "twitter": (
+            '<svg viewBox="0 0 24 24" aria-hidden="true">'
+            '<path d="M22 5.9c-.7.3-1.5.6-2.2.7.8-.5 1.4-1.3 1.7-2.3-.8.5-1.6.8-2.5 1'
+            '-1.5-1.6-4-1.7-5.6-.2-1.1 1-1.5 2.5-1.1 3.9-3.2-.2-6.1-1.7-8-4.2-1 1.8-.5 4 1.2 5.1'
+            '-.6 0-1.2-.2-1.8-.5 0 2.1 1.5 3.9 3.6 4.3-.6.2-1.3.2-1.9.1.5 1.8 2.2 3.1 4.1 3.1'
+            'A8.3 8.3 0 0 1 2 18.1 11.8 11.8 0 0 0 8.4 20c7.7 0 12-6.7 11.8-12.7.8-.6 1.4-1.2 1.8-2"></path>'
+            "</svg>"
+        ),
+        "github": (
+            '<svg viewBox="0 0 24 24" aria-hidden="true">'
+            '<path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.9c-2.9.7-3.6-1.2-3.6-1.2'
+            '-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.6 1 1.6 1 .9 1.6 2.4 1.1 3 .8.1-.7.4-1.1.7-1.4'
+            '-2.3-.3-4.7-1.2-4.7-5.2 0-1.1.4-2 1-2.8-.1-.2-.4-1.3.1-2.8 0 0 .8-.3 2.9 1a10 10 0 0 1 5.2 0c2-1.3'
+            ' 2.9-1 2.9-1 .6 1.5.2 2.6.1 2.8.7.8 1 1.7 1 2.8 0 4.1-2.4 5-4.7 5.2.4.4.8 1 .8 2v3'
+            'c0 .3.2.6.7.5A10 10 0 0 0 12 2"></path>'
+            "</svg>"
+        ),
+        "arrow": (
+            '<svg viewBox="0 0 24 24" aria-hidden="true">'
+            '<path d="m9 6 6 6-6 6"></path>'
+            "</svg>"
+        ),
+    }
+    return paths[name]
+
+
 def _render_nav() -> str:
     return "".join(
-        f'<a class="site-nav__link" href="{escape(item["href"])}">{escape(item["label"])}</a>'
-        for item in NAV_ITEMS
+        f'<a class="nav-link font-grotesk" href="{escape(href)}">{escape(label)}</a>'
+        for href, label in NAV_ITEMS
     )
 
 
-def _render_metrics() -> str:
+def _render_social_buttons(button_class: str) -> str:
     return "".join(
         (
-            '<li class="hero-metric">'
-            f'<span class="hero-metric__value">{escape(item["value"])}</span>'
-            f'<span class="hero-metric__label">{escape(item["label"])}</span>'
-            "</li>"
+            f'<a class="{button_class} liquid-glass" href="{escape(url)}" aria-label="{escape(label)}" target="_blank" rel="noreferrer">'
+            f"{_icon_svg(icon)}"
+            "</a>"
         )
-        for item in HERO_METRICS
+        for icon, label, url in SOCIAL_ITEMS
     )
 
 
-def _render_teachers() -> str:
-    cards: list[str] = []
-    for teacher in TEACHERS:
-        cards.append(
+def _render_social_rail_items() -> str:
+    rows: list[str] = []
+    for index, (icon, label, url) in enumerate(SOCIAL_ITEMS):
+        divider = '<span class="social-rail__divider" aria-hidden="true"></span>' if index < len(SOCIAL_ITEMS) - 1 else ""
+        rows.append(
             (
-                '<article class="teacher-card reveal">'
-                f'<img class="teacher-card__image" src="{escape(homepage_asset_url(teacher["image"]))}" alt="{escape(teacher["name"])}">'
-                '<div class="teacher-card__body">'
-                f'<p class="teacher-card__role">{escape(teacher["role"])}</p>'
-                f'<h3>{escape(teacher["name"])}</h3>'
-                f'<p>{escape(teacher["description"])}</p>'
+                '<div class="social-rail__row">'
+                f'<a class="social-rail__button" href="{escape(url)}" aria-label="{escape(label)}" target="_blank" rel="noreferrer">'
+                f'<span class="social-rail__icon">{_icon_svg(icon)}</span>'
+                f'<span class="font-grotesk social-rail__label">{escape(label)}</span>'
+                "</a>"
+                f"{divider}"
                 "</div>"
-                "</article>"
             )
         )
-    return "".join(cards)
+    return "".join(rows)
 
 
-def _render_gallery_cards() -> str:
+def _render_cards() -> str:
     cards: list[str] = []
-    for item in STUDENT_GALLERY:
+    for video_url, score in NFT_CARDS:
         cards.append(
             (
-                '<button class="dome-card" type="button">'
-                f'<img src="{escape(homepage_asset_url(item["image"]))}" alt="{escape(item["title"])}">'
-                f'<span>{escape(item["title"])}</span>'
-                "</button>"
-            )
-        )
-    return "".join(cards)
-
-
-def _render_course_cards() -> str:
-    cards: list[str] = []
-    for course in COURSE_CARDS:
-        cards.append(
-            (
-                '<article class="course-card reveal">'
-                f'<img class="course-card__image" src="{escape(homepage_asset_url(course["image"]))}" alt="{escape(course["title"])}">'
-                '<div class="course-card__content">'
-                f'<p class="course-card__ages">{escape(course["ages"])}</p>'
-                f'<h3>{escape(course["title"])}</h3>'
-                f'<p>{escape(course["description"])}</p>'
+                '<article class="nft-card liquid-glass">'
+                '<div class="nft-card__video-wrap">'
+                f'<video class="nft-card__video" autoplay loop muted playsinline src="{escape(video_url)}"></video>'
                 "</div>"
-                "</article>"
-            )
-        )
-    return "".join(cards)
-
-
-def _render_honors() -> str:
-    cards: list[str] = []
-    for item in HONORS:
-        cards.append(
-            (
-                '<article class="media-tile reveal">'
-                f'<img src="{escape(homepage_asset_url(item["image"]))}" alt="{escape(item["title"])}">'
-                f'<span>{escape(item["title"])}</span>'
-                "</article>"
-            )
-        )
-    return "".join(cards)
-
-
-def _render_campus() -> str:
-    cards: list[str] = []
-    for item in CAMPUS:
-        cards.append(
-            (
-                '<article class="campus-card reveal">'
-                f'<img class="campus-card__image" src="{escape(homepage_asset_url(item["image"]))}" alt="{escape(item["title"])}">'
-                '<div class="campus-card__content">'
-                f'<h3>{escape(item["title"])}</h3>'
-                f'<p>{escape(item["description"])}</p>'
+                '<div class="nft-card__overlay liquid-glass">'
+                '<div class="nft-card__meta">'
+                '<span class="nft-card__label">RARITY SCORE:</span>'
+                f'<span class="nft-card__score">{escape(score)}</span>'
                 "</div>"
-                "</article>"
-            )
-        )
-    return "".join(cards)
-
-
-def _render_contact_items() -> str:
-    cards: list[str] = []
-    for item in CONTACT_ITEMS:
-        cards.append(
-            (
-                '<article class="contact-card reveal">'
-                f'<h3>{escape(item["title"])}</h3>'
-                f'<p>{escape(item["body"])}</p>'
+                f'<button class="nft-card__arrow" type="button" aria-label="Open creator">{_icon_svg("arrow")}</button>'
+                "</div>"
                 "</article>"
             )
         )
@@ -279,165 +169,133 @@ def _render_contact_items() -> str:
 
 def render_marketing_homepage(request: Request) -> str:
     _ = request
+    texture_url = homepage_asset_url("texture.png")
+    stylesheet_url = homepage_asset_url("styles.css")
+    script_url = homepage_asset_url("app.js")
     return f"""<!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{escape(HOMEPAGE_TITLE)}</title>
-    <meta name="description" content="{escape(HOMEPAGE_SUBTITLE)}">
-    <link rel="stylesheet" href="{escape(homepage_asset_url('styles.css'))}">
+    <title>Orbis.Nft</title>
+    <meta name="description" content="{escape(ABOUT_COPY)}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="{escape(GOOGLE_FONTS_URL)}">
+    <link rel="stylesheet" href="{escape(stylesheet_url)}">
   </head>
   <body>
-    <div class="page-shell">
-      <header class="site-header">
-        <a class="brand-lockup" href="#brand" aria-label="{escape(HOMEPAGE_TITLE)}">
-          <img class="brand-lockup__logo" src="{escape(homepage_asset_url('media/logo.png'))}" alt="{escape(HOMEPAGE_TITLE)}">
-          <span class="brand-lockup__text">
-            <strong>{escape(HOMEPAGE_TITLE)}</strong>
-            <small>LEQIXIANG ROBOTICS</small>
-          </span>
-        </a>
-        <nav class="site-nav" aria-label="首页导航">
-          {_render_nav()}
-        </nav>
-        <a class="site-login" href="/login">登录</a>
-      </header>
-
-      <main>
-        <section class="hero reveal reveal--visible" id="brand">
-          <div class="hero__backdrop">
-            <video class="hero__video" autoplay muted loop playsinline poster="{escape(homepage_asset_url('media/campus-1.webp'))}">
-              <source src="{escape(homepage_asset_url('media/hero-video.mp4'))}" type="video/mp4">
-            </video>
-            <div class="hero__veil"></div>
-            <div class="hero__grid"></div>
-          </div>
-          <div class="hero__content">
-            <p class="hero__eyebrow">乐高 / 机器人 / 编程 / AI 科技素养</p>
-            <h1 class="hero__title">{escape(HOMEPAGE_SUBTITLE)}</h1>
-            <p class="hero__description">{escape(HOMEPAGE_DESCRIPTION)} 先让孩子被未来感吸引，再让家长看见体系、师资、成果与线下可达性。</p>
-            <div class="hero__actions">
-              <a class="button button--primary" href="https://codebn.cn/courses.html" target="_blank" rel="noreferrer">查看完整课程体系</a>
-              <a class="button button--ghost" href="#gallery">进入成长穹顶</a>
+    <div class="texture-overlay" aria-hidden="true" style="background-image:url('{escape(texture_url)}');"></div>
+    <main class="page">
+      <section class="hero-stage" id="hero">
+        <video class="hero-stage__video" autoplay loop muted playsinline src="{escape(HERO_VIDEO_URL)}"></video>
+        <div class="hero-stage__shade"></div>
+        <div class="container hero-stage__container">
+          <header class="hero-header">
+            <a class="hero-logo font-grotesk" href="#hero">Orbis.Nft</a>
+            <nav class="hero-nav liquid-glass" aria-label="Primary">
+              {_render_nav()}
+            </nav>
+          </header>
+          <div class="hero-body">
+            <div class="hero-copy">
+              <h1 class="hero-title font-grotesk">
+                Beyond earth
+                <br>
+                and <span class="hero-title__parenthetical">( its )</span> familiar boundaries
+              </h1>
+              <p class="hero-accent font-condiment">Nft collection</p>
             </div>
-            <ul class="hero__metrics">
-              {_render_metrics()}
-            </ul>
-          </div>
-          <aside class="hero-panel">
-            <p class="hero-panel__label">品牌主张</p>
-            <h2>不是把课程摆满首页，而是把成长路径做成孩子和家长都愿意停留的展厅。</h2>
-            <p>首页保留单一登录入口，教学系统仍按原路径运行；公开首页只负责建立品牌记忆、真实感和到校意愿。</p>
-          </aside>
-        </section>
-
-        <section class="section section--faculty" id="faculty">
-          <div class="section-copy reveal">
-            <p class="section-copy__eyebrow">真实团队</p>
-            <h2>让“高级感”后面立刻接上“可信任”</h2>
-            <p>师资不是抽象海报，而是把创始、教学、乐高、硬件和教务服务都真实摆在首页前半段。</p>
-          </div>
-          <div class="teacher-grid">
-            {_render_teachers()}
-          </div>
-        </section>
-
-        <section class="section section--gallery" id="gallery">
-          <div class="section-copy reveal">
-            <p class="section-copy__eyebrow">成长穹顶</p>
-            <h2>把学员展示墙做成可以旋转、拖拽、记住孩子成长瞬间的 3D 穹顶</h2>
-            <p>交互方向参考本地 `prisma-web` 的 DomeGallery，表达不做普通照片墙，而是面向未来感的成长装置。</p>
-          </div>
-          <div class="dome-stage reveal">
-            <div class="dome-focus-ring"></div>
-            <div class="dome-orbit" data-tilt="-12">
-              {_render_gallery_cards()}
+            <div class="hero-social hero-social--desktop" aria-label="Social links">
+              {_render_social_buttons("social-square")}
             </div>
           </div>
-        </section>
+          <div class="hero-social hero-social--mobile" aria-label="Social links">
+            {_render_social_buttons("social-square")}
+          </div>
+        </div>
+      </section>
 
-        <section class="section section--courses" id="courses">
-          <div class="section-copy reveal">
-            <p class="section-copy__eyebrow">课程入口</p>
-            <h2>从乐高启蒙到 AI 创造，形成完整而清晰的成长台阶</h2>
-            <p>首页只展示主路径和方向，完整课程体系直接承接到现有官网内容，避免在首页重复堆叠。</p>
-          </div>
-          <div class="course-grid">
-            {_render_course_cards()}
-          </div>
-          <div class="section-actions reveal">
-            <a class="button button--primary" href="https://codebn.cn/courses.html" target="_blank" rel="noreferrer">查看完整课程体系</a>
-          </div>
-        </section>
-
-        <section class="section section--honors" id="honors">
-          <div class="section-copy reveal">
-            <p class="section-copy__eyebrow">赛事成果</p>
-            <h2>不只展示课程，更展示孩子已经走到哪里</h2>
-            <p>赛事领奖、证书成果、展演和项目记录共同构成家长最关心的“真实结果”。</p>
-          </div>
-          <div class="media-grid">
-            {_render_honors()}
-          </div>
-        </section>
-
-        <section class="section section--campus" id="campus">
-          <div class="section-copy reveal">
-            <p class="section-copy__eyebrow">校区环境</p>
-            <h2>线下体验更重要，所以必须把空间、课堂和氛围讲清楚</h2>
-            <p>校区外立面、教学空间与活动现场共同承担“到店前预体验”的作用。</p>
-          </div>
-          <div class="campus-grid">
-            {_render_campus()}
-          </div>
-        </section>
-
-        <section class="section section--showreel" id="showreel">
-          <div class="showreel-card reveal">
-            <div class="showreel-card__copy">
-              <p class="section-copy__eyebrow">品牌视频</p>
-              <h2>让家长和孩子先感受到现场，而不是先看长篇说明</h2>
-              <p>这里保留视频氛围表达，后续可以继续替换为更完整的机构 showreel 与活动素材。</p>
+      <section class="about-stage" id="about">
+        <video class="about-stage__video" autoplay loop muted playsinline src="{escape(ABOUT_VIDEO_URL)}"></video>
+        <div class="about-stage__shade"></div>
+        <div class="container about-stage__container">
+          <div class="about-top">
+            <div class="about-title-wrap">
+              <h2 class="about-title font-grotesk">
+                Hello!
+                <br>
+                I'm orbis
+              </h2>
+              <p class="about-accent font-condiment">Orbis</p>
             </div>
-            <div class="showreel-card__media">
-              <video controls playsinline preload="metadata" poster="{escape(homepage_asset_url('media/student-3.webp'))}">
-                <source src="{escape(homepage_asset_url('media/hero-video.mp4'))}" type="video/mp4">
-              </video>
+            <p class="about-intro font-mono">{escape(ABOUT_COPY)}</p>
+          </div>
+          <div class="about-bottom">
+            <div class="about-fade about-fade--left">
+              <p class="font-mono">{escape(ABOUT_COPY)}</p>
+              <p class="font-mono">{escape(ABOUT_COPY)}</p>
+            </div>
+            <div class="about-fade about-fade--right">
+              <p class="font-mono">{escape(ABOUT_COPY)}</p>
+              <p class="font-mono">{escape(ABOUT_COPY)}</p>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section class="section section--contact" id="contact">
-          <div class="section-copy reveal">
-            <p class="section-copy__eyebrow">校区联系</p>
-            <h2>把咨询方式并列摆出来，让线下到校和课程沟通都自然发生</h2>
-            <p>联系方式先用结构化展示承接，后续可以再替换为机构确定的具体微信、电话和校区地址。</p>
+      <section class="collection-stage" id="collection">
+        <div class="container collection-stage__container">
+          <div class="collection-header">
+            <div class="collection-heading">
+              <h2 class="collection-title font-grotesk">Collection of</h2>
+              <div class="collection-title-line">
+                <span class="collection-accent font-condiment">Space</span>
+                <span class="collection-objects font-grotesk">objects</span>
+              </div>
+            </div>
+            <a class="see-all" href="#signal">
+              <div class="see-all__text">
+                <span class="see-all__see font-grotesk">SEE</span>
+                <span class="see-all__stack font-grotesk">
+                  <span>ALL</span>
+                  <span>CREATORS</span>
+                </span>
+              </div>
+              <span class="see-all__full-text">SEE ALL CREATORS</span>
+              <span class="see-all__bar" aria-hidden="true"></span>
+            </a>
           </div>
-          <div class="contact-grid">
-            {_render_contact_items()}
+          <div class="nft-grid">
+            {_render_cards()}
           </div>
-        </section>
-      </main>
-    </div>
+        </div>
+      </section>
 
-    <div class="gallery-modal" aria-hidden="true">
-      <button class="gallery-modal__scrim" type="button" aria-label="关闭预览"></button>
-      <div class="gallery-modal__panel">
-        <button class="gallery-modal__close" type="button" aria-label="关闭">×</button>
-        <img class="gallery-modal__image" src="" alt="">
-        <p class="gallery-modal__caption"></p>
-      </div>
-    </div>
-
-    <script src="{escape(homepage_asset_url('app.js'))}" defer></script>
+      <section class="signal-stage" id="signal">
+        <div class="container signal-stage__container">
+          <div class="signal-stage__media">
+            <video class="signal-stage__video" autoplay loop muted playsinline src="{escape(CTA_VIDEO_URL)}"></video>
+            <div class="signal-copy">
+              <p class="signal-accent font-condiment">Go beyond</p>
+              <h2 class="signal-title font-grotesk">
+                <span class="signal-title__lead">JOIN US.</span>
+                <span>REVEAL WHAT'S HIDDEN.</span>
+                <span>DEFINE WHAT'S NEXT.</span>
+                <span>FOLLOW THE SIGNAL.</span>
+              </h2>
+            </div>
+            <div class="social-rail liquid-glass">
+              {_render_social_rail_items()}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="{escape(script_url)}" defer></script>
   </body>
 </html>
 """
 
 
-__all__ = [
-    "homepage_asset_path",
-    "homepage_asset_url",
-    "render_marketing_homepage",
-]
+__all__ = ["homepage_asset_path", "homepage_asset_url", "render_marketing_homepage"]
