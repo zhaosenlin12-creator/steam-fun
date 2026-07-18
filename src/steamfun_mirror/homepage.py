@@ -13,15 +13,20 @@ GOOGLE_FONTS_URL = (
     "https://fonts.googleapis.com/css2?family=Anton&family=Condiment&family=Noto+Sans+SC:wght@400;600&display=swap"
 )
 
-HERO_VIDEO_FILE = "hero-video.mp4"
-ABOUT_VIDEO_FILE = "showreel-birthday.mp4"
-SIGNAL_VIDEO_FILE = "showreel-dance.mp4"
+HERO_VIDEO_FILE = "hero-cloudfront-20260331-045634.mp4"
+ABOUT_VIDEO_FILE = "about-cloudfront-20260331-151551.mp4"
+SIGNAL_VIDEO_FILE = "signal-cloudfront-20260331-055729.mp4"
 
 CINEMA_ITEMS = [
-    ("showreel-birthday.mp4", "showreel-01.webp", "\u5b66\u5458\u751f\u65e5\u4f1a \u00b7 \u5171\u4eab\u6b22\u4e50\u65f6\u5149"),
-    ("showreel-dance.mp4", "showreel-02.webp", "\u8d5b\u524d\u96c6\u8bad \u00b7 \u673a\u5668\u4eba\u8e48\u821e\u6f14\u7ec3"),
-    ("hero-video.mp4", "campus-01.webp", "\u521b\u5ba2\u5de5\u574a \u00b7 \u4e50\u9ad8\u642d\u5efa\u73b0\u573a"),
+    ("showreel-birthday.mp4", "showreel-01.webp", "学员生日会 · 共享欢乐时光"),
+    ("showreel-dance.mp4", "showreel-02.webp", "乐启舞团 LEQI DANCE CREW"),
+    ("huodong.mp4", "showreel-huodong.webp", "校区活动 · 学员日常实录"),
+    ("camp1.mp4", "showreel-camp1.webp", "特色课 · 夏令营集训"),
+    ("camp2.mp4", "showreel-camp2.webp", "特色课 · VR 沉浸体验"),
+    ("camp3.mp4", "showreel-camp3.webp", "特色课 · WRO 备赛实录"),
+    ("hero-cloudfront-20260331-045634.mp4", "campus-01.webp", "创客工坊 · 乐高搭建现场"),
 ]
+
 
 ABOUT_COPY = (
     "\u4e50\u542f\u4eab\u673a\u5668\u4eba\u4e13\u6ce8 3-16 \u5c81\u5c11\u513f\u79d1\u6280\u7d20\u517b\u6559\u80b2\uff0c"
@@ -49,59 +54,51 @@ SIGNAL_ITEMS = [
 ]
 
 COURSE_PATH = [
-    ("course-lego.png", "\u4e50\u9ad8\u542f\u8499", "3-6 \u5c81 \u00b7 \u79ef\u6728\u642d\u5efa\u4e0e\u7a7a\u95f4\u60f3\u8c61", "Wedo"),
-    ("course-robot.png", "\u673a\u5668\u4eba\u5de5\u7a0b", "7-10 \u5c81 \u00b7 \u7ed3\u6784 \u00b7 \u52a8\u529b \u00b7 \u7f16\u7a0b", "Ev3 / Spike"),
-    ("course-python.png", "Python \u7f16\u7a0b", "10-14 \u5c81 \u00b7 \u7b97\u6cd5 \u00b7 \u9879\u76ee\u5f00\u53d1", "Code \u00b7 AI"),
-    ("course-ai.png", "AI \u521b\u9020", "12 \u5c81+ \u00b7 \u5927\u6a21\u578b \u00b7 \u89c6\u89c9 \u00b7 \u667a\u80fd\u4f53", "LLM \u00b7 Vision"),
+    ("乐高启蒙", "3-6 岁 · 积木搭建与空间想象", "Wedo", ["course-gallery/lego-1.webp", "course-gallery/lego-2.webp", "course-gallery/visual-1.webp", "course-gallery/visual-2.webp"]),
+    ("机器人工程", "7-10 岁 · 结构 · 动力 · 编程", "Ev3 / Spike", ["course-gallery/robot-1.webp", "course-gallery/robot-2.webp", "course-gallery/robot-3.webp", "course-gallery/robot-4.webp", "course-gallery/robot-5.webp"]),
+    ("Python 编程", "10-14 岁 · 算法 · 项目开发", "Code · AI", ["course-gallery/python-1.webp", "course-gallery/python-2.webp", "course-gallery/python-3.webp", "course-gallery/python-4.webp", "course-gallery/python-5.webp", "course-gallery/python-6.webp"]),
+    ("创赛与特色课", "8 岁+ · 图形化 · Python · 航模", "Competition", ["course-gallery/competition-1.webp", "course-gallery/competition-2.webp", "course-gallery/competition-3.webp", "course-gallery/scratch-1.webp", "course-gallery/aircraft-1.webp"]),
 ]
 
 TEACHER_POSTERS = [
-    ("teacher-senlin.png", "\u68ee\u6797\u8001\u5e08", "\u521b\u59cb\u4eba \u00b7 \u8bfe\u7a0b\u603b\u8bbe\u8ba1\u5e08",
-     "https://senlin-c1n.pages.dev/", "\u4e50\u9ad8\u00b7\u673a\u5668\u4eba\u00b7Python\u00b7AI \u5168\u6846\u67b6\u8bfe\u7a0b\u4f53\u7cfb\u8bbe\u8ba1\u8005\uff0c\u8ddf\u968f\u5b69\u5b50\u4e00\u8def\u4ece\u79ef\u6728\u8d70\u5230\u667a\u80fd\u4f53\u3002"),
-    ("teacher-xiang.png", "\u5411\u8001\u5e08", "\u4e50\u9ad8\u542f\u8499\u6559\u7814\u4e3b\u7ba1",
-     "https://xiangmin-lego.pages.dev/", "\u4ece\u4e50\u9ad8\u5927\u9897\u7c92\u5230\u5c0f\u9897\u7c92\u673a\u68b0\uff0c\u8ba9\u8eab\u4f53\u52a8\u4f5c\u4e0e\u7a7a\u95f4\u601d\u8003\u540c\u6b65\u53d1\u751f\u3002"),
-    ("teacher-liu.png", "\u5218\u8001\u5e08", "\u673a\u5668\u4eba\u5de5\u7a0b\u6559\u7814\u7ec4\u957f",
-     "https://zhaoyu-2h8.pages.dev/", "Ev3 / Spike \u673a\u68b0\u3001\u52a8\u529b\u3001\u4f20\u611f\u5668\u4e0e\u7f16\u7a0b\u8de8\u5b66\u79d1\u8005\uff0c\u70b9\u4eae\u5b69\u5b50\u7684\u5de5\u7a0b\u68a6\u3002"),
-    ("teacher-zhou.png", "\u5468\u8001\u5e08", "Python \u7f16\u7a0b\u5bfc\u5e08",
-     "https://main.zhouyufeng-website.pages.dev", "\u4ece\u53d8\u91cf\u5230\u51fd\u6570\uff0c\u4ece\u6e38\u620f\u5230\u5c0f\u5de5\u5177\uff0c\u5e26\u5b69\u5b50\u8d70\u5b8c\u7b2c\u4e00\u4e2a\u771f\u6b63\u7684\u9879\u76ee\u3002"),
-    ("teacher-yang.png", "\u6768\u8001\u5e08", "AI \u79d1\u6280\u7d20\u517b\u5bfc\u5e08",
-     "https://yangtao-c8u.pages.dev/", "\u7528 LLM\u3001\u8ba4\u77e5\u3001\u8bed\u97f3\u6280\u672f\u70b9\u4eae\u5b69\u5b50\u7684\u672a\u6765\u5b66\u4e60\u65b9\u5f0f\u3002"),
-    ("teacher-zhao.png", "\u8d75\u8001\u5e08", "\u8d5b\u4e8b\u4e0e\u8fd0\u8425\u603b\u8d1f\u8d23",
-     "https://zhaoyu-2h8.pages.dev/", "\u5168\u7a0b\u8ddf\u8fdb WRO\u3001\u84dd\u6865\u676f\u3001\u9752\u5c11\u5e74\u673a\u5668\u4eba\u7ade\u8d5b\uff0c\u8d4b\u80fd\u6bcf\u4e00\u4e2a\u4e50\u8da3\u3002"),
+    ("teacher-liu.png", "刘海涵", "乐启享创始人 · 校长", "https://zhaoyu-2h8.pages.dev/", "7 年校区经营与课程管理经验，负责乐启享整体发展与教学品质。"),
+    ("teacher-senlin.png", "赵森林", "副校长 · 合伙人", "https://senlin-c1n.pages.dev/", "资深编程教研，负责课程研发、教师培养与项目式课堂设计。"),
+    ("teacher-xiang.png", "向敏", "资深乐高 + 编程双导师", "https://xiangmin-lego.pages.dev/", "5 年一线教学经验，覆盖乐高搭建、机械结构与编程启蒙。"),
+    ("teacher-zhou.png", "周玉锋", "资深图形化 + 硬件导师", "https://main.zhouyufeng-website.pages.dev", "5 年教学经验，专注图形化编程、硬件控制与机器人项目。"),
+    ("teacher-yang.png", "杨陶", "教学主管", "https://yangtao-c8u.pages.dev/", "6 年教学与教研经验，负责课程实施、课堂质量与教师协作。"),
+    ("teacher-zhao.png", "赵玉", "教务 · 财务", "https://zhaoyu-2h8.pages.dev/", "6 年教务运营经验，负责学员服务、排课与校区日常管理。"),
 ]
 
 HONOR_CARDS = [
-    ("honors/3c4b1c9a2f99fd3aedb86712b709b6a2.webp", "全国青少年机器人竞赛", "一等奖 2024"),
-    ("honors/3eec15d34062bf6ef680de67fb74689f.webp", "WRO 中国总决赛", "亚军 2024"),
-    ("honors/415738909ed8cf9eb1594535c8e3537e.webp", "湖北省创客大赛", "冠军 2023"),
-    ("honors/47cdc27feee3d1ca5a1c2de341202475.webp", "宜昌市科技教育基地", "授牌 2023"),
-    ("honors/4be2d8ed8c0608e5a76aaff44fea0b86.webp", "蓝桥杯青少组", "省赛一等奖 2024"),
-    ("honors/4c034334db22d80ecae7cd665b142e62.webp", "中国电子学会考评", "优秀考点 2024"),
-    ("honors/57b76a27feb1167ff4387a3bcb517eae.webp", "校区授牌", "乐启享 2023"),
-    ("honors/6e43b26aa8d461efbe6bfd108898c4bf.webp", "优秀考点", "全国电子学会"),
-    ("honors/8f227f5af1a8258132ca7a181cb5f8c7.webp", "创赛营一等奖", "Python 创赛"),
-    ("honors/9f553117006eb7273508fce3e103dc84.webp", "机器人主题赛", "蓝桥杯专项"),
-    ("honors/c61cbbd3848e84e3ef947fb05a6ea4e4.webp", "蓝桥杯省赛一等奖", "青少组"),
-    ("honors/cert1.webp", "全国总决赛亚军", "WRO 2024"),
-    ("honors/cert4.webp", "机器人省赛冠军", "湖北赛区"),
-    ("honors/cert5.webp", "营地优秀学员", "2024 夏令营"),
-    ("honors/certer3.webp", "省赛二等奖", "Scratch 创意编程"),
-    ("honors/d3112f025a571be58aa80e2ee73623d2.webp", "市赛金奖", "乐高搭建"),
-    ("honors/ebe03b95c25fec9d8b86d3108992b09f.webp", "学员表彰", "校区荣誉"),
-    ("honors/festival4.webp", "节日活动", "中秋 / 国庆 / 元旦"),
+    ("honors/3c4b1c9a2f99fd3aedb86712b709b6a2.webp", "全国青少年机器人竞赛颁奖合影", "一等奖 2024"),
+    ("honors/3eec15d34062bf6ef680de67fb74689f.webp", "WRCC2025 宜昌锦标赛 BoxBot 小学组 颁奖", "冠军 2025"),
+    ("honors/415738909ed8cf9eb1594535c8e3537e.webp", "WRCC2025 北京锦标赛 三学员合影", "参赛 2025"),
+    ("honors/47cdc27feee3d1ca5a1c2de341202475.webp", "全国青少年机器人竞赛颁奖合影", "获奖 2024"),
+    ("honors/4be2d8ed8c0608e5a76aaff44fea0b86.webp", "第四届乐高机器人大赛颁奖合影", "获奖 2024"),
+    ("honors/4c034334db22d80ecae7cd665b142e62.webp", "WRCC2025 北京锦标赛 乐博士队合影", "参赛 2025"),
+    ("honors/57b76a27feb1167ff4387a3bcb517eae.webp", "WRCC2025 宜昌锦标赛 BoxBot 中学组 颁奖", "冠军 2025"),
+    ("honors/6e43b26aa8d461efbe6bfd108898c4bf.webp", "WRCC2025 北京锦标赛 三学员合影", "参赛 2025"),
+    ("honors/8f227f5af1a8258132ca7a181cb5f8c7.webp", "第四届乐高机器人编程大赛合影", "获奖 2024"),
+    ("honors/9f553117006eb7273508fce3e103dc84.webp", "第四届乐高机器人编程大赛颁奖合影", "获奖 2024"),
+    ("honors/c61cbbd3848e84e3ef947fb05a6ea4e4.webp", "第四届乐高机器人编程大赛颁奖合影", "获奖 2024"),
+    ("honors/cert1.webp", "WRCT2024 世界机器人大赛选拔赛一等奖证书", "森林队3 2024"),
+    ("honors/cert4.webp", "WRCC2024 世界机器人大赛锦标赛冠军证书", "奇思妙想 2024"),
+    ("honors/cert5.webp", "WRCF2023 世界机器人大赛总决赛一等奖证书", "宜昌乐博士一队 2023"),
+    ("honors/certer3.webp", "第八届全国青少年无人机大赛二等奖证书", "冯智远 2024"),
+    ("honors/d3112f025a571be58aa80e2ee73623d2.webp", "WRCC2025 宜昌锦标赛 BoxBot 中学组 颁奖", "冠军 2025"),
+    ("honors/ebe03b95c25fec9d8b86d3108992b09f.webp", "第四届乐高机器人编程大赛颁奖合影", "获奖 2024"),
+    ("honors/festival4.webp", "WRCC2025 宜昌锦标赛 BoxBot 小学组 颁奖", "冠军 2025"),
 ]
 
 CAMPUS_CARDS = [
-    ("home/1.webp", "宜昌旗舰校区", "180 m^2 创客空间"),
-    ("home/2.webp", "乐高搭建教室", "6 间主题工坊"),
-    ("home/3.webp", "机器人实验室", "Ev3 / Spike 全套教具"),
-    ("home/birsiday.webp", "季度生日会", "共享欢乐时光"),
-    ("home/camp2.webp", "星际探索 VR 体验", "沉浸式互动学习"),
-    ("home/classroom3.webp", "乐高搭建教室", "主题工坊 / 项目路演"),
-    ("home/classroom6.webp", "真实课堂", "学员专注 / 老师陪伴"),
-    ("home/dance.webp", "赛队蹈舞", "赛前集训"),
-    ("home/robot-camp.webp", "机器人营地", "主题营 / 项目实战"),
+    ("campus-storefront.webp", "乐启享校区门面", "金岭路校区 · 做有温度的教育"),
+    ("campus-room.webp", "乐高搭建教室", "真实教学空间 · 分组实践区"),
+    ("campus-classroom-3.webp", "机器人课堂", "课堂实拍 · 搭建与调试"),
+    ("campus-classroom-6.webp", "编程教学现场", "真实课堂 · 项目式学习"),
+    ("campus-space-1.webp", "校区活动空间", "开放交流 · 学员展示"),
+    ("campus-space-2.webp", "创客工坊", "器材齐备 · 动手实践"),
 ]
+
 
 STUDENT_FILES = [f"students/student-{i:03d}.webp" for i in range(1, 153)]
 GALLERY_FILES = STUDENT_FILES
@@ -302,54 +299,98 @@ def _render_cinema_stage() -> str:
         '</div>'
     )
 
-def _render_course_card(image: str, title: str, blurb: str, tag: str) -> str:
-    src = homepage_asset_url("media/" + image)
+def _render_course_card(title: str, blurb: str, tag: str, images: list[str]) -> str:
+    slides = []
+    dots = []
+    for index, image in enumerate(images):
+        src = homepage_asset_url("media/" + image)
+        active = " is-active" if index == 0 else ""
+        slides.append(f'<img class="nft-card__image nft-card__slide{active}" data-course-slide loading="lazy" decoding="async" src="{escape(src)}" alt="{escape(title)}课程图片 {index + 1}">')
+        dots.append(f'<button class="nft-card__dot{active}" type="button" data-course-dot="{index}" aria-label="查看第 {index + 1} 张课程图片"></button>')
     return (
-        '<article class="nft-card liquid-glass">'
-        '<div class="nft-card__video-wrap">'
-        f'<img class="nft-card__image" loading="lazy" decoding="async" src="{escape(src)}" alt="{escape(title)}">'
-        f'</div>'
-        '<div class="nft-card__overlay">'
-        '<div class="nft-card__meta">'
-        f'<span class="nft-card__label font-mono">{escape(tag)}</span>'
-        f'<span class="nft-card__score font-grotesk">{escape(title)}</span>'
-        f'<span class="nft-card__blurb font-mono">{escape(blurb)}</span>'
-        f'</div>'
-        f'<a class="nft-card__arrow" href="{escape(BRAND_COURSE_URL)}" target="_blank" rel="noreferrer" aria-label="\u67e5\u770b\u5b8c\u6574\u8bfe\u7a0b\u4f53\u7cfb">'
-        f'{_icon_svg("arrow")}'
-        f'</a>'
-        f'</div>'
-        f'</article>'
+        '<article class="nft-card liquid-glass" data-course-carousel>'
+        '<div class="nft-card__video-wrap">' + ''.join(slides)
+        + '<button class="nft-card__slide-nav nft-card__slide-nav--prev" type="button" data-course-prev aria-label="上一张">&#8249;</button>'
+        + '<button class="nft-card__slide-nav nft-card__slide-nav--next" type="button" data-course-next aria-label="下一张">&#8250;</button>'
+        + '<div class="nft-card__dots">' + ''.join(dots) + '</div></div>'
+        '<div class="nft-card__overlay"><div class="nft-card__meta">'
+        + '<span class="nft-card__label font-mono">' + escape(tag) + ' · ' + str(len(images)) + ' 张课程实拍</span>'
+        + '<span class="nft-card__score font-grotesk">' + escape(title) + '</span>'
+        + '<span class="nft-card__blurb font-mono">' + escape(blurb) + '</span></div>'
+        + '<a class="nft-card__arrow" href="' + escape(BRAND_COURSE_URL) + '" target="_blank" rel="noreferrer" aria-label="查看完整课程体系">'
+        + _icon_svg("arrow") + '</a></div></article>'
     )
-
 
 def _render_cards() -> str:
     return "".join(_render_course_card(*card) for card in COURSE_PATH)
 
 
 def _render_teacher_strip() -> str:
+    """Teacher strip rendered as a horizontal scroller using the
+    same pattern as the honor / campus carousels. The poster
+    image opens the shared image-lightbox on click; the
+    "view personal page" entry is an explicit external link
+    styled as a button."""
     cells = []
     for image, name, role, site, blurb in TEACHER_POSTERS:
-        src = homepage_asset_url("media/" + image)
-        cells.append(
-            (
-                '<article class="teacher-cell liquid-glass">'
-                f'<a class="teacher-cell__link" href="{escape(site)}" target="_blank" rel="noreferrer" aria-label="{escape(name)} \u4e2a\u4eba\u4e3b\u9875">'
-                f'<img class="teacher-cell__image" loading="lazy" decoding="async" src="{escape(src)}" alt="{escape(name)}">'
-                '<div class="teacher-cell__overlay">'
-                f'<span class="teacher-cell__name font-grotesk">{escape(name)}</span>'
-                f'<span class="teacher-cell__role font-mono">{escape(role)}</span>'
-                f'<span class="teacher-cell__blurb font-mono">{escape(blurb)}</span>'
-                '<span class="teacher-cell__cta font-grotesk">'
-                '\u67e5\u770b\u4e2a\u4eba\u4e3b\u9875'
-                '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"></path></svg>'
-                '</span>'
-                '</div>'
-                f'</a>'
-                f'</article>'
-            )
+        src_url = homepage_asset_url("media/" + image)
+        cap = escape(name) + " . " + escape(role)
+        home_label_aria = escape(name) + " " + "个人主页"
+        cell_html = (
+            "<figure class=" + chr(34) + "teacher-cell liquid-glass" + chr(34) + " "
+            + "data-lightbox-src=" + chr(34) + escape(src_url) + chr(34) + " "
+            + "data-lightbox-caption=" + chr(34) + cap + chr(34) + ">"
+            + "<img class=" + chr(34) + "teacher-cell__image" + chr(34)
+            + " loading=" + chr(34) + "lazy" + chr(34)
+            + " decoding=" + chr(34) + "async" + chr(34) + " "
+            + "src=" + chr(34) + escape(src_url) + chr(34)
+            + " alt=" + chr(34) + escape(name) + chr(34) + ">"
+            + "<figcaption class=" + chr(34) + "teacher-cell__overlay" + chr(34) + ">"
+            + "<span class=" + chr(34) + "teacher-cell__name font-grotesk" + chr(34)
+            + ">" + escape(name) + "</span>"
+            + "<span class=" + chr(34) + "teacher-cell__role font-mono" + chr(34)
+            + ">" + escape(role) + "</span>"
+            + "<span class=" + chr(34) + "teacher-cell__blurb font-mono" + chr(34)
+            + ">" + escape(blurb) + "</span>"
+            + "<a class=" + chr(34) + "teacher-cell__home font-grotesk" + chr(34)
+            + " href=" + chr(34) + escape(site) + chr(34)
+            + " target=" + chr(34) + "_blank" + chr(34)
+            + " rel=" + chr(34) + "noreferrer noopener" + chr(34)
+            + " aria-label=" + chr(34) + home_label_aria + chr(34) + ">"
+            + "查看个人主页"
+            + "<svg viewBox=" + chr(34) + "0 0 24 24" + chr(34)
+            + " aria-hidden=" + chr(34) + "true" + chr(34) + ">"
+            + "<path d=" + chr(34) + "m9 6 6 6-6 6" + chr(34) + "></path></svg>"
+            + "</a>"
+            + "</figcaption>"
+            + "</figure>"
         )
-    return '<div class="teacher-strip">' + "".join(cells) + '</div>'
+        cells.append(cell_html)
+    track = "".join(cells)
+    prev_aria = "上一位"
+    next_aria = "下一位"
+    team_label = "位老师 · 师资团队介绍"
+    return (
+        "<div class=" + chr(34) + "teacher-strip" + chr(34)
+        + " id=" + chr(34) + "teacherStrip" + chr(34) + " "
+        + "data-count=" + chr(34) + str(len(TEACHER_POSTERS)) + chr(34) + ">"
+        + "<button class=" + chr(34)
+        + "teacher-strip__nav teacher-strip__nav--prev font-grotesk" + chr(34) + " "
+        + "type=" + chr(34) + "button" + chr(34)
+        + " aria-label=" + chr(34) + prev_aria + chr(34)
+        + ">" + chr(38) + "#8249;</button>"
+        + "<div class=" + chr(34) + "teacher-strip__viewport" + chr(34) + ">"
+        + "<div class=" + chr(34) + "teacher-strip__track" + chr(34)
+        + ">" + track + "</div></div>"
+        + "<button class=" + chr(34)
+        + "teacher-strip__nav teacher-strip__nav--next font-grotesk" + chr(34) + " "
+        + "type=" + chr(34) + "button" + chr(34)
+        + " aria-label=" + chr(34) + next_aria + chr(34)
+        + ">" + chr(38) + "#8250;</button>"
+        + "<span class=" + chr(34) + "teacher-strip__count font-mono" + chr(34)
+        + ">" + str(len(TEACHER_POSTERS)) + " " + team_label + "</span>"
+        + "</div>"
+    )
 
 
 def _render_gallery_wall() -> str:
@@ -367,7 +408,7 @@ def _render_gallery_wall() -> str:
             (
                 f'<figure class="dome-cell" '
                 f'style="--dome-index:{index};--dome-lat:{lat}deg;--dome-lon:{lon}deg;" '
-                f'data-index="{index}" data-lightbox-src="{escape(src)}" data-lightbox-caption="学员作品 {index + 1}">'
+                f'data-index="{index}" data-lightbox-src="{escape(src)}" data-lightbox-caption="学员风采 {index + 1}">'
                 f'<img loading="lazy" decoding="async" src="{escape(src)}" alt="\u5b66\u5458\u4f5c\u54c1 {index + 1}">'
                 f'</figure>'
             )
@@ -414,7 +455,7 @@ def _render_campus_row() -> str:
     # Campus carousel: auto-scroll horizontally; hover pauses; click any card to open lightbox.
     cells = []
     for image, title, sub in CAMPUS_CARDS:
-        src_url = '/_site/courses/images/' + image
+        src_url = homepage_asset_url('media/' + image)
         cells.append(
             (
                 '<figure class="campus-card liquid-glass" data-lightbox-src="' + escape(src_url) + '" data-lightbox-caption="' + escape(title + ' . ' + sub) + '">'
@@ -469,13 +510,17 @@ def render_marketing_homepage(request: Request) -> str:
     parts.append('<link rel="stylesheet" href="' + escape(stylesheet_url) + '">')
     parts.append('</head><body><main class="page">')
     parts.append('<section class="hero-stage" id="hero">')
-    parts.append('<img class="hero-stage__image" src="/_site/courses/images/home/camp2.webp" alt="乐启享机器人 · 从乐高启蒙到 AI 创造" decoding="async">')
+    hero_video_url = homepage_asset_url('media/' + HERO_VIDEO_FILE)
+    parts.append('<video class="hero-stage__video" autoplay muted loop playsinline '
+                  'poster="/_site/courses/images/home/camp2.webp" '
+                  'preload="metadata" aria-hidden="true">')
+    parts.append('<source src="' + escape(hero_video_url) + '" type="video/mp4">')
+    parts.append('</video>')
     parts.append('<div class="hero-stage__shade"></div>')
     parts.append('<div class="container hero-stage__container">')
     parts.append('<header class="hero-header">')
     parts.append('<a class="hero-logo font-grotesk" href="#hero">')
-    parts.append('<span class="hero-logo__mark" aria-hidden="true"></span>')
-    parts.append('<span>\u4e50\u542f\u4eab</span>')
+    parts.append('<img class="hero-logo__image" src="' + homepage_asset_url('media/brand-logo.png') + '" alt="\u4e50\u542f\u4eab">')
     parts.append('</a>')
     parts.append('<nav class="hero-nav liquid-glass" aria-label="Primary">' + nav_html + '</nav>')
     parts.append('</header>')
@@ -547,7 +592,7 @@ def render_marketing_homepage(request: Request) -> str:
         + '<span class="font-mono site-footer__tagline">从乐高启蒙 · 到 AI 创造</span>'
         + '</div>'
         + '<div class="site-footer__contact font-mono">'
-        + '<span>微信：lqxszls</span>'
+        + '<span>微信：LQXSZLS</span>'
         + '<span>电话：18164173640</span>'
         + '<span>校区：宜昌市猇亭区金岭路59-1号</span>'
         + '</div>'

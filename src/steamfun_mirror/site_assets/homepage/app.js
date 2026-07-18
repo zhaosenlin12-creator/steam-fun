@@ -110,6 +110,7 @@
 
   initCarousel('#honorCarousel', '.honor-carousel__viewport', '.honor-carousel__track', '.honor-carousel__nav--prev', '.honor-carousel__nav--next');
   initCarousel('#campusCarousel', '.campus-carousel__viewport', '.campus-carousel__track', '.campus-carousel__nav--prev', '.campus-carousel__nav--next');
+  initCarousel('#teacherStrip', '.teacher-strip__viewport', '.teacher-strip__track', '.teacher-strip__nav--prev', '.teacher-strip__nav--next');
 
   // -- dome rAF 3D sphere ----------------------------------------------
   const dome = document.getElementById('domeWall');
@@ -194,4 +195,27 @@
   if (imageLightbox) {
     imageLightbox.addEventListener('click', (e) => { if (e.target === imageLightbox) closeImageLightbox(); });
   }
+  // Course cards keep the original size; only their image layer rotates.
+  document.querySelectorAll('[data-course-carousel]').forEach((carousel) => {
+    const slides = Array.from(carousel.querySelectorAll('[data-course-slide]'));
+    const dots = Array.from(carousel.querySelectorAll('[data-course-dot]'));
+    const prev = carousel.querySelector('[data-course-prev]');
+    const next = carousel.querySelector('[data-course-next]');
+    if (slides.length < 2) return;
+    let index = 0;
+    let timer = 0;
+    const show = (target) => {
+      index = (target + slides.length) % slides.length;
+      slides.forEach((slide, i) => slide.classList.toggle('is-active', i === index));
+      dots.forEach((dot, i) => dot.classList.toggle('is-active', i === index));
+    };
+    const start = () => { clearInterval(timer); timer = window.setInterval(() => show(index + 1), 4200); };
+    prev?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); show(index - 1); start(); });
+    next?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); show(index + 1); start(); });
+    dots.forEach((dot, i) => dot.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); show(i); start(); }));
+    carousel.addEventListener('mouseenter', () => clearInterval(timer));
+    carousel.addEventListener('mouseleave', start);
+    start();
+  });
+
 })();
