@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 
 from .config import BASE_URL, STUDENT_LOGIN_PATH, TEACHER_LOGIN_PATH
 from .course_offline import build_course_asset_not_local_response, lookup_course_archive_asset
+from .homepage import homepage_asset_path, render_marketing_homepage
 from .rewrite import is_same_origin_host, rewrite_external_urls
 from .storage import MirrorStore
 
@@ -13316,6 +13317,20 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
             "assets": asset_count,
             "allow_live_proxy": allow_live_proxy,
         }
+
+    @app.get("/")
+    def marketing_homepage(request: Request) -> Response:
+        return Response(
+            content=render_marketing_homepage(request).encode("utf-8"),
+            media_type="text/html",
+        )
+
+    @app.get("/_site/homepage/{asset_path:path}")
+    def homepage_static_asset(asset_path: str) -> Response:
+        candidate = homepage_asset_path(asset_path)
+        if candidate is None:
+            return Response(status_code=404)
+        return _static_response_or_404(candidate, expected_asset_path=asset_path)
 
     @app.post(TEACHER_LOGIN_PATH)
     async def teacher_login(request: Request) -> Response:
