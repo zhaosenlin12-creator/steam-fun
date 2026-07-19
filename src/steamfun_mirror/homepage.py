@@ -591,13 +591,15 @@ def render_marketing_homepage(request: Request) -> str:
     parts.append('<div class="signal-copy"><p class="signal-accent font-condiment">\u52a0\u5165\u4e50\u542f\u4eab</p>')
     parts.append('<h2 class="signal-title font-grotesk"><span class="signal-title__lead">\u9884\u7ea6\u4f53\u9a8c\u8bfe.</span><span>\u8d70\u8fdb\u4e50\u9ad8\u5de5\u574a.</span><span>\u8ba9\u5b69\u5b50\u4eb2\u624b\u521b\u9020.</span><span>\u627e\u5230\u5c5e\u4e8e\u4ed6\u7684\u4fe1\u53f7.</span></h2></div>')
     parts.append('<aside class="signal-qr-card liquid-glass" aria-label="扫码预约体验课">'
-        + '<p class="signal-qr-card__title font-condiment">\u52a0\u5165\u4e50\u542f\u4eab</p>'
-        + '<p class="signal-qr-card__lede font-mono">\u626b\u7801\u9884\u7ea6\u4f53\u9a8c\u8bfe</p>'
+        + '<p class="signal-qr-card__title font-condiment">\u4e50\u542f\u4eab</p>'
+        + '<p class="signal-qr-card__lede font-mono">\u626b\u7801 / \u5bfc\u822a / \u62e8\u6253</p>'
         + '<figure class="signal-qr-card__figure">'
         + '<img class="signal-qr-card__image" src="' + homepage_asset_url('media/qr-liuteacher.png') + '" alt="\u5218\u8001\u5e08\u5fae\u4fe1\u4e8c\u7ef4\u7801">'
-        + '<figcaption class="signal-qr-card__caption font-mono">\u5218\u8001\u5e08 \u00b7 \u5fae\u4fe1 18164173640</figcaption>'
         + '</figure>'
-        + '<p class="signal-qr-card__phone font-grotesk">\u6216\u62e8\u6253 <a href="tel:18164173640">18164173640</a></p>'
+        + '<a class="signal-qr-card__map" target="_blank" rel="noreferrer" href="https://uri.amap.com/marker?markers=110.708018,30.58667,%E4%B9%90%E5%90%AF%E4%BA%AB%E6%9C%BA%E5%99%A8%E4%BA%BA">'
+        + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c-4 0-7 3-7 7 0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"></path><circle cx="12" cy="9" r="2.5"></circle></svg>'
+        + '<span class="font-mono">\u91d1\u5cad\u8def59-1\u53f7 \u00b7 \u7307\u4ead\u533a</span></a>'
+        + '<a class="signal-qr-card__phone font-grotesk" href="tel:18164173640">\u62e8\u6253 18164173640</a>'
         + '</aside></div></div></section>')
     parts.append('<footer class="site-footer">'
         + '<div class="container site-footer__container">'

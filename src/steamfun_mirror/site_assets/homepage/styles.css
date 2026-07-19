@@ -116,7 +116,6 @@ svg {
 
 .hero-stage {
   border-radius: 0 0 32px 32px;
-  overflow: hidden;
 }
 
 .hero-stage__video,
@@ -159,7 +158,27 @@ svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  padding: 0.6rem 1rem;
+  margin: 0 -1rem;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  background: linear-gradient(180deg, rgba(2, 8, 24, 0.7) 0%, rgba(2, 8, 24, 0.45) 100%);
+}
+@media (max-width: 720px) {
+  .hero-header {
+    padding: 0.5rem 0.5rem;
+  }
+  .hero-logo {
+    flex: 0 0 auto;
+  }
+  .hero-logo__image {
+    height: 2.4rem !important;
+    width: auto !important;
+  }
 }
 
 .hero-logo {
@@ -170,12 +189,21 @@ svg {
 }
 
 .hero-nav {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(1rem, 2vw, 2rem);
-  padding: 1.5rem 3.25rem;
+  gap: clamp(0.5rem, 1.5vw, 2rem);
+  padding: 0.85rem 1.5rem;
   border-radius: 28px;
+}
+@media (max-width: 720px) {
+  .hero-nav {
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
+  }
+  .nav-link {
+    font-size: 0.7rem;
+  }
 }
 
 .nav-link {
@@ -183,6 +211,7 @@ svg {
   z-index: 1;
   font-size: 0.8125rem;
   letter-spacing: 0.08em;
+  white-space: nowrap;
   transition: color 180ms ease;
 }
 
@@ -1771,11 +1800,13 @@ body {
 /* Signal QR card (replaces social-rail inside the stage). */
 .signal-qr-card {
   position: absolute;
-  top: 32px;
-  right: 32px;
-  z-index: 4;
+  left: 26%;
+  bottom: 18%;
+  top: auto;
+  right: auto;
+  z-index: 5;
   padding: 22px 22px 20px;
-  width: 220px;
+  width: 240px;
   border-radius: 22px;
   display: flex;
   flex-direction: column;
@@ -1833,5 +1864,10 @@ body {
   .signal-qr-card {
     position: static;
     margin: 24px auto 0;
+    width: min(280px, calc(100% - 32px));
+  }
+  .signal-qr-card__image {
+    width: 140px;
+    height: 140px;
   }
 }
