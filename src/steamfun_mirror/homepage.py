@@ -19,7 +19,7 @@ SIGNAL_VIDEO_FILE = "signal-cloudfront-20260331-055729.mp4"
 
 CINEMA_ITEMS = [
     ("showreel-birthday.mp4", "showreel-01.webp", "学员生日会 · 共享欢乐时光"),
-    ("showreel-dance.mp4", "showreel-02.webp", "乐启舞团 LEQI DANCE CREW"),
+    ("ai-camp-clip.mp4", "showreel-02.webp", "特色课 · AI 创赛营课程片段"),
     ("huodong.mp4", "showreel-huodong.webp", "校区活动 · 学员日常实录"),
     ("camp1.mp4", "showreel-camp1.webp", "特色课 · 夏令营集训"),
     ("camp2.mp4", "showreel-camp2.webp", "特色课 · VR 沉浸体验"),
@@ -93,6 +93,11 @@ HONOR_CARDS = [
 CAMPUS_CARDS = [
     ("campus-storefront.webp", "乐启享校区门面", "金岭路校区 · 做有温度的教育"),
     ("campus-room.webp", "乐高搭建教室", "真实教学空间 · 分组实践区"),
+    ("campus-01.webp", "创客工坊 · 设备齐备", "真实工坊 · 独立操作台"),
+    ("campus-02.webp", "乐高搭建教室", "搭建与调试 · 项目实践"),
+    ("campus-03.webp", "竞赛集训空间", "竞赛集训 · 团队协作"),
+    ("campus-04.webp", "编程课堂", "Scratch / Python / C++ 教学现场"),
+    ("campus-05.webp", "学员作品展区", "作品发表 · 公开展示"),
     ("campus-classroom-3.webp", "机器人课堂", "课堂实拍 · 搭建与调试"),
     ("campus-classroom-6.webp", "编程教学现场", "真实课堂 · 项目式学习"),
     ("campus-space-1.webp", "校区活动空间", "开放交流 · 学员展示"),
@@ -527,7 +532,7 @@ def render_marketing_homepage(request: Request) -> str:
     parts.append('<div class="hero-body">')
     parts.append('<div class="hero-copy">')
     parts.append('<span class="hero-eyebrow font-condiment">\u4e50\u542f\u4eab \u00b7 STEAM \u6559\u80b2</span>')
-    parts.append('<h1 class="hero-title font-grotesk">\u4ece\u4e50\u9ad8\u542f\u8499<br>\u5230 <span class="hero-title__ai">AI</span> \u521b\u9020</h1>')
+    parts.append('<h1 class="hero-title font-grotesk" id="heroTitle"><span class="hero-title__row"><span class="hero-title__char" aria-hidden="true">从</span><span class="hero-title__char" aria-hidden="true">乐</span><span class="hero-title__char" aria-hidden="true">高</span><span class="hero-title__char" aria-hidden="true">启</span><span class="hero-title__char" aria-hidden="true">蒙</span></span><span class="hero-title__row"><span class="hero-title__space" aria-hidden="true">&nbsp;</span>\u5230 <span class="hero-title__ai">AI</span> <span class="hero-title__char" aria-hidden="true">创</span><span class="hero-title__char" aria-hidden="true">造</span></span></h1>')
     parts.append('<p class="hero-accent font-condiment">\u4e50\u542f\u4eab\u673a\u5668\u4eba</p>')
     parts.append('<p class="hero-tagline font-mono">' + subtitle + '</p>')
     parts.append('<div class="hero-typewriter" aria-live="polite">' + '<span id="hero-typewriter-text" class="hero-typewriter__text font-mono"></span>' + '<span class="hero-typewriter__cursor" aria-hidden="true"></span></div>')
@@ -585,7 +590,15 @@ def render_marketing_homepage(request: Request) -> str:
     parts.append('<video class="signal-stage__video" autoplay loop muted playsinline src="' + escape(signal_video_url) + '"></video>')
     parts.append('<div class="signal-copy"><p class="signal-accent font-condiment">\u52a0\u5165\u4e50\u542f\u4eab</p>')
     parts.append('<h2 class="signal-title font-grotesk"><span class="signal-title__lead">\u9884\u7ea6\u4f53\u9a8c\u8bfe.</span><span>\u8d70\u8fdb\u4e50\u9ad8\u5de5\u574a.</span><span>\u8ba9\u5b69\u5b50\u4eb2\u624b\u521b\u9020.</span><span>\u627e\u5230\u5c5e\u4e8e\u4ed6\u7684\u4fe1\u53f7.</span></h2></div>')
-    parts.append('<div class="social-rail liquid-glass">' + rail_html + '</div></div></div></section>')
+    parts.append('<aside class="signal-qr-card liquid-glass" aria-label="扫码预约体验课">'
+        + '<p class="signal-qr-card__title font-condiment">\u52a0\u5165\u4e50\u542f\u4eab</p>'
+        + '<p class="signal-qr-card__lede font-mono">\u626b\u7801\u9884\u7ea6\u4f53\u9a8c\u8bfe</p>'
+        + '<figure class="signal-qr-card__figure">'
+        + '<img class="signal-qr-card__image" src="' + homepage_asset_url('media/qr-liuteacher.png') + '" alt="\u5218\u8001\u5e08\u5fae\u4fe1\u4e8c\u7ef4\u7801">'
+        + '<figcaption class="signal-qr-card__caption font-mono">\u5218\u8001\u5e08 \u00b7 \u5fae\u4fe1 18164173640</figcaption>'
+        + '</figure>'
+        + '<p class="signal-qr-card__phone font-grotesk">\u6216\u62e8\u6253 <a href="tel:18164173640">18164173640</a></p>'
+        + '</aside></div></div></section>')
     parts.append('<footer class="site-footer">'
         + '<div class="container site-footer__container">'
         + '<div class="site-footer__brand">'

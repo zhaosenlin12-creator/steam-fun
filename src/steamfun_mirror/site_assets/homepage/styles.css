@@ -211,6 +211,17 @@ svg {
   letter-spacing: 0.02em;
 }
 
+.hero-title__char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.4em);
+  transition: opacity 360ms ease, transform 420ms ease;
+}
+.hero-title__row { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.04em; }
+.hero-title__space { display: inline-block; width: 0.6em; }
+html.is-loaded .hero-title__char { /* JS toggles -- fallback friendly */ }
+
+
 .hero-title__ai {
   font-size: 0.72em;
   font-style: italic;
@@ -1756,4 +1767,71 @@ body {
   .signal-accent { margin-left: -7rem; margin-bottom: .4rem; }
   .social-rail { left: 8%; bottom: 16%; }
   .social-rail__button { width: 19rem; }
+}
+/* Signal QR card (replaces social-rail inside the stage). */
+.signal-qr-card {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  z-index: 4;
+  padding: 22px 22px 20px;
+  width: 220px;
+  border-radius: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #e7f1ff;
+  background: rgba(10, 18, 36, 0.62);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.38);
+}
+.signal-qr-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #8be5ff;
+  letter-spacing: 0.06em;
+}
+.signal-qr-card__lede {
+  margin: 4px 0 12px;
+  font-size: 0.75rem;
+  color: rgba(231, 241, 255, 0.78);
+  letter-spacing: 0.02em;
+}
+.signal-qr-card__figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.signal-qr-card__image {
+  width: 156px;
+  height: 156px;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 8px;
+  object-fit: contain;
+}
+.signal-qr-card__caption {
+  font-size: 0.7rem;
+  color: rgba(231, 241, 255, 0.7);
+  margin-top: 4px;
+}
+.signal-qr-card__phone {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  color: rgba(231, 241, 255, 0.85);
+}
+.signal-qr-card__phone a {
+  color: #ffffff;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+@media (max-width: 900px) {
+  .signal-qr-card {
+    position: static;
+    margin: 24px auto 0;
+  }
 }

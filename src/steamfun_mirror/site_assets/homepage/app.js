@@ -261,4 +261,26 @@
     };
     tick();
   }
+
+  // -- hero title per-character typing -----------------------------
+  (function () {
+    var title = document.getElementById('heroTitle');
+    if (!title) return;
+    var chars = title.querySelectorAll('.hero-title__char');
+    if (!chars.length) return;
+    chars.forEach(function (c) { c.style.opacity = '0'; c.style.transform = 'translateY(0.35em)'; });
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var stepDelay = reduced ? 0 : 130;
+    function revealAll() {
+      chars.forEach(function (c) { c.style.opacity = '1'; c.style.transform = 'none'; });
+    }
+    if (reduced) { revealAll(); return; }
+    chars.forEach(function (c, idx) {
+      window.setTimeout(function () {
+        c.style.transition = 'opacity 360ms ease, transform 420ms ease';
+        c.style.opacity = '1';
+        c.style.transform = 'none';
+      }, idx * stepDelay);
+    });
+  })();
 })();
