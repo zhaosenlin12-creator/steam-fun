@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https: data:; style-src 'self' 'unsafe-inline' https:; img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self' https:; media-src 'self' https: data:; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <title>课程详情 - 乐启享编程教育</title>
+  <meta name="description" content="乐启享编程教育课程详情，包含完整课程大纲、学期内容和学习目标。">
+  <link rel="icon" href="images/logo11.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;500;700&family=Poppins:wght@700;800;900&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/courses.css?v=a084a83d">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="courses-nav">
+    <a href="/" class="nav-logo">
+      <img src="images/logo11.png" alt="乐启享">
+      <div class="nav-logo-text">
+        <span class="text-blue">乐创未来</span><br>
+        <span class="text-orange">启享编程</span>
+      </div>
+    </a>
+    <button class="menu-toggle" onclick="toggleMenu()">
+      <i class="fas fa-bars"></i>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/">首页</a></li>
+      <li><a href="courses.html">课程体系</a></li>
+      <li><a href="courses.html#routes">学习路线</a></li>
+      <li><a href="courses.html#booking">预约体验</a></li>
+      <li><a href="/#signal">联系我们</a></li>
+      <li><a href="courses.html#booking" class="nav-cta-btn"><i class="fas fa-calendar-check"></i> 免费体验课</a></li>
+    </ul>
+  </nav>
+
+  <!-- Detail Hero (dynamic) -->
+  <section class="detail-hero" id="detailHero">
+    <div class="breadcrumb">
+      <a href="courses.html"><i class="fas fa-arrow-left" style="margin-right:4px"></i>课程体系</a> / <span id="detailTitle">课程名称</span>
+    </div>
+    <h1 id="detailTitle2"></h1>
+    <div class="detail-meta">
+      <span><i class="fas fa-user-graduate"></i> <span id="detailAge"></span></span>
+    </div>
+    <div class="detail-core-goal" id="detailDesc" style="margin-top:16px"></div>
+  </section>
+
+  <!-- Tab Navigation (dynamic) -->
+  <div class="detail-tabs" id="detailTabs"></div>
+
+  <!-- Tab Content (dynamic) -->
+  <div id="detailContent"></div>
+
+  <!-- Bottom CTA -->
+  <section class="detail-cta">
+    <h3>对这门课程感兴趣？</h3>
+    <p>预约一节免费体验课，让孩子亲身感受</p>
+    <a href="courses.html#booking" class="detail-cta-btn">
+      <i class="fas fa-calendar-check"></i> 预约免费体验课
+    </a>
+  </section>
+
+  <!-- Footer -->
+  <footer class="courses-footer">
+    <div class="footer-links-row">
+      <a href="/">首页</a>
+      <a href="courses.html">课程体系</a>
+      <a href="/#signal">联系我们</a>
+    </div>
+    <p>&copy; 2025 乐启享 版权所有 | <a href="https://beian.miit.gov.cn/" target="_blank" rel="nofollow">鄂ICP备2025149404号-1</a></p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/course-data.js?v=55f793c7"></script>
+  <script src="js/courses.js?v=eaf64648"></script>
+  <script>
+    /* #15 Fix: iOS Safari 跨页锚链接偏差修复 */
+    document.addEventListener('DOMContentLoaded', function() {
+      if (location.hash) {
+        setTimeout(function() {
+          var el = document.querySelector(location.hash);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
+    });
+  </script>
+  <script>
+    // Update page title dynamically
+    document.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      if (id && typeof COURSE_DATA !== 'undefined') {
+        const stage = COURSE_DATA.stages.find(s => s.id === id);
+        if (stage) {
+          document.title = `${stage.name} - 乐启享编程教育`;
+          const t2 = document.getElementById('detailTitle2');
+          if (t2) t2.textContent = stage.name;
+        }
+      }
+    });
+  </script>
+</body>
+</html>

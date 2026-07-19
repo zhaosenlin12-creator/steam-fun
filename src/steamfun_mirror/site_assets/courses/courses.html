@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https: data:; style-src 'self' 'unsafe-inline' https:; img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self' https:; media-src 'self' https: data:; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <title>课程体系 - 乐启享编程教育 | 3岁到16岁的成长旅程</title>
+  <meta name="description" content="乐启享编程教育完整课程体系：乐高大颗粒、小颗粒机械、WeDo编程启蒙、Scratch图形化编程、Python、C++、AI创赛营，覆盖3岁到九年级。">
+  <meta name="keywords" content="乐启享,编程教育,乐高课程,Scratch,Python,C++,AI创赛营,宜昌编程">
+  <meta property="og:title" content="课程体系 - 乐启享编程教育">
+  <meta property="og:description" content="从3岁到16岁的完整编程成长旅程，7大课程阶段系统进阶">
+  <meta property="og:url" content="https://codebona.cn/courses.html">
+  <link rel="icon" href="images/logo11.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;500;700&family=Poppins:wght@700;800;900&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/courses.css?v=a084a83d">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="courses-nav">
+    <a href="/" class="nav-logo">
+      <img src="images/logo11.png" alt="乐启享">
+      <div class="nav-logo-text">
+        <span class="text-blue">乐创未来</span><br>
+        <span class="text-orange">启享编程</span>
+      </div>
+    </a>
+    <button class="menu-toggle" onclick="toggleMenu()">
+      <i class="fas fa-bars"></i>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/">首页</a></li>
+      <li><a href="#courses-grid" class="active">课程体系</a></li>
+      <li><a href="#routes">学习路线</a></li>
+      <li><a href="#booking">预约体验</a></li>
+      <li><a href="/#signal">联系我们</a></li>
+      <li><a href="#booking" class="nav-cta-btn"><i class="fas fa-calendar-check"></i> 免费体验课</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="courses-hero">
+    <!-- 浮动装饰元素 -->
+    <div class="hero-floating-decor">
+      <i class="fas fa-cog float-icon float-1"></i>
+      <i class="fas fa-code float-icon float-2"></i>
+      <i class="fas fa-puzzle-piece float-icon float-3"></i>
+      <i class="fas fa-robot float-icon float-4"></i>
+      <i class="fas fa-lightbulb float-icon float-5"></i>
+      <i class="fas fa-rocket float-icon float-6"></i>
+    </div>
+    <div class="hero-badge"><i class="fas fa-graduation-cap"></i> 乐启享 · 完整课程体系</div>
+    <h1 class="hero-title-glow">3岁到16岁的编程成长旅程</h1>
+    <p class="hero-subtitle">从乐高积木到AI编程，7大课程阶段系统进阶<br>专业系统 · 温暖陪伴 · 因材施教</p>
+
+    <!-- Hero Stats -->
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat-num">7</span>
+        <span class="hero-stat-label">大课程体系</span>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+      <span class="hero-stat-num">300+</span>
+        <span class="hero-stat-label">精心课时</span>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">3-16</span>
+        <span class="hero-stat-label">岁全覆盖</span>
+      </div>
+    </div>
+
+    <!-- Growth Timeline -->
+    <div class="hero-timeline" id="heroTimeline"></div>
+    <!-- Hero底部波浪 -->
+    <div class="hero-wave">
+      <svg viewBox="0 0 1440 100" preserveAspectRatio="none"><path d="M0,60 C360,120 720,0 1440,60 L1440,100 L0,100 Z" fill="#fdf8f3"/></svg>
+    </div>
+  </section>
+
+  <!-- Course Cards Section -->
+  <section class="section-container" id="courses-grid">
+    <div class="section-header">
+      <h2><svg class="section-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg> 全阶段课程体系</h2>
+      <p>点击卡片查看完整课程内容</p>
+    </div>
+    <div class="course-cards" id="courseCards"></div>
+  </section>
+
+  <!-- 教学实拍展示条 -->
+  <section class="gallery-section">
+    <div class="section-header">
+      <h2><svg class="section-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> 真实课堂</h2>
+      <p>每一节课都是孩子们的精彩时刻</p>
+    </div>
+    <div class="gallery-scroll">
+      <div class="gallery-track">
+        <div class="gallery-item"><img src="images/classroom3.webp" alt="课堂实拍" loading="lazy"><span>动手搭建中</span></div>
+        <div class="gallery-item"><img src="images/classroom6.webp" alt="课堂实拍" loading="lazy"><span>编程学习中</span></div>
+        <div class="gallery-item"><img src="images/classroom7.webp" alt="课堂实拍" loading="lazy"><span>小组合作</span></div>
+        <div class="gallery-item"><img src="images/classroom8.webp" alt="课堂实拍" loading="lazy"><span>作品展示</span></div>
+        <div class="gallery-item"><img src="images/camp2.webp" alt="活动实拍" loading="lazy"><span>集训营活动</span></div>
+        <div class="gallery-item"><img src="images/innovation3.webp" alt="创新活动" loading="lazy"><span>创新实践</span></div>
+        <!-- 重复一组实现无缝滚动 -->
+        <div class="gallery-item"><img src="images/classroom3.webp" alt="课堂实拍" loading="lazy"><span>动手搭建中</span></div>
+        <div class="gallery-item"><img src="images/classroom6.webp" alt="课堂实拍" loading="lazy"><span>编程学习中</span></div>
+        <div class="gallery-item"><img src="images/classroom7.webp" alt="课堂实拍" loading="lazy"><span>小组合作</span></div>
+        <div class="gallery-item"><img src="images/classroom8.webp" alt="课堂实拍" loading="lazy"><span>作品展示</span></div>
+        <div class="gallery-item"><img src="images/camp2.webp" alt="活动实拍" loading="lazy"><span>集训营活动</span></div>
+        <div class="gallery-item"><img src="images/innovation3.webp" alt="创新活动" loading="lazy"><span>创新实践</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 波浪分隔 -->
+  <div class="wave-divider">
+    <svg viewBox="0 0 1440 80" preserveAspectRatio="none"><path d="M0,40 C480,100 960,0 1440,40 L1440,80 L0,80 Z" fill="#fff"/></svg>
+  </div>
+
+  <!-- Learning Routes Section -->
+  <section class="routes-section" id="routes">
+    <div class="section-container">
+      <div class="section-header">
+        <h2><svg class="section-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 学习路线规划</h2>
+        <p>两条路线，适配不同目标的学员</p>
+      </div>
+      <div class="route-tabs">
+        <button class="route-tab active" data-route="basic">基础路线</button>
+        <button class="route-tab" data-route="advanced">高阶路线</button>
+      </div>
+      <div class="route-content active" id="route-basic"></div>
+      <div class="route-content" id="route-advanced"></div>
+    </div>
+  </section>
+
+  <!-- 波浪分隔 -->
+  <div class="wave-divider wave-flip">
+    <svg viewBox="0 0 1440 80" preserveAspectRatio="none"><path d="M0,40 C480,100 960,0 1440,40 L1440,80 L0,80 Z" fill="#fff"/></svg>
+  </div>
+
+  <!-- AI Section -->
+  <section class="ai-section">
+    <div class="section-container">
+      <div class="section-header">
+        <h2><svg class="section-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> AI编程融合教学</h2>
+        <p>让每个孩子掌握AI时代的核心竞争力</p>
+      </div>
+      <div class="ai-features">
+        <div class="ai-feature-card">
+          <i class="fas fa-brain"></i>
+          <h3>AI辅助创作</h3>
+          <p>结合Trae等AI工具，让学生在AI辅助下高效完成创意项目，体验"人机协作"的开发模式。</p>
+        </div>
+        <div class="ai-feature-card">
+          <i class="fas fa-project-diagram"></i>
+          <h3>软硬件穿插</h3>
+          <p>Python课程穿插树莓派/ESP32硬件编程，Scratch课程联动micro:bit，理论与实践结合。</p>
+        </div>
+        <div class="ai-feature-card">
+          <i class="fas fa-trophy"></i>
+          <h3>竞赛导向</h3>
+          <p>课程对接蓝桥杯、信息素养大赛、CSP/NOIP等主流赛事，每个阶段都有明确的竞赛目标。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Booking CTA Section -->
+  <section class="booking-section" id="booking">
+    <div class="section-container">
+      <div class="section-header">
+        <h2><svg class="section-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ff6b00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 01-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg> 预约<span style="color: var(--secondary);">免费</span>体验课</h2>
+        <p>让孩子亲身体验编程的乐趣</p>
+      </div>
+      <div class="booking-card">
+        <h3><i class="fas fa-gift" style="color: var(--secondary); margin-right: 6px;"></i>现在预约，赠送一节体验课</h3>
+        <p>填写信息后，我们将在24小时内与您联系安排体验</p>
+        <form class="booking-form" id="courseBookingForm">
+          <input type="text" id="bookingName" placeholder="您的姓名" required>
+          <input type="tel" id="bookingPhone" placeholder="联系电话" required>
+          <textarea id="bookingMessage" placeholder="留言内容（如：孩子年龄、感兴趣的课程等）"></textarea>
+          <button type="submit" class="booking-submit">
+            <i class="fas fa-paper-plane" style="margin-right: 6px;"></i>提交预约
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="courses-footer">
+    <div class="footer-links-row">
+      <a href="/">首页</a>
+      <a href="/#about">关于我们</a>
+      <a href="courses.html">课程体系</a>
+      <a href="/#collection">精彩活动</a>
+      <a href="/#signal">联系我们</a>
+    </div>
+    <p>&copy; 2025-2026 乐启享 版权所有 | <a href="https://beian.miit.gov.cn/" target="_blank" rel="nofollow" style="color: #999; text-decoration: none;">鄂ICP备2025149404号-1</a></p>
+    <p style="margin-top: 8px;">地址：宜昌市猇亭区金岭路59-1号 | 电话：18164173640</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/course-data.js?v=55f793c7"></script>
+  <script src="js/courses.js?v=eaf64648"></script>
+<script>
+/* #15 Fix: iOS Safari 跨页锚链接偏差修复 */
+document.addEventListener('DOMContentLoaded', function() {
+  if (location.hash) {
+    setTimeout(function() {
+      var el = document.querySelector(location.hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+  }
+});
+</script>
+</body>
+</html>

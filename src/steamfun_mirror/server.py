@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 
 from .config import BASE_URL, STUDENT_LOGIN_PATH, TEACHER_LOGIN_PATH
 from .course_offline import build_course_asset_not_local_response, lookup_course_archive_asset
+from .homepage import COURSES_ASSET_ROOT, courses_asset_path, homepage_asset_path, render_marketing_homepage
 from .rewrite import is_same_origin_host, rewrite_external_urls
 from .storage import MirrorStore
 
@@ -4696,67 +4697,41 @@ def _render_local_admin_login_page(request: Request) -> str:
         or ""
     ).strip()
     redirect_json = json.dumps(redirect_value, ensure_ascii=False)
-    return (
-        "<!doctype html>"
-        "<html lang='zh-CN'>"
-        "<head>"
-        "<meta charset='utf-8'>"
-        "<meta name='viewport' content='width=device-width, initial-scale=1'>"
-        "<title>STEAM.FUN Local Admin Login</title>"
-        "<style>"
-        "html,body{height:100%;margin:0;font-family:Segoe UI,Microsoft YaHei,sans-serif;background:#f4f7fb;color:#1f2937;}"
-        "body{display:flex;align-items:center;justify-content:center;padding:24px;}"
-        ".card{width:min(440px,100%);background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(15,23,42,.12);padding:32px;}"
-        "h1{margin:0 0 8px;font-size:28px;}p{margin:0 0 20px;color:#526072;line-height:1.6;}"
-        "label{display:block;margin:14px 0 6px;font-size:14px;font-weight:600;}"
-        "input{width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid #cbd5e1;border-radius:12px;font-size:15px;}"
-        "button{margin-top:18px;width:100%;padding:13px 16px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-size:16px;font-weight:700;cursor:pointer;}"
-        ".hint{margin-top:12px;font-size:12px;color:#64748b;}.error{margin-top:14px;color:#b91c1c;font-size:14px;min-height:20px;}"
-        "</style>"
-        "</head>"
-        "<body>"
-        "<div class='card'>"
-        "<h1>鏈湴鍚庡彴鐧诲綍</h1>"
-        "<p>褰撳墠椤甸潰鐢辨湰鍦伴暅鍍忕洿鎺ユ彁渚涳紝鐧诲綍鎴愬姛鍚庝細璺宠浆鍒板悗鍙版湰鍦拌矾鐢憋紝涓嶄緷璧?steam.fun 绾夸笂椤甸潰銆?/p>"
-        '<form id="local-admin-login" action="/java-api/school/tch/login" method="post">'
-        '<label for="userName">绠＄悊鍛樿处鍙?/label>'
-        '<input id="userName" name="userName" type="text" autocomplete="username" placeholder="璇疯緭鍏ョ鐞嗗憳璐﹀彿" required>'
-        '<label for="password">瀵嗙爜</label>'
-        '<input id="password" name="password" type="password" autocomplete="current-password" placeholder="璇疯緭鍏ュ瘑鐮?" required>'
-        '<input type="hidden" id="captchaVerifyParam" name="captchaVerifyParam" value="">'
-        '<button type="submit">鐧诲綍</button>'
-        '<div class="error" id="login-error"></div>'
-        "</form>"
-        "<div class='hint'>榛樿浼氭部鐢ㄦ湰鍦伴暅鍍忛噷鐨勭鐞嗗憳璧勬枡鍜屾潈闄愭爲銆?/div>"
-        "<script>"
-        "(function(){"
-        "try{sessionStorage.removeItem('mirror_profile');}catch(e){}"
-        "var form=document.getElementById('local-admin-login');"
-        "var errorNode=document.getElementById('login-error');"
-        f"var redirectValue={redirect_json};"
-        "form.addEventListener('submit',async function(event){"
-        "event.preventDefault();"
-        "errorNode.textContent='';"
-        "var payload={userName:form.userName.value,password:form.password.value,captchaVerifyParam:form.captchaVerifyParam.value||''};"
-        "try{"
-        "var response=await fetch(form.action,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),credentials:'same-origin'});"
-        "var data=await response.json();"
-        "if(data&&data.success){"
-        "var target='/background/course-management/school-curriculum';"
-        "if(redirectValue){target=redirectValue.charAt(0)==='/'?'/background'+redirectValue:'/background/'+redirectValue;}"
-        "window.location.assign(target);"
-        "return;"
-        "}"
-        "errorNode.textContent=(((data||{}).error||{}).message)||'鐧诲綍澶辫触';"
-        "}catch(error){errorNode.textContent='鏈湴鐧诲綍璇锋眰澶辫触';}"
-        "});"
-        "}());"
-        "</script>"
-        "</div>"
-        "</body>"
-        "</html>"
-    )
-
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>乐启享 · 管理登录</title>
+<style>
+*{{box-sizing:border-box}}html,body{{height:100%;margin:0;font-family:'Segoe UI','Microsoft YaHei',sans-serif;color:#eef4ff}}
+body{{display:grid;place-items:center;padding:24px;background:#07132d;overflow:hidden}}
+.login-bg{{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:.58;filter:saturate(1.12) contrast(1.05)}}
+.login-shade{{position:fixed;inset:0;background:linear-gradient(115deg,rgba(2,8,28,.9),rgba(2,8,28,.42) 52%,rgba(2,8,28,.82)),radial-gradient(circle at 78% 25%,rgba(111,255,0,.16),transparent 34%)}}
+.login-shell{{position:relative;z-index:1;display:grid;grid-template-columns:minmax(260px,430px) minmax(340px,460px);width:min(960px,100%);min-height:560px;border:1px solid rgba(255,255,255,.18);border-radius:30px;overflow:hidden;background:rgba(4,15,42,.64);box-shadow:0 35px 100px rgba(0,0,0,.48);backdrop-filter:blur(20px)}}
+.brand-panel{{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:26px;padding:54px;background:linear-gradient(150deg,rgba(111,255,0,.12),rgba(44,103,255,.08))}}
+.brand-panel img{{width:min(230px,78%);filter:drop-shadow(0 18px 38px rgba(0,0,0,.38))}}
+.brand-panel h2{{margin:0;font-size:28px;letter-spacing:.12em}}.brand-panel p{{margin:0;color:rgba(238,244,255,.72);line-height:1.8;text-align:center}}
+.card{{display:flex;flex-direction:column;justify-content:center;padding:58px;background:rgba(3,12,35,.58)}}
+h1{{margin:0 0 10px;font-size:32px}}.intro{{margin:0 0 28px;color:rgba(238,244,255,.68);line-height:1.7}}
+label{{display:block;margin:16px 0 8px;font-size:14px;font-weight:650;color:rgba(238,244,255,.88)}}
+input{{width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,.18);border-radius:13px;background:rgba(255,255,255,.08);color:#fff;font-size:15px;outline:none}}
+input:focus{{border-color:#6fff00;box-shadow:0 0 0 3px rgba(111,255,0,.12)}}input::placeholder{{color:rgba(238,244,255,.4)}}
+button{{margin-top:22px;width:100%;padding:14px;border:0;border-radius:13px;background:#6fff00;color:#061128;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 28px rgba(111,255,0,.18)}}
+.hint{{margin-top:14px;font-size:12px;color:rgba(238,244,255,.48)}}.error{{margin-top:14px;color:#ff9c9c;font-size:14px;min-height:20px}}
+.back{{position:fixed;z-index:2;left:24px;top:24px;color:#fff;text-decoration:none;padding:10px 16px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(3,12,35,.5);backdrop-filter:blur(12px)}}
+@media(max-width:760px){{.login-shell{{grid-template-columns:1fr}}.brand-panel{{padding:34px;min-height:220px}}.brand-panel img{{width:150px}}.brand-panel p{{display:none}}.card{{padding:38px 28px}}}}
+</style></head>
+<body>
+<video class="login-bg" autoplay loop muted playsinline poster="/_site/homepage/media/contact-bg.webp"><source src="/_site/homepage/media/signal-cloudfront-20260331-055729.mp4" type="video/mp4"></video><div class="login-shade"></div>
+<a class="back" href="/">← 返回官网首页</a>
+<main class="login-shell"><section class="brand-panel"><img src="/_site/homepage/media/brand-logo.png" alt="乐启享"><h2>让创造真实发生</h2><p>乐高搭建 · 机器人工程 · 少儿编程 · AI 创造</p></section>
+<section class="card"><h1>欢迎回来</h1><p class="intro">登录乐启享教学管理系统</p>
+<form id="local-admin-login" action="/java-api/school/tch/login" method="post">
+<label for="userName">账号</label><input id="userName" name="userName" type="text" autocomplete="username" placeholder="请输入登录账号" required>
+<label for="password">密码</label><input id="password" name="password" type="password" autocomplete="current-password" placeholder="请输入登录密码" required>
+<input type="hidden" id="captchaVerifyParam" name="captchaVerifyParam" value=""><button type="submit">登录</button><div class="error" id="login-error"></div></form>
+<div class="hint">本页面仅用于本地教学管理系统登录</div></section></main>
+<script>(function(){{try{{sessionStorage.removeItem('mirror_profile');}}catch(e){{}}var form=document.getElementById('local-admin-login');var errorNode=document.getElementById('login-error');var redirectValue={redirect_json};form.addEventListener('submit',async function(event){{event.preventDefault();errorNode.textContent='';var payload={{userName:form.userName.value,password:form.password.value,captchaVerifyParam:form.captchaVerifyParam.value||''}};try{{var response=await fetch(form.action,{{method:'POST',headers:{{'content-type':'application/json'}},body:JSON.stringify(payload),credentials:'same-origin'}});var data=await response.json();if(data&&data.success){{var target='/background/course-management/school-curriculum';if(redirectValue){{target=redirectValue.charAt(0)==='/'?'/background'+redirectValue:'/background/'+redirectValue;}}window.location.assign(target);return;}}errorNode.textContent=(((data||{{}}).error||{{}}).message)||'登录失败';}}catch(error){{errorNode.textContent='网络异常，请稍后重试';}}}});}}());</script></body></html>"""
 
 def _inject_teacher_session_bootstrap(text: str, script: str | None) -> str:
     if not script:
@@ -13455,6 +13430,31 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
             "allow_live_proxy": allow_live_proxy,
         }
 
+    @app.get("/")
+    def marketing_homepage(request: Request) -> Response:
+        return Response(
+            content=render_marketing_homepage(request).encode("utf-8"),
+            media_type="text/html",
+        )
+
+    @app.get("/_site/homepage/{asset_path:path}")
+    def homepage_static_asset(asset_path: str) -> Response:
+        candidate = homepage_asset_path(asset_path)
+        if candidate is None:
+            return Response(status_code=404)
+        return _static_response_or_404(candidate, expected_asset_path=asset_path)
+
+    @app.get("/_site/courses/{asset_path:path}")
+    def courses_static_asset(asset_path: str) -> Response:
+        if asset_path in ("", "/"):
+            index_path = COURSES_ASSET_ROOT / "index.html"
+            if index_path.is_file():
+                return _static_response_or_404(index_path, expected_asset_path="index.html")
+        candidate = courses_asset_path(asset_path)
+        if candidate is not None:
+            return _static_response_or_404(candidate, expected_asset_path=asset_path)
+        return Response(status_code=404)
+
     @app.post(TEACHER_LOGIN_PATH)
     async def teacher_login(request: Request) -> Response:
         payload = await request.json()
@@ -14067,6 +14067,27 @@ def _static_response_or_404(path: Path, *, expected_asset_path: str | None = Non
     return Response(content=body, media_type=media_type)
 
 
+def _inject_back_to_home_button(text: str) -> str:
+    """Brand the captured login page without changing its login behavior."""
+    snippet = (
+        '<style>'
+        'html,body,#app,.login-container{background:transparent!important;}body{position:relative;}'
+        'body:before{content:"";position:fixed;inset:0;z-index:-2;background:linear-gradient(115deg,rgba(2,8,28,.9),rgba(2,8,28,.38)),url("/_site/homepage/media/contact-bg.webp") center/cover no-repeat!important;}'
+        'body:after{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 75% 20%,rgba(111,255,0,.2),transparent 34%);pointer-events:none}'
+        '.lq-login-brand{position:fixed;right:4vw;top:50%;z-index:9998;width:min(28vw,320px);transform:translateY(-50%);filter:drop-shadow(0 22px 45px rgba(0,0,0,.48));}'
+        '.lq-login-video{position:fixed;inset:0;z-index:-3;width:100%;height:100%;object-fit:cover;opacity:.58}'
+        '.lq-back-home{position:fixed;top:1.2rem;left:1.2rem;z-index:9999;display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1rem;border-radius:999px;background:rgba(2,8,28,.72);color:#fff;font-family:"Noto Sans SC",sans-serif;font-weight:600;font-size:.85rem;text-decoration:none;border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(12px)}'
+        '.lq-back-home:hover{background:#6fff00;color:#010828}'
+        '@media(max-width:900px){.lq-login-brand{display:none}}'
+        '</style>'
+        '<video class="lq-login-video" autoplay loop muted playsinline><source src="/_site/homepage/media/signal-cloudfront-20260331-055729.mp4" type="video/mp4"></video>'
+        '<img class="lq-login-brand" src="/_site/homepage/media/brand-logo.png" alt="乐启享">'
+        '<a class="lq-back-home" href="/" aria-label="返回官网首页"><span>← 返回官网首页</span></a>'
+    )
+    if "</body>" in text:
+        return text.replace("</body>", snippet + "</body>", 1)
+    return text + snippet
+
 def _captured_route_response(
     path: Path,
     *,
@@ -14089,4 +14110,6 @@ def _captured_route_response(
         text = _prune_core_background_menu(text)
     text = _inject_teacher_session_bootstrap(text, teacher_session_bootstrap)
     text = _inject_runtime_guards(text)
+    if route_key and route_key in {"/login", "/background/login"}:
+        text = _inject_back_to_home_button(text)
     return Response(content=text.encode("utf-8"), media_type="text/html")

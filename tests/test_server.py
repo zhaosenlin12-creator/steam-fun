@@ -1259,17 +1259,23 @@ def test_benign_placeholder_route_returns_minimal_html_instead_of_shell(tmp_path
         assert response.text == "<!doctype html><html><head><meta charset='utf-8'></head><body></body></html>"
 
 
-def test_public_root_redirects_to_login(tmp_path: Path) -> None:
+def test_public_root_serves_marketing_homepage(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
 
     response = client.get("/", follow_redirects=False)
 
-    assert response.status_code == 307
-    assert response.headers["location"] == "/login"
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "乐启享" in response.text
+    assert "系统培养孩子的科技素养与创造力" in response.text
+    assert 'href="/login"' in response.text
+    assert "18164173640" in response.text
+    assert "texture.png" not in response.text
 
 
-def test_root_redirects_teacher_session_to_teacher_home(tmp_path: Path) -> None:
+
+def test_root_with_teacher_cookie_still_serves_marketing_homepage(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path, username="zhaosenlin", user_info={"id": 12385, "realName": "Teacher Li"})
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
@@ -1277,11 +1283,12 @@ def test_root_redirects_teacher_session_to_teacher_home(tmp_path: Path) -> None:
 
     response = client.get("/", follow_redirects=False)
 
-    assert response.status_code == 307
-    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
+    assert response.status_code == 200
+    assert "location" not in response.headers
+    assert "乐启享机器人" in response.text
 
 
-def test_root_redirects_student_session_to_myclass(tmp_path: Path) -> None:
+def test_root_with_student_cookie_still_serves_marketing_homepage(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_runtime_student_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
@@ -1289,11 +1296,12 @@ def test_root_redirects_student_session_to_myclass(tmp_path: Path) -> None:
 
     response = client.get("/", follow_redirects=False)
 
-    assert response.status_code == 307
-    assert response.headers["location"] == "/code-classroom/myClass"
+    assert response.status_code == 200
+    assert "location" not in response.headers
+    assert "乐启享机器人" in response.text
 
 
-def test_root_redirects_admin_session_to_school_curriculum(tmp_path: Path) -> None:
+def test_root_with_admin_cookie_still_serves_marketing_homepage(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     store = MirrorStore(tmp_path)
@@ -1326,8 +1334,71 @@ def test_root_redirects_admin_session_to_school_curriculum(tmp_path: Path) -> No
 
     response = client.get("/", follow_redirects=False)
 
-    assert response.status_code == 307
-    assert response.headers["location"] == "/background/course-management/school-curriculum"
+    assert response.status_code == 200
+    assert "location" not in response.headers
+    assert "乐启享机器人" in response.text
+
+
+def test_marketing_homepage_contains_required_sections(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert 'id="hero"' in response.text
+    assert 'id="about"' in response.text
+    assert 'id="cinema"' in response.text
+    assert 'id="collection"' in response.text
+    assert 'id="signal"' in response.text
+    assert "hero-stage" in response.text
+    assert "about-stage" in response.text
+    assert "cinema-stage" in response.text
+    assert "collection-stage" in response.text
+    assert "signal-stage" in response.text
+    assert "乐启享" in response.text
+    assert "18164173640" in response.text
+    assert "宜昌市猇亭区金岭路59-1号" in response.text
+    assert "/_site/courses/" in response.text
+    assert 'href="/login"' in response.text
+    assert "森林老师" in response.text
+    assert "senlin-c1n.pages.dev" in response.text
+    assert "student-001" in response.text
+    assert "student-150" in response.text
+    assert "honors/3c4b1c9a" in response.text
+    assert "home/1.webp" in response.text
+    assert "showreel-birthday.mp4" in response.text
+    assert "showreel-dance.mp4" in response.text
+    assert "codebn.cn" not in response.text
+    assert "honor-carousel" in response.text
+    assert "campus-carousel" in response.text
+    assert "imageLightbox" in response.text
+    assert "site-footer" in response.text
+    assert "鄂ICP" in response.text
+    assert "camp2.webp" in response.text
+    assert "cinema-wall" in response.text
+    assert "texture.png" not in response.text
+
+
+
+def test_homepage_static_asset_route_serves_local_css(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get("/_site/homepage/styles.css")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/css")
+
+
+def test_homepage_static_asset_route_serves_local_logo(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get("/_site/homepage/media/logo.png")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/png")
 
 
 def test_frontend_route_uses_captured_html_when_available(tmp_path: Path) -> None:
