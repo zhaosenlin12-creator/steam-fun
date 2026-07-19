@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 课程页交互逻辑
  * - 主页：卡片渲染、时间轴、路线切换、预约表单
  * - 详情页：动态渲染、Tab切换、折叠展开
@@ -21,6 +21,35 @@
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function showMessage(text, type) {
+    const existing = $('.course-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.className = `course-toast course-toast--${type || 'info'}`;
+    toast.setAttribute('role', 'status');
+    toast.textContent = text;
+    toast.style.cssText = [
+      'position:fixed',
+      'left:50%',
+      'bottom:32px',
+      'transform:translateX(-50%)',
+      'z-index:9999',
+      'max-width:min(92vw,420px)',
+      'padding:12px 18px',
+      'border-radius:999px',
+      'background:rgba(17,24,39,.92)',
+      'color:#fff',
+      'font-size:14px',
+      'line-height:1.5',
+      'box-shadow:0 16px 40px rgba(15,23,42,.22)',
+      'backdrop-filter:blur(12px)',
+      'text-align:center'
+    ].join(';');
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4200);
   }
 
   // ========== 主页逻辑 ==========
@@ -83,7 +112,7 @@
             <i class="${getIconClass(stage)}"></i>
           </div>`;
       return `
-      <a class="course-card" href="course-detail.html?id=${stage.id}" style="--card-accent:${stage.color};border-top:4px solid ${stage.color};">
+      <div class="course-card" onclick="window.location.href='course-detail.html?id=${stage.id}'" style="--card-accent:${stage.color};border-top:4px solid ${stage.color};">
         ${imgHtml}
         <div class="course-card-top">
           <div class="course-card-icon" style="background:${stage.color}">
@@ -95,54 +124,12 @@
           <div class="course-card-highlights">
             ${stage.highlights.map(h => `<span style="background:${hexToRgba(stage.color, 0.1)};color:${stage.color}">${h}</span>`).join('')}
           </div>
-          <a href="course-detail.html?id=${stage.id}" onclick="event.stopPropagation();" class="course-card-btn" style="background:${stage.color}">
+          <a href="course-detail.html?id=${stage.id}" class="course-card-btn" style="background:${stage.color}">
             查看详情 <i class="fas fa-arrow-right"></i>
           </a>
-      </a>`;
+        </div>
+      </div>`;
     }).join('');
-  }
-
-
-  window.openCourseDetail = function(stageId) {
-    const stage = COURSE_DATA.stages.find(item => item.id === stageId);
-    if (!stage) return;
-    let panel = document.getElementById('course-detail-panel');
-    if (!panel) {
-      panel = document.createElement('section');
-      panel.id = 'course-detail-panel';
-      panel.className = 'inline-course-detail';
-      panel.innerHTML = '<div class="inline-course-detail__inner"><button class="inline-course-detail__close" type="button" aria-label="关闭详情">×</button><div id="detailHero" class="detail-hero"><h2 id="detailTitle"></h2><p id="detailAge"></p><p id="detailDesc"></p></div><div id="detailTabs" class="detail-tabs"></div><div id="detailContent" class="detail-content"></div></div>';
-      document.body.appendChild(panel);
-      panel.querySelector('.inline-course-detail__close').addEventListener('click', () => panel.classList.remove('is-open'));
-    }
-    panel.classList.add('is-open');
-    panel.dataset.courseId = stageId;
-    history.replaceState(null, '', '#course-detail-panel');
-    document.getElementById('detailTitle').textContent = stage.name;
-    document.getElementById('detailAge').textContent = stage.ageRange;
-    document.getElementById('detailDesc').textContent = stage.description;
-    renderInlineCourseTabs(stage);
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  function renderInlineCourseTabs(stage) {
-    const tabsEl = document.getElementById('detailTabs');
-    const contentEl = document.getElementById('detailContent');
-    const tabs = [];
-    if (stage.subCourses) {
-      stage.subCourses.forEach((sub, index) => tabs.push({ id: 'sub-' + index, label: sub.age ? sub.age + '岁' : (sub.semester || '课程'), data: sub }));
-    }
-    if (!tabs.length) tabs.push({ id: 'overview', label: '课程介绍', data: stage });
-    const render = (index) => {
-      const tab = tabs[index];
-      tabsEl.querySelectorAll('button').forEach((button, i) => button.classList.toggle('active', i === index));
-      const data = tab.data;
-      const terms = data.terms || [];
-      contentEl.innerHTML = terms.length ? terms.map(term => '<article class="inline-course-term"><h3>' + term.termName + '</h3><div class="inline-course-lessons">' + (term.lessons || []).map(lesson => '<div class="inline-course-lesson"><strong>' + lesson.title + '</strong><p>' + (lesson.skill || lesson.knowledge || lesson.project || '') + '</p></div>').join('') + '</div></article>').join('') : '<article class="inline-course-term"><h3>' + stage.name + '</h3><p>' + stage.description + '</p><div class="course-card-highlights">' + (stage.highlights || []).map(item => '<span>' + item + '</span>').join('') + '</div></article>';
-    };
-    tabsEl.innerHTML = tabs.map((tab, index) => '<button type="button" data-inline-tab="' + index + '">' + tab.label + '</button>').join('');
-    tabsEl.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => render(Number(button.dataset.inlineTab))));
-    render(0);
   }
 
   function renderRoutes() {
@@ -161,7 +148,7 @@
             const color = s ? s.color : '#3570B5';
             const icon = s ? getIconClass(s) : 'fas fa-star';
             return (i > 0 ? '<div class="route-arrow"></div>' : '') +
-              `<div class="route-step" onclick="openCourseDetail('${m.stage}')" style="cursor:pointer">
+              `<div class="route-step" onclick="window.location.href='course-detail.html?id=${m.stage}'" style="cursor:pointer">
                 <div class="route-step-icon" style="background:${color}"><i class="${icon}"></i></div>
                 <div class="route-step-info">
                   <h4>${m.label}</h4>
@@ -186,11 +173,10 @@
   function initBookingForm() {
     const form = $('#courseBookingForm');
     if (!form) return;
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       const name = $('#bookingName').value.trim();
       const phone = $('#bookingPhone').value.trim();
-      const message = $('#bookingMessage').value.trim();
 
       if (!name || !phone) {
         showMessage('请填写姓名和联系电话', 'warning');
@@ -202,27 +188,10 @@
       }
 
       const btn = form.querySelector('.booking-submit');
-      btn.disabled = true;
-      btn.textContent = '提交中...';
-
-      try {
-        await submitBooking({
-          name,
-          phone,
-          message: message || '来自课程体系页',
-          source: 'courses_page'
-        });
-        showMessage('预约成功！我们将尽快与您联系', 'success');
-        form.reset();
-      } catch (err) {
-        showMessage('提交失败，请稍后重试或直接拨打 18164173640', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:6px"></i>提交预约';
-      }
+      btn.innerHTML = '<i class="fas fa-phone" style="margin-right:6px"></i>请直接联系 18164173640';
+      showMessage('已记录您的体验课意向，请直接添加微信或拨打 18164173640 预约。', 'success');
     });
   }
-
   // ========== 详情页逻辑 ==========
   function isDetailPage() {
     return !!$('#detailHero');

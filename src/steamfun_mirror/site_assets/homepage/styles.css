@@ -1808,7 +1808,7 @@ body {
 /* Signal QR card (replaces social-rail inside the stage). */
 .signal-qr-card {
   position: absolute;
-  left: 26%;
+  left: 17%;
   bottom: 18%;
   top: auto;
   right: auto;

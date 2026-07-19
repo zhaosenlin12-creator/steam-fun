@@ -13308,18 +13308,14 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
 
     @app.get("/_site/courses/{asset_path:path}")
     def courses_static_asset(asset_path: str) -> Response:
+        if asset_path in ("", "/"):
+            index_path = COURSES_ASSET_ROOT / "index.html"
+            if index_path.is_file():
+                return _static_response_or_404(index_path, expected_asset_path="index.html")
         candidate = courses_asset_path(asset_path)
         if candidate is not None:
             return _static_response_or_404(candidate, expected_asset_path=asset_path)
-        index_path = COURSES_ASSET_ROOT / "index.html"
-        if asset_path in ("", "/") and index_path.is_file():
-            return _static_response_or_404(index_path, expected_asset_path="index.html")
         return Response(status_code=404)
-
-        candidate = courses_asset_path(asset_path)
-        if candidate is None:
-            return Response(status_code=404)
-        return _static_response_or_404(candidate, expected_asset_path=asset_path)
 
     @app.post(TEACHER_LOGIN_PATH)
     async def teacher_login(request: Request) -> Response:
