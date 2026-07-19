@@ -62,7 +62,7 @@ COURSE_PATH = [
 
 TEACHER_POSTERS = [
     ("teacher-liu.png", "刘海涵", "乐启享创始人 · 校长", "https://zhaoyu-2h8.pages.dev/", "7 年校区经营与课程管理经验，负责乐启享整体发展与教学品质。"),
-    ("teacher-senlin.png", "赵森林", "副校长 · 合伙人", "https://senlin-c1n.pages.dev/", "资深编程教研，负责课程研发、教师培养与项目式课堂设计。"),
+    ("teacher-senlin.png", "森林老师", "副校长 · 合伙人", "https://senlin-c1n.pages.dev/", "资深编程教研，负责课程研发、教师培养与项目式课堂设计。"),
     ("teacher-xiang.png", "向敏", "资深乐高 + 编程双导师", "https://xiangmin-lego.pages.dev/", "5 年一线教学经验，覆盖乐高搭建、机械结构与编程启蒙。"),
     ("teacher-zhou.png", "周玉锋", "资深图形化 + 硬件导师", "https://main.zhouyufeng-website.pages.dev", "5 年教学经验，专注图形化编程、硬件控制与机器人项目。"),
     ("teacher-yang.png", "杨陶", "教学主管", "https://yangtao-c8u.pages.dev/", "6 年教学与教研经验，负责课程实施、课堂质量与教师协作。"),
@@ -91,9 +91,9 @@ HONOR_CARDS = [
 ]
 
 CAMPUS_CARDS = [
-    ("campus-storefront.webp", "乐启享校区门面", "金岭路校区 · 做有温度的教育"),
-    ("campus-room.webp", "乐高搭建教室", "真实教学空间 · 分组实践区"),
-    ("campus-01.webp", "创客工坊 · 设备齐备", "真实工坊 · 独立操作台"),
+    ("home/1.webp", "乐启享校区门面", "金岭路校区 · 做有温度的教育"),
+    ("home/2.webp", "乐高搭建教室", "真实教学空间 · 分组实践区"),
+    ("home/3.webp", "创客工坊 · 设备齐备", "真实工坊 · 独立操作台"),
     ("campus-02.webp", "乐高搭建教室", "搭建与调试 · 项目实践"),
     ("campus-03.webp", "竞赛集训空间", "竞赛集训 · 团队协作"),
     ("campus-04.webp", "编程课堂", "Scratch / Python / C++ 教学现场"),

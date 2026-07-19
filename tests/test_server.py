@@ -1368,7 +1368,8 @@ def test_marketing_homepage_contains_required_sections(tmp_path: Path) -> None:
     assert "honors/3c4b1c9a" in response.text
     assert "home/1.webp" in response.text
     assert "showreel-birthday.mp4" in response.text
-    assert "showreel-dance.mp4" in response.text
+    assert "ai-camp-clip.mp4" in response.text
+    assert "showreel-dance.mp4" not in response.text
     assert "codebn.cn" not in response.text
     assert "honor-carousel" in response.text
     assert "campus-carousel" in response.text
