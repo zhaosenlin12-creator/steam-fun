@@ -159,14 +159,22 @@ svg {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 60;
-  padding: 0.6rem 1rem;
-  margin: 0 -1rem;
+  padding: 0.6rem 1.5rem;
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   background: linear-gradient(180deg, rgba(2, 8, 24, 0.7) 0%, rgba(2, 8, 24, 0.45) 100%);
+  pointer-events: auto;
+}
+.hero-header > * {
+  pointer-events: auto;
+}
+.page {
+  padding-top: 4rem;
 }
 @media (max-width: 720px) {
   .hero-header {
