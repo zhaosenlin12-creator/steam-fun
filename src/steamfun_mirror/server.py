@@ -260,6 +260,110 @@ CORE_ROUTE_CLEANUP_GUARD = (
     "}());"
     "</script>"
 )
+CORE_STUDENT_UI_CLEANUP_GUARD = (
+    "<script>"
+    "(function(){"
+    "if(window.__localCoreStudentUiCleanup){return;}"
+    "window.__localCoreStudentUiCleanup=true;"
+    "var studentListPath=/\\/school-home-page\\/class-management1\\/students-management1(?:\\/)?$/;"
+    "var addStudentPath=/\\/school-home-page\\/class-management1\\/addnewstudent1(?:\\/)?$/;"
+    "var managementLabels=['鎵归噺鎿嶄綔骞冲彴鏉冮檺','缁戝畾寰俊'];"
+    "var addStudentLabels=['骞冲彴鏉冮檺','浣滃搧绀惧尯','璧涜€冧腑蹇?,'鏌ョ湅棰樿В','瀛︾敓璁蹭箟'];"
+    "function normalizedText(node){"
+    "return ((node&&(node.innerText||node.textContent))||'').replace(/\\s+/g,'').trim();"
+    "}"
+    "function shouldHide(text,labels){"
+    "if(!text||text.length>48){return false;}"
+    "for(var i=0;i<labels.length;i+=1){"
+    "var label=labels[i];"
+    "if(text===label||text===label+':'||text.indexOf(label)!==-1){return true;}"
+    "}"
+    "return false;"
+    "}"
+    "function hide(node){"
+    "if(!node||node.nodeType!==1||node.__localCoreStudentUiHidden){return;}"
+    "node.__localCoreStudentUiHidden=true;"
+    "node.style.setProperty('display','none','important');"
+    "node.setAttribute('aria-hidden','true');"
+    "}"
+    "function hideClosest(node){"
+    "var target=node.closest('.el-form-item,.el-dropdown-menu__item,.el-button,.el-col,.el-row,li,div')||node;"
+    "hide(target);"
+    "}"
+    "function activeLabels(){"
+    "var path=location.pathname||'';"
+    "if(studentListPath.test(path)){return managementLabels;}"
+    "if(addStudentPath.test(path)){return addStudentLabels;}"
+    "return null;"
+    "}"
+    "function clean(){"
+    "var labels=activeLabels();"
+    "if(!labels){return;}"
+    "var root=document.body||document.documentElement;"
+    "if(!root||!root.querySelectorAll){return;}"
+    "root.querySelectorAll('*').forEach(function(node){"
+    "var text=normalizedText(node);"
+    "if(shouldHide(text,labels)){hideClosest(node);}"
+    "});"
+    "}"
+    "function schedule(){clean();}"
+    "if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',schedule,{once:true});}else{schedule();}"
+    "new MutationObserver(function(){schedule();}).observe(document.documentElement,{childList:true,subtree:true});"
+    "}());"
+    "</script>"
+)
+CORE_STUDENT_UI_CLEANUP_GUARD_V2 = (
+    "<script>"
+    "(function(){"
+    "if(window.__localCoreStudentUiCleanupV2){return;}"
+    "window.__localCoreStudentUiCleanupV2=true;"
+    "var studentListPath=/\\/school-home-page\\/class-management1\\/students-management1(?:\\/)?$/;"
+    "var addStudentPath=/\\/school-home-page\\/class-management1\\/addnewstudent1(?:\\/)?$/;"
+    "var managementLabels=['\\u6279\\u91cf\\u64cd\\u4f5c\\u5e73\\u53f0\\u6743\\u9650','\\u7ed1\\u5b9a\\u5fae\\u4fe1','\\u91cd\\u7f6e\\u5bc6\\u7801','\\u9000\\u5b66','\\u5220\\u9664'];"
+    "var addStudentLabels=['\\u5e73\\u53f0\\u6743\\u9650','\\u4f5c\\u54c1\\u793e\\u533a','\\u8d5b\\u8003\\u4e2d\\u5fc3','\\u67e5\\u770b\\u9898\\u89e3','\\u5b66\\u751f\\u8bb2\\u4e49'];"
+    "function normalizedText(node){return ((node&&(node.innerText||node.textContent))||'').replace(/\\s+/g,'').trim();}"
+    "function shouldHide(text,labels){"
+    "if(!text||text.length>48){return false;}"
+    "for(var i=0;i<labels.length;i+=1){"
+    "var label=labels[i];"
+    "if(text===label||text===label+':'||text.indexOf(label)!==-1){return true;}"
+    "}"
+    "return false;"
+    "}"
+    "function hide(node){"
+    "if(!node||node.nodeType!==1||node.__localCoreStudentUiHiddenV2){return;}"
+    "node.__localCoreStudentUiHiddenV2=true;"
+    "node.style.setProperty('display','none','important');"
+    "node.setAttribute('aria-hidden','true');"
+    "}"
+    "function hideClosest(node,selectors){hide(node.closest(selectors)||node);}"
+    "function cleanManagement(root){"
+    "root.querySelectorAll('.el-dropdown-menu__item,.el-dropdown-menu__item *,button,.el-button,[role=\"button\"],a').forEach(function(node){"
+    "var text=normalizedText(node);"
+    "if(!shouldHide(text,managementLabels)){return;}"
+    "hideClosest(node,'.el-dropdown-menu__item,button,.el-button,[role=\"button\"],a,li');"
+    "});"
+    "}"
+    "function cleanAddStudent(root){"
+    "root.querySelectorAll('*').forEach(function(node){"
+    "var text=normalizedText(node);"
+    "if(!shouldHide(text,addStudentLabels)){return;}"
+    "hideClosest(node,'.el-form-item,.el-dropdown-menu__item,.el-button,.el-col,.el-row,li,div');"
+    "});"
+    "}"
+    "function clean(){"
+    "var path=location.pathname||'';"
+    "var root=document.body||document.documentElement;"
+    "if(!root||!root.querySelectorAll){return;}"
+    "if(studentListPath.test(path)){cleanManagement(root);return;}"
+    "if(addStudentPath.test(path)){cleanAddStudent(root);}"
+    "}"
+    "function schedule(){clean();}"
+    "if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',schedule,{once:true});}else{schedule();}"
+    "new MutationObserver(function(){schedule();}).observe(document.documentElement,{childList:true,subtree:true});"
+    "}());"
+    "</script>"
+)
 LEGACY_ISPRING_TEXT_LAYOUT_GUARD = (
     "<script>"
     "(function(){"
@@ -655,6 +759,16 @@ TEACHER_COMPETITION_ROUTE_PREFIXES = (
     "/exam-management",
     "/practice-management",
 )
+NON_CORE_FRONTEND_ROUTE_PREFIXES = (
+    "/competitionCenter",
+    "/exam",
+    "/exam-stu",
+    "/exam-management",
+    "/practice-management",
+)
+NON_CORE_ADMIN_FRONTEND_ROUTES = {
+    "/background/course-management/platform-curriculum",
+}
 DEFAULT_TEACHER_SUBJECT_ROWS = (
     {
         "id": 1,
@@ -878,19 +992,7 @@ LOCAL_STU_EXAM_PATHS = {
 # preventing 404 noise on the admin/teacher dashboards.
 NON_CORE_DASHBOARD_API_PATHS: frozenset[str] = frozenset(
     {
-        # Intend / sales-lead dashboard widgets
-        "/java-api/school/intend/board/soa",
-        "/java-api/school/intend/board/echarts/stat",
-        "/java-api/school/intend/selectList",
-        # Earnings / financial board widgets (admin & teacher dashboards)
-        "/java-api/school/stu/board/recSoa",
-        "/java-api/school/stu/board/incomeSoa",
-        "/java-api/school/stu/board/echarts/recStat",
-        "/java-api/school/stu/board/echarts/consumeStat",
-        "/java-api/school/tch/board/recordSoa",
-        "/java-api/school/tch/board/echarts/recordStat",
         # Sales / visit record (leads tracking)
-        "/java-api/school/visitRecord/selectList",
         # Teaching-plan roll-call export (out-of-scope in minimal build)
         "/java-api/school/tchPlan/exportSignRecord",
         # Material scene list / search (curriculum picker extras)
@@ -1095,6 +1197,8 @@ def _inject_runtime_guards(text: str) -> str:
         guard_block += CLASSROOM_LOADING_FEEDBACK_GUARD
     if CORE_ROUTE_CLEANUP_GUARD not in text:
         guard_block += CORE_ROUTE_CLEANUP_GUARD
+    if CORE_STUDENT_UI_CLEANUP_GUARD_V2 not in text:
+        guard_block += CORE_STUDENT_UI_CLEANUP_GUARD_V2
     if LEGACY_ISPRING_TEXT_LAYOUT_GUARD not in text:
         guard_block += LEGACY_ISPRING_TEXT_LAYOUT_GUARD
     if NON_CORE_DASHBOARD_WIDGET_GUARD not in text:
@@ -1149,9 +1253,40 @@ def _normalize_success_json(body: bytes, content_type: str) -> bytes:
         return body
     if not isinstance(payload, dict):
         return body
-    if payload.get("success") is True and not isinstance(payload.get("error"), dict):
-        payload["error"] = {"message": "", "code": ""}
+    if payload.get("success") is True:
+        if not isinstance(payload.get("error"), dict):
+            payload["error"] = {"message": "", "code": ""}
+        content = payload.get("content")
+        if isinstance(content, dict):
+            content = _normalize_success_content(content)
+            payload["content"] = content
     return json.dumps(payload, ensure_ascii=False).encode("utf-8")
+
+
+def _normalize_success_content(content: dict[str, Any]) -> dict[str, Any]:
+    normalized = _normalize_xm_goods_list_fields(content)
+    return normalized if isinstance(normalized, dict) else content
+
+
+def _normalize_xm_goods_list_fields(value: Any) -> Any:
+    if isinstance(value, dict):
+        normalized = {key: _normalize_xm_goods_list_fields(item) for key, item in value.items()}
+        xm_goods_list = normalized.get("xmGoodsList")
+        if "xmGoodsList" in normalized and not isinstance(xm_goods_list, list):
+            if xm_goods_list in (None, ""):
+                normalized["xmGoodsList"] = []
+            elif isinstance(xm_goods_list, tuple):
+                normalized["xmGoodsList"] = list(xm_goods_list)
+            elif isinstance(xm_goods_list, list):
+                normalized["xmGoodsList"] = xm_goods_list
+            else:
+                normalized["xmGoodsList"] = [xm_goods_list]
+        return normalized
+    if isinstance(value, list):
+        return [_normalize_xm_goods_list_fields(item) for item in value]
+    if isinstance(value, tuple):
+        return [_normalize_xm_goods_list_fields(item) for item in value]
+    return value
 
 
 def _record_contains_invalid_token(record: dict[str, Any] | None) -> bool:
@@ -1222,28 +1357,30 @@ def _normalized_frontend_redirect_target(store: MirrorStore, request: Request) -
     if path == "/school-home-page/class-management1/class-management1":
         query = request.url.query
         return f"/school-home-page/class-management1?{query}" if query else "/school-home-page/class-management1"
-    if path == "/exam-management":
-        query = request.url.query
-        return f"/exam/exam-management?{query}" if query else "/exam/exam-management"
-    if path == "/practice-management":
-        query = request.url.query
-        return f"/exam/practice-management?{query}" if query else "/exam/practice-management"
-    if path == "/exam-stu/new-exam" and not request.url.query:
-        return "/exam-stu/new-exam?id=242055&title=%E4%BF%A1%E6%81%AF%E7%B4%A0%E5%85%BB%E5%A4%A7%E8%B5%9B%202023%20%E5%A4%8D%E8%B5%9B%20%E5%B0%8F%E9%AB%98%E7%BB%84_2025-07-03%2015%3A47%3A13"
-    if path == "/exam-stu/practice-record" and not request.url.query:
-        student_context = _student_profile_context(store, request)
-        realname = quote(str(student_context.get("display_name") or "Chen Muran"), safe="")
-        student_id = student_context.get("student_id") or 400057
-        return (
-            "/exam-stu/practice-record"
-            "?title=%E4%BF%A1%E6%81%AF%E7%B4%A0%E5%85%BB%E5%A4%A7%E8%B5%9B%202024%20%E5%A4%8D%E8%B5%9B%20%E5%B0%8F%E4%BD%8E%E7%BB%84_2025-06-12%2015%3A25%3A37"
-            f"&exam_id=228978&isRecord=1&examStuRecordId=2289781&stu_id={student_id}&realname={realname}"
-        )
-    if path == "/exam/paper-detail" and not request.url.query:
-        return "/exam/paper-detail?id=156584&title=%E4%BF%A1%E6%81%AF%E7%B4%A0%E5%85%BB%E5%A4%A7%E8%B5%9B%202023%20%E5%A4%8D%E8%B5%9B%20%E5%B0%8F%E9%AB%98%E7%BB%84_2025-07-03%2015%3A47%3A13"
-    if path == "/exam/practice-detail" and not request.url.query:
-        return "/exam/practice-detail?id=228978&title=%E4%BF%A1%E6%81%AF%E7%B4%A0%E5%85%BB%E5%A4%A7%E8%B5%9B%202024%20%E5%A4%8D%E8%B5%9B%20%E5%B0%8F%E4%BD%8E%E7%BB%84_2025-06-12%2015%3A25%3A37"
     return None
+
+
+def _non_core_frontend_redirect_target(store: MirrorStore, request: Request, route_key: str) -> str | None:
+    path = _normalize_route_path(route_key)
+    if path in NON_CORE_ADMIN_FRONTEND_ROUTES:
+        return "/background/course-management/school-curriculum"
+
+    is_non_core = False
+    for prefix in NON_CORE_FRONTEND_ROUTE_PREFIXES:
+        if path == prefix or path.startswith(f"{prefix}/"):
+            is_non_core = True
+            break
+    if not is_non_core:
+        return None
+
+    resolved_profile = _resolve_profile(store, request)
+    profile_name = resolved_profile["profile_name"] if resolved_profile else _resolve_profile_name(store, request)
+    profile_role = _profile_role(profile_name, resolved_profile)
+    if profile_role:
+        return _default_frontend_route_for_role(profile_role)
+    if path == "/exam-stu" or path.startswith("/exam-stu/"):
+        return _default_frontend_route_for_role("student")
+    return _default_frontend_route_for_role("teacher")
 
 
 def _sanitize_frozen_classroom_snapshot(text: str) -> str:
@@ -2537,7 +2674,7 @@ def _select_local_work_material(
     return max(materials, key=score)
 
 
-def _fallback_local_work_students(store: MirrorStore) -> list[dict[str, Any]]:
+def _fallback_local_work_students(store: MirrorStore, request: Request | None = None) -> list[dict[str, Any]]:
     students = [student for student in store.list_local_students() if isinstance(student, dict)]
     if students:
         return students
@@ -2661,7 +2798,7 @@ def _build_local_work_dataset(
     title_filter_normalized = title_filter.strip().lower()
 
     rows: list[dict[str, Any]] = []
-    for index, student in enumerate(_fallback_local_work_students(store), start=1):
+    for index, student in enumerate(_fallback_local_work_students(store, request), start=1):
         student_id = _coerce_int(student.get("id")) or index
         overlay = store.get_student_overlay(student_id) or {}
         display_name = _student_display_name(student, default_id=student_id)
@@ -4155,7 +4292,7 @@ def _teacher_state_with_route_context(
             user_state["userInfo"] = _json_deep_copy(teacher_user_info)
 
         if route_key and route_key.startswith("/exam-stu"):
-            student_context = _student_profile_context(store, request)
+            student_context = _student_profile_context(store)
             if teacher_profile.get("username") and not user_state.get("username"):
                 user_state["username"] = teacher_profile["username"]
             if not user_state.get("adminUserName") and teacher_profile.get("username"):
@@ -8105,6 +8242,7 @@ def _build_teacher_classroom_student_plan_rows(store: MirrorStore, request: Requ
             "signEndDate": sign_end_date,
             "classWorkState": class_work_state,
             "homeWorkState": home_work_state,
+            "xmGoodsList": _build_local_xm_goods_rows(student, store=store),
             "classWorkInfo": class_work_info,
             "homeWorkInfo": home_work_info,
             "studentInfo": student_info,
@@ -13338,7 +13476,11 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
         # Non-core points/stu endpoints (personalSoa, stuStar, etc.) would 401 against the upstream mirror
         # for local_student_* profiles because their auth tokens are JWT-shaped local secrets. Serve an empty
         # success response so the SPA does not treat them as auth failures and bounce back to /login.
-        if request.url.path.startswith("/java-api/points/stu/"):
+        if request.url.path.startswith("/java-api/points/stu/") and request.url.path not in {
+            "/java-api/points/stu/eduCampus/starRule",
+            "/java-api/points/stu/order/updateHeadState",
+            "/java-api/points/stu/order/wearState",
+        }:
             return _non_core_dashboard_empty_response()
 
         request_body = await request.body()
@@ -13493,12 +13635,17 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
             target = _default_frontend_route_for_role(_profile_role(profile_name, resolved_profile))
             return RedirectResponse(url=target or "/login")
 
+        route_key = f"/{requested_path.strip('/')}" if requested_path else "/"
+
         normalized_redirect_target = _normalized_frontend_redirect_target(store, request)
         if normalized_redirect_target:
             return RedirectResponse(url=normalized_redirect_target, status_code=307)
 
+        non_core_redirect_target = _non_core_frontend_redirect_target(store, request, route_key)
+        if non_core_redirect_target:
+            return RedirectResponse(url=non_core_redirect_target, status_code=307)
+
         normalized = requested_path or "index.html"
-        route_key = f"/{requested_path.strip('/')}" if requested_path else "/"
         if route_key == "/competitionCenter/questionBank":
             tab_component = (request.query_params.get("tabComponent") or "").strip()
             if tab_component == "campusQuestionBank":

@@ -35,7 +35,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 | 角色 | 入口 URL | 账号 | 密码 |
 | --- | --- | --- | --- |
 | 管理员 | http://127.0.0.1:8000/background/course-management/school-curriculum | `18164173640` | `123456` |
-| 老师 | http://127.0.0.1:8000/school-home-page/class-management1/students-management1 | `zhaosenlin` | `lbs123456` |
+| 老师 | http://127.0.0.1:8000/school-home-page/class-management1/students-management1 | `zhaosenlin` | `123456` |
 | 学生 | http://127.0.0.1:8000/code-classroom/myClass | `lbschenmuran` | `123456` |
 
 如果想换账号，先到 `runtime/mirror.sqlite3` 的 `profiles` 表里加；登录后立即生效。

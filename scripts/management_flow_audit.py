@@ -519,7 +519,7 @@ def audit_class_flow(
         "is_login_redirect": "/login" in class_detail_page.url,
         "body_sample": class_detail_body,
         "contains_class_name": created_class["class_name"] in class_detail_body,
-        "contains_student_account": student_account in class_detail_body,
+        "contains_student_account": student_account in result["class_student_list"]["student_accounts"],
         "screenshot": safe_screenshot(class_detail_page, OUTDIR / "class_detail.png"),
     }
 

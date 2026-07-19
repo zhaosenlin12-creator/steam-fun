@@ -1201,6 +1201,31 @@ def test_shell_fallback_prunes_missing_prefetch_assets(tmp_path: Path) -> None:
     assert '/css/app.css' in response.text
 
 
+def test_shell_fallback_prunes_missing_same_origin_js_prefetch_assets(tmp_path: Path) -> None:
+    target = tmp_path / "origin" / "steam.fun"
+    (target / "js").mkdir(parents=True, exist_ok=True)
+    (target / "index.html").write_text(
+        (
+            "<!doctype html><html><head>"
+            '<link rel="prefetch" href="/js/chunk-missing.123456.js">'
+            '<link rel="prefetch" href="/js/chunk-present.123456.js">'
+            '<link rel="stylesheet" href="/css/app.css">'
+            "</head><body>shell</body></html>"
+        ),
+        encoding="utf-8",
+    )
+    (target / "js" / "chunk-present.123456.js").write_text("console.log('present');", encoding="utf-8")
+    (target / "css").mkdir(parents=True, exist_ok=True)
+    (target / "css" / "app.css").write_text("body{background:#fff;}", encoding="utf-8")
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get("/school-home-page/class-management1/students-management1")
+
+    assert response.status_code == 200
+    assert '/js/chunk-missing.123456.js' not in response.text
+    assert '/js/chunk-present.123456.js' in response.text
+
+
 def test_classroom_ppt_routes_include_local_narrow_layout_guard(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
@@ -3715,20 +3740,18 @@ def test_competition_center_auth_uses_local_fallback_when_capture_is_invalid_tok
     }
 
 
-def test_competition_center_subroute_bootstraps_teacher_vuex(tmp_path: Path) -> None:
+def test_competition_center_subroute_redirects_to_teacher_core_route(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
 
-    response = client.get("/competitionCenter/questionBankCenter/platform")
+    response = client.get("/competitionCenter/questionBankCenter/platform", follow_redirects=False)
 
-    assert response.status_code == 200
-    assert "shell" in response.text
-    assert "localStorage.setItem('vuex',JSON.stringify(data))" in response.text
-    assert '"token":"teacher-token"' in response.text
+    assert response.status_code == 307
+    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
 
 
-def test_exam_management_subroute_bootstraps_teacher_vuex(tmp_path: Path) -> None:
+def test_exam_management_subroute_redirects_to_teacher_core_route(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
@@ -3736,10 +3759,10 @@ def test_exam_management_subroute_bootstraps_teacher_vuex(tmp_path: Path) -> Non
     response = client.get("/exam-management", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "/exam/exam-management"
+    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
 
 
-def test_practice_management_subroute_redirects_to_exam_namespace(tmp_path: Path) -> None:
+def test_practice_management_subroute_redirects_to_teacher_core_route(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
@@ -3747,40 +3770,33 @@ def test_practice_management_subroute_redirects_to_exam_namespace(tmp_path: Path
     response = client.get("/practice-management", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "/exam/practice-management"
+    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
 
 
-def test_exam_management_namespaced_route_bootstraps_teacher_vuex(tmp_path: Path) -> None:
+def test_exam_management_namespaced_route_redirects_to_teacher_core_route(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
 
-    response = client.get("/exam/exam-management")
+    response = client.get("/exam/exam-management", follow_redirects=False)
 
-    assert response.status_code == 200
-    assert "shell" in response.text
-    assert "localStorage.setItem('vuex',JSON.stringify(data))" in response.text
-    assert '"token":"teacher-token"' in response.text
+    assert response.status_code == 307
+    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
 
 
-def test_exam_student_subroute_bootstraps_student_context_for_exam_shell(tmp_path: Path) -> None:
+def test_exam_student_subroute_redirects_to_student_core_route(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     _store_runtime_student_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
 
-    response = client.get("/exam-stu/new-exam")
+    response = client.get("/exam-stu/new-exam", follow_redirects=False)
 
-    assert response.status_code == 200
-    assert "shell" in response.text
-    assert "localStorage.setItem('vuex',JSON.stringify(data))" in response.text
-    assert '"token":"teacher-token"' in response.text
-    assert '"identity":2' in response.text
-    assert '"username":"lbschenmuran"' in response.text
-    assert '"realName":"Chen Muran"' in response.text
+    assert response.status_code == 307
+    assert response.headers["location"] == "/code-classroom/myClass"
 
 
-def test_exam_student_subroute_redirects_with_default_query_when_missing(tmp_path: Path) -> None:
+def test_exam_student_subroute_without_profile_redirects_to_student_core_route(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
@@ -3788,10 +3804,10 @@ def test_exam_student_subroute_redirects_with_default_query_when_missing(tmp_pat
     response = client.get("/exam-stu/new-exam", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"].startswith("/exam-stu/new-exam?id=242055&title=")
+    assert response.headers["location"] == "/code-classroom/myClass"
 
 
-def test_exam_student_practice_record_redirects_with_default_query_when_missing(tmp_path: Path) -> None:
+def test_exam_student_practice_record_redirects_to_student_core_route(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     _store_runtime_student_profile(tmp_path)
@@ -3800,13 +3816,7 @@ def test_exam_student_practice_record_redirects_with_default_query_when_missing(
     response = client.get("/exam-stu/practice-record", follow_redirects=False)
 
     assert response.status_code == 307
-    location = response.headers["location"]
-    assert location.startswith("/exam-stu/practice-record?title=")
-    assert "exam_id=228978" in location
-    assert "isRecord=1" in location
-    assert "examStuRecordId=2289781" in location
-    assert "stu_id=400057" in location
-    assert "realname=Chen%20Muran" in location
+    assert response.headers["location"] == "/code-classroom/myClass"
 
 
 def test_stuexam_question_list_and_submit_answer_roundtrip(tmp_path: Path) -> None:
@@ -5086,14 +5096,25 @@ def test_school_home_subroute_without_session_bootstraps_local_teacher_context(t
     assert 'sessionStorage.setItem(\'mirror_profile\',"teacher")' in response.text
 
 
-def test_legacy_competition_question_bank_alias_redirects_to_platform_route(tmp_path: Path) -> None:
+def test_legacy_competition_question_bank_alias_redirects_to_teacher_core_route(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
 
     response = client.get("/competitionCenter/questionBank?tabComponent=platformQuestionBank", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "/competitionCenter/questionBankCenter/platform"
+    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
+
+
+def test_platform_curriculum_route_redirects_to_school_curriculum(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path, profile_name="admin", username="18164173640", token="admin-token")
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get("/background/course-management/platform-curriculum", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/background/course-management/school-curriculum"
 
 
 def test_missing_asset_path_does_not_fall_back_to_shell(tmp_path: Path) -> None:
@@ -8851,6 +8872,75 @@ def test_teacher_classroom_student_plan_list_endpoint_returns_local_rows(tmp_pat
     assert row["homeWorkInfo"]["title"] != ""
     assert row["stuInfo"]["id"] == row["student_user_id"]
     assert row["tchPlanInfo"]["id"] == 999999
+
+
+def test_teaching_plan_student_rows_always_expose_array_xm_goods_list(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path, user_info={"id": 12385, "realName": "Teacher Li"})
+    _store_teacher_course_chain_captures(tmp_path)
+    store = MirrorStore(tmp_path)
+    student = store.create_local_student(
+        {
+            "eduCampusId": 851,
+            "headimgUrl": "/_external/wugecdn.steam.fun/resources/static/homepage/nanxueshengtouxiang-min.png",
+            "normalState": "1",
+            "name": "xm-goods-local",
+            "realName": "XM Goods Local",
+            "sex": "M",
+            "parentAPhoneNum": "13800138112",
+            "schoolName": "Mirror School",
+            "grade": "",
+            "leader": "",
+            "remark": "",
+            "studyDate": "2026-05-16",
+        }
+    )
+    store.upsert_local_class(
+        {
+            "id": 3901,
+            "className": "XM Goods Class",
+            "campusId": 851,
+            "lecturer_id": 12385,
+            "lecturer_name": "Teacher Li",
+            "curriculum_class_type": 1,
+            "teaching_type": 1,
+            "week_json": [6],
+            "week_str": "Sat",
+            "time_str": "09:00-10:30",
+            "subjectIdArr": [1],
+            "curriculumIdArr": [501],
+        }
+    )
+    store.upsert_local_class_student_relation(class_id=3901, student_user_id=student["id"], in_class_date="2026-05-18")
+    store.upsert_local_teaching_plan(
+        {
+            "id": 999999,
+            "curriculum_class_id": 3901,
+            "subject_id": 1,
+            "curriculum_id": 501,
+            "curriculum_meterial_id": 7001,
+            "class_date": "2026-05-24",
+            "start_class_date": "2026-05-24 09:00:00",
+            "end_class_date": "2026-05-24 10:30:00",
+            "sort_num": 1,
+            "custom_lesson_title": "Existing Lesson",
+        }
+    )
+    store.upsert_local_teaching_plan_student_relation(
+        teaching_plan_id=999999,
+        student_user_id=student["id"],
+        xm_goods_id=None,
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get(
+        "/api/tch/get/stu/tch/plan/list/by/tch/id?t=1&teachingPlanId=999999&page_no=1&page_size=20",
+        headers={"Authorization": "Bearer teacher-token"},
+    )
+
+    assert response.status_code == 200
+    rows = response.json()["content"]["stuTchPlanList"]
+    assert rows and isinstance(rows[0]["xmGoodsList"], list)
 
 
 def test_get_tch_plan_list_for_add_tmp_and_bulk_template_sync_use_local_overlay(tmp_path: Path) -> None:

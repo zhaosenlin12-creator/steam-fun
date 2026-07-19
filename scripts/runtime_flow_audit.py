@@ -43,6 +43,23 @@ def _storage_state(page) -> tuple[dict[str, str], dict[str, str]]:
     return state["localStorage"], state["sessionStorage"]
 
 
+def _storage_state_with_retry(page, *, attempts: int = 3, wait_ms: int = 1000) -> tuple[dict[str, str], dict[str, str]]:
+    last_error: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            return _storage_state(page)
+        except Exception as exc:
+            last_error = exc
+            if attempt == attempts - 1:
+                raise
+            page.wait_for_timeout(wait_ms)
+            try:
+                page.wait_for_load_state("domcontentloaded", timeout=5000)
+            except Exception:
+                pass
+    raise RuntimeError(f"unable to read storage state: {last_error}")
+
+
 def login(page, username: str, password: str, *, role: str) -> None:
     flow = get_login_flow(role)
     navigate_for_audit(page, f"{BASE}{flow.path}", settle_timeout_ms=1500)
@@ -83,7 +100,7 @@ def login(page, username: str, password: str, *, role: str) -> None:
     except Exception:
         pass
     page.wait_for_timeout(1200)
-    local_storage, _ = _storage_state(page)
+    local_storage, _ = _storage_state_with_retry(page)
     if should_force_post_login_navigation(page.url, local_storage):
         navigate_for_audit(page, f"{BASE}{flow.fallback_path}", settle_timeout_ms=2000)
 
@@ -198,7 +215,7 @@ def main() -> None:
 
         teacher_context = browser.new_context(ignore_https_errors=True)
         teacher_page = teacher_context.new_page()
-        login(teacher_page, "zhaosenlin", "lbs123456", role="teacher")
+        login(teacher_page, "zhaosenlin", "123456", role="teacher")
         results["teacher_login"] = snapshot_page(teacher_page, "teacher_login")
         teacher_page.close()
 

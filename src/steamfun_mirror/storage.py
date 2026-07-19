@@ -230,6 +230,7 @@ def _decode_response_body(body: bytes, headers: dict[str, Any]) -> bytes:
 class MirrorStore:
     def __init__(self, root: Path):
         self.paths = MirrorPaths(root.resolve())
+        self._class_payload_cache: dict[str, dict[str, Any] | None] = {}
         self._ensure_dirs()
         self.init_db()
 
@@ -1806,8 +1807,6 @@ class MirrorStore:
             reverse=True,
         )
 
-    _class_payload_cache: dict[str, dict[str, Any] | None] = {}
-
     def get_class_student_payload(self, class_id: int | str | None) -> dict[str, Any] | None:
         normalized_class_id = str(class_id).strip()
         if not normalized_class_id:
@@ -3119,6 +3118,7 @@ class MirrorStore:
                 ),
             )
         self.set_class_membership_override(normalized_class_id, True)
+        self._class_payload_cache.pop(str(normalized_class_id), None)
         rows = {row["student_user_id"]: row for row in self.list_local_class_students(normalized_class_id)}
         return rows.get(normalized_student_id)
 
@@ -3137,6 +3137,7 @@ class MirrorStore:
                 [(normalized_class_id, student_id) for student_id in normalized_student_ids],
             )
         self.set_class_membership_override(normalized_class_id, True)
+        self._class_payload_cache.pop(str(normalized_class_id), None)
         return normalized_student_ids
 
     def _student_snapshot_by_id(self, student_id: int | str | None) -> dict[str, Any]:
