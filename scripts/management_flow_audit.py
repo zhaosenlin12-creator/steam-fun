@@ -237,6 +237,25 @@ def create_audit_student(
     )
 
 
+def cleanup_audit_student(
+    session: requests.Session,
+    teacher_headers: dict[str, str],
+    *,
+    student_id: int,
+) -> dict[str, Any]:
+    response = session.post(
+        f"{BASE}/java-api/school/stu/batchDelete?t={int(time.time())}",
+        headers=teacher_headers,
+        json=[student_id],
+        timeout=REQUEST_TIMEOUT,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if payload.get("success") is not True:
+        raise RuntimeError(f"Could not delete audit student {student_id}: {payload}")
+    return {"student_id": student_id, "deleted": True}
+
+
 def audit_student_validity_flow(
     browser: Browser,
     session: requests.Session,
@@ -647,6 +666,20 @@ def audit_class_flow(
     return result
 
 
+def admin_page_passed(result: dict[str, Any]) -> bool:
+    return (
+        not result["is_login_redirect"]
+        and result["contains_canonical_admin_home"]
+        and result["class_page"]["contains_class_management"]
+        and result["class_page"]["contains_create_class"]
+        and result["class_page"]["rows"] > 0
+        and result["student_page"]["contains_student_management"]
+        and result["student_page"]["contains_create_student"]
+        and result["student_page"]["rows"] > 0
+        and result["mobile_overflow_free"]
+    )
+
+
 def audit_admin_page(browser: Browser, *, network_audit: dict[str, Any]) -> dict[str, Any]:
     context = authenticated_context(
         browser,
@@ -718,17 +751,12 @@ def audit_admin_page(browser: Browser, *, network_audit: dict[str, Any]) -> dict
         "mobile_screenshot": mobile_screenshot,
     }
     context.close()
-    result["passed"] = (
-        not result["is_login_redirect"]
-        and result["contains_original_admin_home"]
+    result["contains_canonical_admin_home"] = (
+        "/school-home-page/class-management1" in result["url"]
         and result["class_page"]["contains_class_management"]
         and result["class_page"]["contains_create_class"]
-        and result["class_page"]["rows"] > 0
-        and result["student_page"]["contains_student_management"]
-        and result["student_page"]["contains_create_student"]
-        and result["student_page"]["rows"] > 0
-        and result["mobile_overflow_free"]
     )
+    result["passed"] = admin_page_passed(result)
     return result
 
 
@@ -769,6 +797,26 @@ def main() -> None:
                     network_audit=network_audit,
                 )
             finally:
+                student_validity_flow = summary.get("student_validity_flow") or {}
+                created_student = student_validity_flow.get("created_student") or {}
+                student_id = created_student.get("student_id")
+                student_reused = bool(created_student.get("reused"))
+                if student_id and not student_reused:
+                    try:
+                        summary["student_validity_cleanup"] = cleanup_audit_student(
+                            session,
+                            teacher_headers,
+                            student_id=int(student_id),
+                        )
+                    except Exception as exc:
+                        summary["student_validity_cleanup_error"] = str(exc)
+                elif student_id:
+                    summary["student_validity_cleanup"] = {
+                        "skipped": True,
+                        "reason": "persistent demo student is reused across runs",
+                        "student_id": student_id,
+                    }
+
                 class_flow = summary.get("class_flow") or {}
                 created_class = class_flow.get("created_class") or {}
                 class_id = created_class.get("class_id")
@@ -807,6 +855,12 @@ def main() -> None:
             summary[section]["passed"]
             for section in ("admin_page", "student_validity_flow", "class_flow")
         )
+        and "student_validity_cleanup_error" not in summary
+        and (
+            summary.get("student_validity_cleanup", {}).get("deleted") is True
+            or summary.get("student_validity_cleanup", {}).get("skipped") is True
+        )
+        and "class_flow_cleanup_error" not in summary
         and all(
             not network_audit[key]
             for key in (

@@ -43,11 +43,18 @@ DEMO_LESSON_CURRICULUM_MATERIAL_IDS = [7001, 7002]
 
 
 def find_local_student_by_account(store: MirrorStore, account: str) -> dict[str, Any] | None:
-    """Return the ``local_students`` row whose ``name`` matches ``account``."""
+    """Return the visible local student whose ``name`` matches ``account``."""
     with store._connect() as connection:  # noqa: SLF001
         row = connection.execute(
-            "SELECT id, name, realname, campus_id FROM local_students "
-            "WHERE name = ? ORDER BY id DESC LIMIT 1",
+            """
+            SELECT student.id, student.name, student.realname, student.campus_id
+            FROM local_students AS student
+            LEFT JOIN student_overlays AS overlay ON overlay.stu_id = student.id
+            WHERE student.name = ?
+              AND COALESCE(overlay.deleted, 0) = 0
+            ORDER BY student.id DESC
+            LIMIT 1
+            """,
             (account,),
         ).fetchone()
     if row is None:

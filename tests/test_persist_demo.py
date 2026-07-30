@@ -83,6 +83,19 @@ def test_find_student_by_account_returns_row_when_present():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_find_student_by_account_skips_soft_deleted_student():
+    store, tmp = _make_store()
+    try:
+        from persist_demo import find_local_student_by_account, DEMO_STUDENT_ACCOUNT
+
+        student_id = _seed_student(store, name=DEMO_STUDENT_ACCOUNT)
+        store.upsert_student_overlay(student_id, {"deleted": 1, "quit": 0})
+
+        assert find_local_student_by_account(store, DEMO_STUDENT_ACCOUNT) is None
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def test_find_class_for_teacher_filters_by_lecturer_and_campus():
     store, tmp = _make_store()
     try:
