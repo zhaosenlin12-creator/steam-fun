@@ -217,14 +217,23 @@ def student_profile_info(profiles: dict[str, dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def create_audit_student(session: requests.Session, campus_id: int) -> dict[str, Any]:
+def create_audit_student(
+    session: requests.Session,
+    campus_id: int,
+    *,
+    teacher_headers: dict[str, str],
+) -> dict[str, Any]:
     """Idempotent wrapper around ``persist_demo.ensure_persist_student``.
 
     Reused across audit runs so the student validity flow always operates
     on the same demo student record.
     """
     return persist_demo.ensure_persist_student(
-        session, STORE, campus_id, base_url=BASE
+        session,
+        STORE,
+        campus_id,
+        teacher_headers=teacher_headers,
+        base_url=BASE,
     )
 
 
@@ -236,7 +245,11 @@ def audit_student_validity_flow(
     campus_id: int,
     network_audit: dict[str, Any],
 ) -> dict[str, Any]:
-    created = create_audit_student(session, campus_id)
+    created = create_audit_student(
+        session,
+        campus_id,
+        teacher_headers=teacher_headers,
+    )
     result: dict[str, Any] = {
         "created_student": created,
     }
@@ -258,7 +271,18 @@ def audit_student_validity_flow(
             body = resp.text()[:500] if "json" in content_type.lower() else ""
         except Exception:
             body = ""
-        api_events.append({"url": resp.url, "status": resp.status, "body": body})
+        try:
+            request_body = resp.request.post_data or ""
+        except Exception:
+            request_body = ""
+        api_events.append(
+            {
+                "url": resp.url,
+                "status": resp.status,
+                "request_body": request_body[:500],
+                "body": body,
+            }
+        )
 
     page.on("response", on_response)
     navigate_for_audit(page, f"{BASE}/school-home-page/class-management1/students-management1", settle_timeout_ms=4000)

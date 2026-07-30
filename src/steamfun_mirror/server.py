@@ -2741,7 +2741,35 @@ def _extract_request_int_set(request: Request, payload: Any | None = None, *keys
     return set(values)
 
 
-def _resolve_student_end_date(request: Request, payload: Any, store: MirrorStore | None = None) -> str:
+def _resolve_student_end_date(
+    request: Request,
+    payload: Any,
+    store: MirrorStore | None = None,
+    *,
+    student_id: int | None = None,
+) -> str:
+    type_value = _parse_int_like(payload.get("type")) if isinstance(payload, dict) else None
+    if type_value == 1:
+        day_num = _parse_int_like(payload.get("dayNum")) if isinstance(payload, dict) else None
+        if day_num is None or day_num <= 0:
+            return ""
+
+        # The duration dialog previews from a student's remaining validity
+        # when it is still active. Match that behavior for every selected
+        # student, falling back to today for expired or unset validity.
+        baseline_date = datetime.now()
+        if store is not None and student_id is not None:
+            overlay = store.get_student_overlay(student_id) or {}
+            current_end_date = str(overlay.get("end_date") or "").strip()[:10]
+            if current_end_date:
+                try:
+                    parsed_end_date = datetime.strptime(current_end_date, "%Y-%m-%d")
+                except ValueError:
+                    parsed_end_date = None
+                if parsed_end_date is not None and parsed_end_date > baseline_date:
+                    baseline_date = parsed_end_date
+        return (baseline_date + timedelta(days=day_num)).strftime("%Y-%m-%d")
+
     direct_value = _request_payload_value(
         request,
         payload,
@@ -2757,42 +2785,7 @@ def _resolve_student_end_date(request: Request, payload: Any, store: MirrorStore
     direct_text = str(direct_value or "").strip()
     if direct_text:
         return direct_text[:10]
-
-    if not isinstance(payload, dict):
-        return ""
-
-    type_value = _parse_int_like(payload.get("type"))
-    if type_value != 1:
-        return ""
-
-    day_num = _parse_int_like(payload.get("dayNum"))
-    if day_num is None or day_num <= 0:
-        return ""
-
-    # When the dialog offers a fixed duration (e.g. “1 个月” = 30 days)
-    # the front-end shows the resulting date as current_end_date + dayNum.
-    # Match that semantics here so mock writes agree with the dialog preview.
-    baseline_text = ""
-    candidate_ids = _extract_student_ids(payload, request)
-    if candidate_ids:
-        existing_overlay = store.get_student_overlay(candidate_ids[0])
-        if isinstance(existing_overlay, dict):
-            overlay_end_date = existing_overlay.get("end_date")
-            if isinstance(overlay_end_date, str) and overlay_end_date:
-                baseline_text = overlay_end_date[:10]
-    if not baseline_text:
-        for student in store.list_local_students():
-            if candidate_ids and _coerce_int(student.get("id")) == candidate_ids[0]:
-                study_date = student.get("study_date")
-                if isinstance(study_date, str) and study_date:
-                    baseline_text = study_date[:10]
-                break
-
-    try:
-        baseline_date = datetime.strptime(baseline_text, "%Y-%m-%d")
-    except (TypeError, ValueError):
-        baseline_date = datetime.now()
-    return (baseline_date + timedelta(days=day_num)).strftime("%Y-%m-%d")
+    return ""
 
 
 def _student_member_class_ids(store: MirrorStore, student_id: int | str | None) -> set[int]:
@@ -11215,20 +11208,27 @@ def _merge_local_students_into_payload(store: MirrorStore, request: Request, pay
     if path == "/java-api/school/stu/selectStudy":
         rows: list[Any] = []
         local_count = 0
+        local_student_ids: set[int] = set()
         for student in store.list_local_students():
             overlay = store.get_student_overlay(student["id"])
             if _student_overlay_is_hidden(overlay):
                 continue
             rows.append(_build_local_select_study_entry(student, store))
             local_count += 1
+            local_student_ids.add(student["id"])
         existing = content.get("content") or []
         removed_existing = 0
+        replaced_existing = 0
         if isinstance(existing, list):
             for row in existing:
                 if not isinstance(row, dict):
                     rows.append(row)
                     continue
-                overlay = store.get_student_overlay(_student_row_id(row))
+                student_id = _student_row_id(row)
+                if student_id in local_student_ids:
+                    replaced_existing += 1
+                    continue
+                overlay = store.get_student_overlay(student_id)
                 if _student_overlay_is_hidden(overlay):
                     removed_existing += 1
                     continue
@@ -11236,7 +11236,11 @@ def _merge_local_students_into_payload(store: MirrorStore, request: Request, pay
         content["content"] = rows
         original_total_size = content.get("totalSize")
         total_size_value = _parse_int_like(original_total_size)
-        total_size = len(rows) if total_size_value is None else max(total_size_value - removed_existing, 0) + local_count
+        total_size = (
+            len(rows)
+            if total_size_value is None
+            else max(total_size_value - removed_existing - replaced_existing, 0) + local_count
+        )
         content["totalSize"] = _format_total_like(original_total_size, total_size)
         page_size = _parse_int_like(content.get("pageSize")) or len(rows) or 1
         content["totalPages"] = 0 if total_size == 0 else (total_size + page_size - 1) // page_size
@@ -13303,10 +13307,15 @@ def _build_local_api_fallback(store: MirrorStore, request: Request, request_body
     if path == "/java-api/school/stu/setEndDate":
         submitted = _load_request_payload(request_body)
         student_ids = _extract_student_ids(submitted, request)
-        end_date = _resolve_student_end_date(request, submitted, store)
-        if student_ids and end_date:
-            store.bulk_upsert_student_overlay(student_ids, {"end_date": end_date})
-            for student_id in student_ids:
+        for student_id in student_ids:
+            end_date = _resolve_student_end_date(
+                request,
+                submitted,
+                store,
+                student_id=student_id,
+            )
+            if end_date:
+                store.bulk_upsert_student_overlay([student_id], {"end_date": end_date})
                 store.update_student_study_date(student_id, end_date)
         return _local_json_record(
             _success_payload(
@@ -13321,10 +13330,15 @@ def _build_local_api_fallback(store: MirrorStore, request: Request, request_body
     if path == "/java-api/school/stu/batchSetEndDate":
         submitted = _load_request_payload(request_body)
         student_ids = _extract_student_ids(submitted, request)
-        end_date = _resolve_student_end_date(request, submitted, store)
-        if student_ids and end_date:
-            store.bulk_upsert_student_overlay(student_ids, {"end_date": end_date})
-            for student_id in student_ids:
+        for student_id in student_ids:
+            end_date = _resolve_student_end_date(
+                request,
+                submitted,
+                store,
+                student_id=student_id,
+            )
+            if end_date:
+                store.bulk_upsert_student_overlay([student_id], {"end_date": end_date})
                 store.update_student_study_date(student_id, end_date)
         return _local_json_record(
             _success_payload(
@@ -13990,9 +14004,54 @@ def _store_default_staff_profile(
     )
 
 
+def _ensure_default_local_runtime_materials(store: MirrorStore) -> None:
+    """Provide explicit local course materials for the seeded offline class."""
+    store.upsert_local_curriculum_snapshot(
+        {
+            "id": 501,
+            "subject_id": 1,
+            "title": "AI 创造启蒙",
+            "number_of_courses": 2,
+            "img_url": "/_site/courses/images/robot-camp.webp",
+        }
+    )
+    for material in (
+        {
+            "id": 7001,
+            "subject_id": 1,
+            "curriculum_id": 501,
+            "title": "AI 创造启蒙：智能小车",
+            "sort_num": 1,
+            "desc": "认识传感器与顺序控制，完成第一辆智能小车。",
+            "img_url": "/_site/courses/images/robot-camp.webp",
+            "ppt_url": "/_site/workspace/ppt-demo.html?lesson=smart-car",
+            "teach_template_url": "/_site/workspace/ppt-demo.html?lesson=smart-car",
+            "exampal_work_url": "/_site/workspace/ppt-demo.html?lesson=smart-car",
+            "home_template_url": "/_site/workspace/ppt-demo.html?lesson=smart-car",
+        },
+        {
+            "id": 7002,
+            "subject_id": 1,
+            "curriculum_id": 501,
+            "title": "AI 创造启蒙：机器人任务",
+            "sort_num": 2,
+            "desc": "组合机械结构与程序控制，完成协作挑战。",
+            "img_url": "/_site/courses/images/lego-course.webp",
+            "ppt_url": "/_site/workspace/ppt-demo.html?lesson=robot-mission",
+            "teach_template_url": "/_site/workspace/ppt-demo.html?lesson=robot-mission",
+            "exampal_work_url": "/_site/workspace/ppt-demo.html?lesson=robot-mission",
+            "home_template_url": "/_site/workspace/ppt-demo.html?lesson=robot-mission",
+        },
+    ):
+        store.upsert_local_curriculum_material_snapshot(material)
+
+
 def _ensure_default_local_runtime_data(store: MirrorStore) -> None:
     """Seed a brand-new local runtime with usable role and class data."""
     if store.list_profiles():
+        teacher_profile = store.get_profile("teacher") or {}
+        if teacher_profile.get("token") == "local-teacher-token":
+            _ensure_default_local_runtime_materials(store)
         return
 
     campus_id = 851
@@ -14119,6 +14178,8 @@ def _ensure_default_local_runtime_data(store: MirrorStore) -> None:
         student_user_id=student_id,
         in_class_date="2026-07-01",
     )
+
+    _ensure_default_local_runtime_materials(store)
 
     for index, payload in enumerate(
         (

@@ -167,3 +167,38 @@ def test_summarize_persistence_reports_missing_student():
         assert snap["class_name"] == DEMO_CLASS_NAME
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_ensure_persist_student_uses_teacher_authorization_headers():
+    store, tmp = _make_store()
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"content": {"studentId": 101}}
+
+    class Session:
+        def __init__(self):
+            self.headers = None
+
+        def post(self, url, *, headers, json, timeout):
+            self.headers = headers
+            return Response()
+
+    try:
+        from persist_demo import ensure_persist_student
+
+        session = Session()
+        result = ensure_persist_student(
+            session,
+            store,
+            851,
+            teacher_headers={"Authorization": "Bearer teacher-token"},
+        )
+
+        assert result["student_id"] == 101
+        assert session.headers == {"Authorization": "Bearer teacher-token"}
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

@@ -1171,7 +1171,7 @@ class MirrorStore:
             for material in materials:
                 if isinstance(material, dict) and str(material.get("id", "")).strip() == wanted:
                     return material
-        return None
+        return self.get_local_curriculum_material_snapshot(wanted)
 
     def list_curriculum_materials(self) -> list[dict[str, Any]]:
         with self._connect() as connection:
@@ -1205,6 +1205,13 @@ class MirrorStore:
                 material_id = str(material.get("id", "")).strip()
                 if not material_id or material_id in materials_by_id:
                     continue
+                materials_by_id[material_id] = material
+
+        # Captured responses remain authoritative. Local snapshots make a
+        # fresh offline runtime usable when no captured course data exists.
+        for material in self.list_local_curriculum_material_snapshots():
+            material_id = str(material.get("id", "")).strip()
+            if material_id and material_id not in materials_by_id:
                 materials_by_id[material_id] = material
 
         def sort_key(material: dict[str, Any]) -> tuple[int, int, int]:
@@ -4069,6 +4076,9 @@ class MirrorStore:
                     "cost_lesson_hour": plan.get("cost_lesson_hour"),
                     "sort_num": plan.get("sort_num"),
                     "curriculum_class_id": class_id,
+                    "curriculum_meterial_id": plan.get("curriculum_meterial_id"),
+                    "curriculum_material_id": plan.get("curriculum_meterial_id"),
+                    "curriculumMaterialId": plan.get("curriculum_meterial_id"),
                     "educational_institution_campus_id": plan.get("educational_institution_campus_id"),
                     "custom_lesson_title": plan.get("custom_lesson_title") or "",
                     "custom_lesson_desc": plan.get("custom_lesson_desc"),

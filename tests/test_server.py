@@ -456,6 +456,64 @@ def test_default_runtime_serves_spa_bootstrap_apis_without_mirror_misses(tmp_pat
     assert any(row["name"] == "乐启享 AI 创造周六班" for row in student_classes)
 
 
+def test_default_runtime_serves_seeded_teacher_ppt_material_detail(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    login = client.post(
+        "/java-api/school/tch/login",
+        json={"userName": "zhaosenlin", "password": "123456", "captchaVerifyParam": ""},
+    )
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {_login_token(login.json())}"}
+
+    response = client.post(
+        "/java-api/school/currMat/detail?t=1",
+        headers=headers,
+        json={"currMatId": 7001, "tchPlanId": 5182933},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["success"] is True
+    assert payload["content"]["curriculumMaterial"]["id"] == 7001
+    assert payload["content"]["curriculumMaterial"]["pptUrl"]
+    assert payload["content"]["tchPlanInfo"]["teachingPlanId"] == 5182933
+
+
+def test_default_runtime_select_study_rows_are_not_duplicated(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    login = client.post(
+        "/java-api/school/tch/login",
+        json={"userName": "zhaosenlin", "password": "123456", "captchaVerifyParam": ""},
+    )
+    headers = {"Authorization": f"Bearer {_login_token(login.json())}"}
+    response = client.post(
+        "/java-api/school/stu/selectStudy?t=1",
+        headers=headers,
+        json={"pageRequest": {"pageNum": 1, "pageSize": 20}},
+    )
+
+    assert response.status_code == 200
+    rows = response.json()["content"]["content"]
+    student_ids = [row["stuId"] for row in rows]
+    assert student_ids == list(dict.fromkeys(student_ids))
+    assert response.json()["content"]["totalSize"] == len(rows)
+
+
+def test_default_runtime_backfills_materials_for_existing_local_teacher_profile(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path, token="local-teacher-token")
+
+    create_app(tmp_path, allow_live_proxy=False)
+
+    material = MirrorStore(tmp_path).get_local_curriculum_material_snapshot(7001)
+    assert material is not None
+    assert material["ppt_url"] == "/_site/workspace/ppt-demo.html?lesson=smart-car"
+
+
 def test_student_login_prefers_canonical_profile_over_stale_local_duplicate(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     store = MirrorStore(tmp_path)
@@ -5258,6 +5316,42 @@ def test_student_set_end_date_supports_daynum_payload_from_ui(tmp_path: Path) ->
     assert target["endDate"] == overlay["end_date"]
 
 
+def test_student_set_end_date_duration_extends_active_existing_expiry(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    store = MirrorStore(tmp_path)
+    student = store.create_local_student(
+        {
+            "eduCampusId": 851,
+            "name": "duration-student",
+            "realName": "Duration Student",
+            "studyDate": "2026-05-18",
+        }
+    )
+    store.upsert_student_overlay(student["id"], {"end_date": "2026-08-30"})
+
+    class FrozenDateTime(server_module.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 7, 31)
+
+    monkeypatch.setattr(server_module, "datetime", FrozenDateTime)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.post(
+        "/java-api/school/stu/setEndDate?t=2",
+        headers={"Authorization": "Bearer teacher-token"},
+        json={"type": 1, "endDate": "", "dayNum": "30", "stuId": student["id"]},
+    )
+
+    assert response.status_code == 200
+    overlay = store.get_student_overlay(student["id"])
+    assert overlay is not None
+    assert overlay["end_date"] == "2026-09-29"
+
+
 def test_student_batch_set_end_date_persists_for_multiple_cached_student_rows(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
@@ -7662,6 +7756,42 @@ def test_local_teaching_plan_by_class_id_fallback_uses_cached_capture_with_filte
     assert len(content["teaching_plan_list"]) == 1
     assert content["teaching_plan_list"][0]["id"] == 81001
     assert content["teaching_plan_list"][0]["lessionInfo"]["img_url"].startswith("/_external/")
+
+
+def test_local_teaching_plan_by_class_preserves_curriculum_material_id(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path, user_info={"id": 12385, "realName": "Teacher Li"})
+    store = MirrorStore(tmp_path)
+    store.upsert_local_class(
+        {
+            "id": 3901,
+            "className": "Material ID Class",
+            "campusId": 851,
+            "lecturer_id": 12385,
+            "lecturer_name": "Teacher Li",
+            "subjectIdArr": [1],
+            "curriculumIdArr": [501],
+        }
+    )
+    store.upsert_local_teaching_plan(
+        {
+            "id": 81001,
+            "curriculum_class_id": 3901,
+            "curriculum_meterial_id": 7002,
+            "subject_id": 1,
+            "curriculum_id": 501,
+        }
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get(
+        "/api/get/teaching/plan/by/class/id?t=1&classes_id=3901&title=&sign_state=",
+        headers={"Authorization": "Bearer teacher-token"},
+    )
+
+    assert response.status_code == 200
+    row = response.json()["content"]["teaching_plan_list"][0]
+    assert row["curriculum_meterial_id"] == 7002
 
 
 def test_teacher_classlist_includes_local_class_without_existing_teaching_plan(tmp_path: Path) -> None:

@@ -127,6 +127,7 @@ def ensure_persist_student(
     store: MirrorStore,
     campus_id: int,
     *,
+    teacher_headers: dict[str, str],
     base_url: str = "http://127.0.0.1:8000",
 ) -> dict[str, Any]:
     """Return the demo student, creating it if missing."""
@@ -156,6 +157,7 @@ def ensure_persist_student(
     }
     response = session.post(
         f"{base_url}/java-api/school/stu/create",
+        headers=teacher_headers,
         json=payload,
         timeout=30,
     )
