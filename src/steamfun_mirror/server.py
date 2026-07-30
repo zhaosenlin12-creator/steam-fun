@@ -180,14 +180,20 @@ STUDENT_CLASS_DETAIL_GUARD = (
     "if(window.__localStudentClassDetailGuard){return;}"
     "window.__localStudentClassDetailGuard=true;"
     "var detailPath=/\\/code-classroom\\/classlist_desc_teacher(?:\\/)?$/;"
+    "var teacherOnlyPath=/^(?:\\/code-classroom\\/(?:prepare-lessons|teach-lessons)|\\/school-home-page|\\/background)(?:\\/|$)/;"
     "var studentTab='\\u5b66\\u5458\\u4fe1\\u606f';"
     "var teacherLabels=['\\u8fdb\\u5165\\u8bfe\\u5802','\\u5907\\u8bfe','\\u70b9\\u540d\\u4e0a\\u8bfe'];"
+    "var teacherMenuLabel='\\u5907\\u8bfe\\u4e2d\\u5fc3';"
     "function isStudent(){try{if(/(?:^|;\\s*)mirror_profile=(?:student|local_student_)/.test(document.cookie)){return true;}}catch(e){}"
     "try{if(sessionStorage.getItem('mirror_profile')==='student'){return true;}}catch(e){}"
     "try{var state=JSON.parse(localStorage.getItem('vuex')||'{}');return Number(((state||{}).user||{}).identity)===2;}catch(e){return false;}}"
     "function apply(){"
     "var root=document.documentElement;"
-    "if(!isStudent()||!detailPath.test(location.pathname||'')){root.classList.remove('local-student-class-detail');return;}"
+    "if(!isStudent()){root.classList.remove('local-student-class-detail');return;}"
+    "var path=location.pathname||'';"
+    "if(teacherOnlyPath.test(path)){if(!window.__localStudentTeacherRouteRedirect){window.__localStudentTeacherRouteRedirect=true;window.location.replace('/code-classroom/myClass');}return;}"
+    "Array.prototype.forEach.call(document.querySelectorAll('.school-home-page>.frame>.menu .el-menu-item'),function(item){if((item.textContent||'').trim()===teacherMenuLabel){item.setAttribute('aria-hidden','true');item.style.setProperty('display','none','important');}});"
+    "if(!detailPath.test(path)){root.classList.remove('local-student-class-detail');return;}"
     "root.classList.add('local-student-class-detail');"
     "Array.prototype.forEach.call(document.querySelectorAll('.classlist-btn'),function(node){node.style.setProperty('display','none','important');});"
     "Array.prototype.forEach.call(document.querySelectorAll('button'),function(button){if(teacherLabels.indexOf((button.textContent||'').trim())!==-1){button.style.setProperty('display','none','important');}});"
@@ -11003,12 +11009,17 @@ def _build_local_select_study_entry(student: dict[str, Any], store: MirrorStore)
     school_info = (teacher_profile.get("fresh_auth") or {}).get("schoolInfo") or {}
     campus_name = school_info.get("campusName") or school_info.get("name") or "姒涙顓婚弽鈥冲隘"
     display_name = _student_display_name(student, default_id=student.get("id"))
+    class_names = [
+        str(membership.get("className") or "").strip()
+        for membership in _student_class_membership_rows(store, student.get("id"))
+        if str(membership.get("className") or "").strip()
+    ]
     row = {
         "stuId": student["id"],
         "stuName": display_name,
         "normalState": int(student["normal_state"]) if str(student["normal_state"]).isdigit() else 1,
         "stuAccount": student["name"],
-        "className": "--",
+        "className": "、".join(class_names) if class_names else "--",
         "openId": None,
         "authorizerOpenid": None,
         "parentWeChat": DEFAULT_UNBOUND_TEXT,

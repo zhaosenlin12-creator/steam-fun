@@ -649,6 +649,17 @@ def test_runtime_guards_hide_teacher_controls_on_student_class_detail() -> None:
     assert "\\u5b66\\u5458\\u4fe1\\u606f" in patched
 
 
+def test_runtime_guards_redirect_student_spa_navigation_from_teacher_prepare_routes() -> None:
+    html = "<!doctype html><html><head></head><body></body></html>"
+
+    patched = server_module._inject_runtime_guards(html)
+
+    assert "prepare-lessons|teach-lessons" in patched
+    assert "school-home-page|\\/background" in patched
+    assert "window.location.replace('/code-classroom/myClass')" in patched
+    assert "\\u5907\\u8bfe\\u4e2d\\u5fc3" in patched
+
+
 def test_shared_class_detail_route_is_available_to_teacher_and_student(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
@@ -9959,6 +9970,51 @@ def test_select_study_direct_local_fallback_uses_account_name_when_realname_is_p
     row = response.json()["content"]["content"][0]
     assert row["stuName"] == "audit_local_1"
     assert row["stuAccount"] == "audit_local_1"
+
+
+def test_select_study_local_fallback_includes_persisted_class_membership(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    store = MirrorStore(tmp_path)
+    student = store.create_local_student(
+        {
+            "eduCampusId": 851,
+            "normalState": "1",
+            "name": "enrolled-student",
+            "realName": "Enrolled Student",
+            "sex": "F",
+            "parentAPhoneNum": "13800138111",
+            "schoolName": "Mirror School",
+            "grade": "",
+            "leader": "",
+            "remark": "",
+            "studyDate": "2026-05-16",
+        }
+    )
+    store.upsert_local_class(
+        {
+            "id": 4001,
+            "name": "Persisted Membership Class",
+            "campusId": 851,
+            "curriculum_class_type": 1,
+        }
+    )
+    store.upsert_local_class_student_relation(
+        class_id=4001,
+        student_user_id=student["id"],
+        in_class_date="2026-05-16",
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.post(
+        "/java-api/school/stu/selectStudy?t=1",
+        headers={"Authorization": "Bearer teacher-token"},
+        json={"pageRequest": {"pageNum": 1, "pageSize": 20}},
+    )
+
+    assert response.status_code == 200
+    row = response.json()["content"]["content"][0]
+    assert row["className"] == "Persisted Membership Class"
 
 
 def test_local_work_copy_and_sync_endpoints_return_local_content(tmp_path: Path) -> None:
