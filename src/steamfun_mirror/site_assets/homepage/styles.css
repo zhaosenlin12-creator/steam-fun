@@ -50,13 +50,13 @@ svg {
 }
 
 .font-grotesk {
-  font-family: "Anton", Impact, sans-serif;
+  font-family: Impact, "Arial Narrow", "Microsoft YaHei", sans-serif;
   font-weight: 400;
   text-transform: uppercase;
 }
 
 .font-condiment {
-  font-family: "Condiment", cursive;
+  font-family: Georgia, "KaiTi", "STKaiti", serif;
   font-weight: 400;
 }
 

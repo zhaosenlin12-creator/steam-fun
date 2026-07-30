@@ -252,7 +252,7 @@ def test_profile_role_distinguishes_admin_teacher_and_student(tmp_path: Path) ->
 
 
 def test_role_capabilities_define_canonical_workspaces_and_route_scope() -> None:
-    assert server_module._default_frontend_route_for_role("admin") == "/background/course-management/school-curriculum"
+    assert server_module._default_frontend_route_for_role("admin") == "/school-home-page/class-management1"
     assert server_module._default_frontend_route_for_role("teacher") == "/code-classroom/classroom-index"
     assert server_module._default_frontend_route_for_role("student") == "/code-classroom/myClass"
     assert server_module._allowed_frontend_roles("/school-home-page/school-user-list") == frozenset({"admin"})
@@ -614,7 +614,7 @@ def test_runtime_guards_redirect_authenticated_spa_root_to_canonical_role_home()
     assert "__localCoreRouteCleanup" not in patched
     assert "__localNonCoreDashboardGuard" not in patched
     assert "__localPostLoginRedirectGuard" in patched
-    assert "admin:'/background/course-management/school-curriculum'" in patched
+    assert "admin:'/school-home-page/class-management1'" in patched
     assert "teacher:'/code-classroom/classroom-index'" in patched
     assert "student:'/code-classroom/myClass'" in patched
     assert "event.stopImmediatePropagation()" in patched
@@ -635,6 +635,17 @@ def test_runtime_guards_add_path_scoped_student_myclass_responsive_layout() -> N
     assert "local-student-myclass" in patched
     assert "html.local-student-myclass .school-home-page>.frame>.menu" in patched
     assert "html.local-student-myclass .school-home-page>.frame>section" in patched
+
+
+def test_runtime_guards_add_path_scoped_admin_mobile_layout() -> None:
+    html = "<!doctype html><html><head></head><body></body></html>"
+
+    patched = server_module._inject_runtime_guards(html)
+
+    assert "__localAdminWorkspaceLayout" in patched
+    assert "local-admin-workspace" in patched
+    assert "local-admin-menu-toggle" in patched
+    assert "html.local-admin-workspace .school-home-page>.frame>.menu" in patched
 
 
 def test_admin_workspace_bootstrap_contains_operational_metrics(tmp_path: Path) -> None:
@@ -724,7 +735,7 @@ def test_workspace_pages_redirect_to_canonical_role_homes(tmp_path: Path) -> Non
     admin.cookies.set("mirror_profile", "admin")
     admin_response = admin.get("/workspace/admin", follow_redirects=False)
     assert admin_response.status_code in {302, 303, 307}
-    assert admin_response.headers["location"] == "/background/course-management/school-curriculum"
+    assert admin_response.headers["location"] == "/school-home-page/class-management1"
 
     teacher = TestClient(app)
     teacher.cookies.set("mirror_profile", "teacher")
@@ -2126,6 +2137,14 @@ def test_marketing_homepage_contains_required_sections(tmp_path: Path) -> None:
     assert "camp2.webp" in response.text
     assert "cinema-wall" in response.text
     assert "texture.png" not in response.text
+    assert "fonts.googleapis.com" not in response.text
+    assert "fonts.gstatic.com" not in response.text
+
+    for path in ("/courses", "/courses.html", "/course-detail.html?id=lego-large"):
+        public_page = client.get(path)
+        assert public_page.status_code == 200
+        assert "fonts.googleapis.com" not in public_page.text
+        assert "fonts.gstatic.com" not in public_page.text
 
 
 
@@ -5935,6 +5954,7 @@ def test_local_background_curriculum_page_uses_curated_bootstrap_without_dom_hid
         profile_name="admin",
         username="zhaosenlin",
         token="teacher-token",
+        user_info={"principal": True},
     )
     store = MirrorStore(tmp_path)
     store.store_route_capture(
@@ -5963,15 +5983,11 @@ def test_local_background_curriculum_page_uses_curated_bootstrap_without_dom_hid
     response = client.get(
         "/background/course-management/school-curriculum",
         headers={"Referer": "http://127.0.0.1:8000/background/course-management/school-curriculum"},
+        follow_redirects=False,
     )
 
-    assert response.status_code == 200
-    assert "首页" in response.text
-    assert "前台业务" in response.text
-    assert '"school-user-list"' in response.text
-    assert '"schoolSys"' in response.text
-    assert '"orderpay"' not in response.text
-    assert "__localCoreRouteCleanup" not in response.text
+    assert response.status_code == 307
+    assert response.headers["location"] == "/school-home-page/course-list"
 
 
 def test_local_background_curriculum_page_bootstrap_uses_admin_teaching_permissions(tmp_path: Path) -> None:
@@ -6121,7 +6137,19 @@ def test_platform_curriculum_route_redirects_to_admin_workspace(tmp_path: Path) 
     response = client.get("/background/course-management/platform-curriculum", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "/background/course-management/school-curriculum"
+    assert response.headers["location"] == "/school-home-page/class-management1"
+
+
+def test_legacy_admin_course_center_redirects_to_original_course_management(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path, profile_name="admin", username="18164173640", token="admin-token")
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "admin")
+
+    response = client.get("/background/course-management/school-curriculum", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/school-home-page/course-list"
 
 
 def test_missing_asset_path_does_not_fall_back_to_shell(tmp_path: Path) -> None:
@@ -10198,7 +10226,7 @@ def test_admin_login_returns_authoritative_role_and_redirect(tmp_path: Path) -> 
     assert response.json()["mirror"] == {
         "profile": "admin",
         "role": "admin",
-        "redirect": "/background/course-management/school-curriculum",
+        "redirect": "/school-home-page/class-management1",
     }
     login_auth_tree = json.loads(response.json()["content"]["authTree"])
     login_permissions = json.dumps(login_auth_tree, ensure_ascii=False)
@@ -10248,7 +10276,7 @@ def test_protected_frontend_routes_require_login_and_enforce_role(tmp_path: Path
     admin.cookies.set("mirror_profile", "admin")
     admin_response = admin.get("/code-classroom", follow_redirects=False)
     assert admin_response.status_code in {302, 303, 307}
-    assert admin_response.headers["location"] == "/background/course-management/school-curriculum"
+    assert admin_response.headers["location"] == "/school-home-page/class-management1"
 
 
 def test_role_specific_api_prefixes_reject_missing_and_mismatched_sessions(tmp_path: Path) -> None:
@@ -10267,3 +10295,56 @@ def test_role_specific_api_prefixes_reject_missing_and_mismatched_sessions(tmp_p
     teacher = TestClient(app)
     teacher.cookies.set("mirror_profile", "teacher")
     assert teacher.get("/java-api/student/stu/freshData").status_code == 403
+
+
+def test_local_curriculum_snapshots_populate_original_course_surfaces(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    store = MirrorStore(tmp_path)
+    store.upsert_local_subject_snapshot({"id": 1, "code": 1, "name": "Jrcode"})
+    store.upsert_local_curriculum_snapshot(
+        {
+            "id": 501,
+            "subject_id": 1,
+            "title": "Offline AI Creation",
+            "number_of_courses": 2,
+            "curriculum_desc": "Local course catalog",
+            "img_url": "/_site/courses/images/robot-camp.webp",
+        }
+    )
+    store.upsert_local_curriculum_material_snapshot(
+        {
+            "id": 7001,
+            "subject_id": 1,
+            "curriculum_id": 501,
+            "title": "Smart Car",
+            "sort_num": 1,
+            "ppt_url": "/_site/workspace/ppt-demo.html?lesson=smart-car",
+        }
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    headers = {"Authorization": "Bearer teacher-token"}
+
+    campus_catalog = client.get(
+        "/api/get/campus/curriculum/list/by/page?subjectId=1&page_no=1&page_size=20",
+        headers=headers,
+    )
+    assert campus_catalog.status_code == 200
+    campus_rows = campus_catalog.json()["content"]["campusAuthList"]
+    assert [row["curriculumInfo"]["id"] for row in campus_rows] == [501]
+
+    admin_catalog = client.get(
+        "/api/admin/get/school/curriculum/list?check_state=2&page_no=1&page_size=20",
+        headers=headers,
+    )
+    assert admin_catalog.status_code == 200
+    assert [row["id"] for row in admin_catalog.json()["content"]["curriculum_list"]] == [501]
+
+    material_list = client.get(
+        "/api/prepare/get/currculumMaterialList?curriculum_id=501&page_no=1&page_size=20",
+        headers=headers,
+    )
+    assert material_list.status_code == 200
+    material_content = material_list.json()["content"]
+    assert material_content["curriculumInfo"]["id"] == 501
+    assert [row["id"] for row in material_content["curriculumMaterialList"]] == [7001]

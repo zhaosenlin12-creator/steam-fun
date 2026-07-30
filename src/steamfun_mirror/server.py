@@ -174,6 +174,68 @@ STUDENT_MYCLASS_LAYOUT_GUARD = (
     "}"
     "</style>"
 )
+ADMIN_WORKSPACE_LAYOUT_GUARD = (
+    "<script>"
+    "(function(){"
+    "if(window.__localAdminWorkspaceLayout){return;}"
+    "window.__localAdminWorkspaceLayout=true;"
+    "if(!/^\\/school-home-page(?:\\/|$)/.test(location.pathname||'')){return;}"
+    "function isAdmin(){try{return sessionStorage.getItem('mirror_profile')==='admin';}catch(e){return false;}}"
+    "function bind(){"
+    "if(!isAdmin()){return;}"
+    "var root=document.documentElement;"
+    "var frame=document.querySelector('.school-home-page>.frame');"
+    "var menu=document.querySelector('.school-home-page>.frame>.menu');"
+    "if(!frame||!menu||document.getElementById('local-admin-menu-toggle')){return;}"
+    "root.classList.add('local-admin-workspace');"
+    "var toggle=document.createElement('button');"
+    "toggle.id='local-admin-menu-toggle';toggle.type='button';toggle.className='local-admin-menu-toggle';"
+    "toggle.setAttribute('aria-label','Open navigation');toggle.setAttribute('aria-expanded','false');"
+    "toggle.setAttribute('title','Open navigation');toggle.innerHTML='<span aria-hidden=\"true\">&#9776;</span>';"
+    "var scrim=document.createElement('div');scrim.className='local-admin-menu-scrim';"
+    "function setOpen(open){frame.classList.toggle('local-admin-menu-open',open);root.classList.toggle('local-admin-menu-open',open);toggle.setAttribute('aria-expanded',String(open));}"
+    "toggle.addEventListener('click',function(){setOpen(!frame.classList.contains('local-admin-menu-open'));});"
+    "scrim.addEventListener('click',function(){setOpen(false);});"
+    "menu.addEventListener('click',function(event){if(event.target&&event.target.closest&&event.target.closest('.el-menu-item')){setOpen(false);}});"
+    "window.addEventListener('resize',function(){if(window.innerWidth>760){setOpen(false);}});"
+    "document.body.appendChild(scrim);document.body.appendChild(toggle);"
+    "}"
+    "function schedule(){bind();}"
+    "if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',schedule,{once:true});}else{schedule();}"
+    "setTimeout(schedule,250);setTimeout(schedule,1200);setTimeout(schedule,2500);"
+    "}());"
+    "</script>"
+    "<style>"
+    "@media(max-width:760px){"
+    "html.local-admin-workspace,html.local-admin-workspace body,"
+    "html.local-admin-workspace #app,html.local-admin-workspace #app>.container,"
+    "html.local-admin-workspace .school-home-page,html.local-admin-workspace .school-home-page>.frame{"
+    "min-width:0!important;width:100%!important;max-width:100%!important;overflow-x:hidden!important;}"
+    "html.local-admin-workspace #home_top{height:60px!important;min-height:60px!important;overflow:hidden!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;height:60px!important;padding:0 8px!important;box-sizing:border-box!important;overflow:hidden!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row>.el-col-4{float:none!important;flex:0 0 152px!important;width:152px!important;min-width:152px!important;overflow:hidden!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row>.el-col-4>div{margin-left:0!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row>.el-col-4 .el-select{min-width:140px!important;width:140px!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row>.el-col-14{float:none!important;flex:1 1 auto!important;width:auto!important;min-width:0!important;overflow:hidden!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row>.el-col-14 .el-menu--horizontal{display:flex!important;width:100%!important;max-width:100%!important;overflow:hidden!important;white-space:nowrap!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row>.el-col-14 .el-menu--horizontal>.el-menu-item{padding:0 8px!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row>.el-col-6{float:none!important;flex:0 0 44px!important;width:44px!important;min-width:44px!important;margin-left:auto!important;overflow:hidden!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row>.el-col-6 .el-col-18{display:none!important;}"
+    "html.local-admin-workspace #home_top>div>.el-row>.el-col-6 .el-col-6{float:none!important;width:44px!important;min-width:44px!important;}"
+    "html.local-admin-workspace #home_top .el-avatar{width:34px!important;height:34px!important;margin-top:13px!important;}"
+    "html.local-admin-workspace .school-home-page>.frame{display:block!important;}"
+    "html.local-admin-workspace .school-home-page>.frame>.menu{position:fixed!important;left:0!important;top:60px!important;bottom:0!important;z-index:120!important;display:block!important;width:244px!important;min-width:244px!important;height:auto!important;overflow-y:auto!important;overflow-x:hidden!important;background:#fff!important;box-shadow:5px 0 18px rgba(32,45,64,.16)!important;transform:translateX(-100%)!important;transition:transform .18s ease!important;}"
+    "html.local-admin-workspace .school-home-page>.frame.local-admin-menu-open>.menu{transform:translateX(0)!important;}"
+    "html.local-admin-workspace .school-home-page>.frame>section,"
+    "html.local-admin-workspace .school-home-page>.frame>section>.container{display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;overflow-x:hidden!important;}"
+    "html.local-admin-workspace .school-home-page .class-management{box-sizing:border-box!important;width:auto!important;max-width:none!important;min-width:0!important;margin:10px 8px!important;padding:12px!important;overflow-x:hidden!important;}"
+    "html.local-admin-workspace .school-home-page .el-table{max-width:100%!important;}"
+    ".local-admin-menu-toggle{position:fixed;top:13px;right:54px;z-index:1001;width:34px;height:34px;padding:0;border:1px solid rgba(255,255,255,.7);border-radius:4px;background:rgba(255,255,255,.16);color:#fff;font-size:20px;line-height:1;cursor:pointer;}"
+    ".local-admin-menu-scrim{display:none;position:fixed;inset:60px 0 0;z-index:110;background:rgba(5,18,38,.32);}"
+    "html.local-admin-menu-open .local-admin-menu-scrim{display:block;}"
+    "}"
+    "</style>"
+)
 TEACHER_CLASSROOM_INDEX_LAYOUT_GUARD = (
     "<script>"
     "(function(){"
@@ -700,7 +762,7 @@ POST_LOGIN_REDIRECT_GUARD = (
     "if(window.__localPostLoginRedirectGuard){return;}"
     "window.__localPostLoginRedirectGuard=true;"
     "var targets={"
-    "admin:'/background/course-management/school-curriculum',"
+    "admin:'/school-home-page/class-management1',"
     "teacher:'/code-classroom/classroom-index',"
     "student:'/code-classroom/myClass'"
     "};"
@@ -1419,6 +1481,8 @@ def _inject_runtime_guards(text: str) -> str:
         guard_block += CLASSROOM_PPT_LAYOUT_GUARD
     if STUDENT_MYCLASS_LAYOUT_GUARD not in text:
         guard_block += STUDENT_MYCLASS_LAYOUT_GUARD
+    if ADMIN_WORKSPACE_LAYOUT_GUARD not in text:
+        guard_block += ADMIN_WORKSPACE_LAYOUT_GUARD
     if TEACHER_CLASSROOM_INDEX_LAYOUT_GUARD not in text:
         guard_block += TEACHER_CLASSROOM_INDEX_LAYOUT_GUARD
     if CLASSROOM_LOADING_FEEDBACK_GUARD not in text:
@@ -1557,6 +1621,11 @@ def _record_has_unsuccessful_json_payload(record: dict[str, Any] | None) -> bool
 
 def _normalized_frontend_redirect_target(store: MirrorStore, request: Request) -> str | None:
     path = _normalize_route_path(request.url.path)
+    if path == "/background/course-management/school-curriculum":
+        profile = _resolve_authenticated_profile(store, request)
+        profile_role = _profile_role(profile.get("profile_name"), profile) if profile else None
+        if profile_role == "admin":
+            return "/school-home-page/course-list"
     if path == "/school-home-page/class-management1/divide-class1":
         existing_keys = {key for key, _ in parse_qsl(request.url.query, keep_blank_values=True)}
         query_pairs = parse_qsl(request.url.query, keep_blank_values=True)
@@ -5012,7 +5081,7 @@ button{{margin-top:22px;width:100%;padding:14px;border:0;border-radius:13px;back
 <label for="password">密码</label><input id="password" name="password" type="password" autocomplete="current-password" placeholder="请输入登录密码" required>
 <input type="hidden" id="captchaVerifyParam" name="captchaVerifyParam" value=""><button type="submit">登录</button><div class="error" id="login-error"></div></form>
 <div class="hint">本页面仅用于本地教学管理系统登录</div></section></main>
-<script>(function(){{try{{sessionStorage.removeItem('mirror_profile');}}catch(e){{}}var form=document.getElementById('local-admin-login');var errorNode=document.getElementById('login-error');var redirectValue={redirect_json};form.addEventListener('submit',async function(event){{event.preventDefault();errorNode.textContent='';var payload={{userName:form.userName.value,password:form.password.value,captchaVerifyParam:form.captchaVerifyParam.value||''}};try{{var response=await fetch(form.action,{{method:'POST',headers:{{'content-type':'application/json'}},body:JSON.stringify(payload),credentials:'same-origin'}});var data=await response.json();if(data&&data.success){{var target='/background/course-management/school-curriculum';if(redirectValue){{target=redirectValue.charAt(0)==='/'?'/background'+redirectValue:'/background/'+redirectValue;}}window.location.assign(target);return;}}errorNode.textContent=(((data||{{}}).error||{{}}).message)||'登录失败';}}catch(error){{errorNode.textContent='网络异常，请稍后重试';}}}});}}());</script></body></html>"""
+<script>(function(){{try{{sessionStorage.removeItem('mirror_profile');}}catch(e){{}}var form=document.getElementById('local-admin-login');var errorNode=document.getElementById('login-error');var redirectValue={redirect_json};form.addEventListener('submit',async function(event){{event.preventDefault();errorNode.textContent='';var payload={{userName:form.userName.value,password:form.password.value,captchaVerifyParam:form.captchaVerifyParam.value||''}};try{{var response=await fetch(form.action,{{method:'POST',headers:{{'content-type':'application/json'}},body:JSON.stringify(payload),credentials:'same-origin'}});var data=await response.json();if(data&&data.success){{var target='/school-home-page/class-management1';if(redirectValue){{target=redirectValue.charAt(0)==='/'?'/background'+redirectValue:'/background/'+redirectValue;}}window.location.assign(target);return;}}errorNode.textContent=(((data||{{}}).error||{{}}).message)||'登录失败';}}catch(error){{errorNode.textContent='网络异常，请稍后重试';}}}});}}());</script></body></html>"""
 
 def _inject_teacher_session_bootstrap(text: str, script: str | None) -> str:
     if not script:
@@ -11784,22 +11853,21 @@ def _build_local_api_fallback(store: MirrorStore, request: Request, request_body
         }))
 
     if path == "/api/prepare/get/currculumMaterialList":
-        # Curriculum-detail page sometimes calls this without a curriculum_id
-        # (e.g. on first load before a course is selected). The captured
-        # responses only cover the parameterized variant, so return a benign
-        # empty list to keep the page quiet. We also include a placeholder
-        # ``curriculumInfo`` object so that Vue templates which read fields
-        # like ``curriculumInfo.img_url`` (chunk-5b483ec6 / curriculum-detail)
-        # can still render without ``Cannot read properties of undefined``.
+        curriculum_id = _coerce_int(_first_query_value(request, "curriculum_id"))
+        materials_by_curriculum = _curriculum_materials_by_curriculum(store)
+        material_rows = _json_deep_copy(materials_by_curriculum.get(curriculum_id or -1, []))
+        curriculum_info = store.get_local_curriculum_snapshot(curriculum_id) or {}
+        page_no, page_size, start = _page_window(request, default_page_size=200)
+        page_rows = material_rows[start:start + page_size]
         return _local_json_record(_success_payload({
-            "curriculumInfo": {},
-            "curriculumMaterialList": [],
-            "currculumMaterialList": [],
-            "list": [],
-            "rows": [],
-            "total": 0,
-            "page_no": 1,
-            "page_size": 200,
+            "curriculumInfo": _json_deep_copy(curriculum_info),
+            "curriculumMaterialList": page_rows,
+            "currculumMaterialList": _json_deep_copy(page_rows),
+            "list": _json_deep_copy(page_rows),
+            "rows": _json_deep_copy(page_rows),
+            "total": len(material_rows),
+            "page_no": page_no,
+            "page_size": page_size,
         }))
 
 

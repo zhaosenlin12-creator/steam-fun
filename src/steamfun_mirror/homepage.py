@@ -12,9 +12,6 @@ COURSES_ASSET_ROOT = Path(__file__).resolve().parent / "site_assets" / "courses"
 COMPETITIONS_ASSET_PREFIX = "/_site/competitions"
 COMPETITIONS_ASSET_ROOT = Path(__file__).resolve().parent / "site_assets" / "competitions"
 COMPETITIONS_ASSET_INDEX = COMPETITIONS_ASSET_ROOT / "index.html"
-GOOGLE_FONTS_URL = (
-    "https://fonts.googleapis.com/css2?family=Anton&family=Condiment&family=Noto+Sans+SC:wght@400;600&display=swap"
-)
 ASSET_VERSION = "20260730-1"
 
 HERO_VIDEO_FILE = "hero-cloudfront-20260331-045634.mp4"
@@ -561,9 +558,6 @@ def render_marketing_homepage(request: Request) -> str:
     parts.append('<meta name="viewport" content="width=device-width, initial-scale=1">')
     parts.append('<title>\u4e50\u542f\u4eab\u673a\u5668\u4eba | \u4ece\u4e50\u9ad8\u542f\u8499\u5230 AI \u521b\u9020</title>')
     parts.append('<meta name="description" content="' + subtitle + '">')
-    parts.append('<link rel="preconnect" href="https://fonts.googleapis.com">')
-    parts.append('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>')
-    parts.append('<link rel="stylesheet" href="' + escape(GOOGLE_FONTS_URL) + '">')
     parts.append('<link rel="stylesheet" href="' + escape(stylesheet_url) + '">')
     parts.append('</head><body><main class="page">')
     parts.append('<section class="hero-stage" id="hero">')

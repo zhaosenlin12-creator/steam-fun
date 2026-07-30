@@ -28,11 +28,11 @@ class RoleCapabilities:
 
 
 ADMIN_NAVIGATION = (
-    NavigationItem("overview", "课程管理", "/background/course-management/school-curriculum", "layout-dashboard"),
+    NavigationItem("overview", "班级与排课", "/school-home-page/class-management1", "layout-dashboard"),
     NavigationItem("teachers", "教师账号", "/school-home-page/school-user-list", "users"),
     NavigationItem("classes", "班级与排课", "/school-home-page/class-management1", "calendar-days"),
     NavigationItem("students", "学员管理", "/school-home-page/class-management1/students-management1", "graduation-cap"),
-    NavigationItem("courses", "课程管理", "/background/course-management/school-curriculum", "library"),
+    NavigationItem("courses", "课程管理", "/school-home-page/course-list", "library"),
     NavigationItem("campuses", "校区设置", "/school-home-page/schoolSys", "building-2"),
 )
 
@@ -53,7 +53,7 @@ STUDENT_NAVIGATION = (
 ROLE_CAPABILITIES: dict[str, RoleCapabilities] = {
     "admin": RoleCapabilities(
         role="admin",
-        default_route="/background/course-management/school-curriculum",
+        default_route="/school-home-page/class-management1",
         navigation=ADMIN_NAVIGATION,
         frontend_prefixes=(
             "/school-home-page/school-user-list",

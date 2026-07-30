@@ -19,7 +19,7 @@ _LOGIN_FLOWS: dict[str, LoginFlow] = {
     "admin": LoginFlow(
         path="/background/login",
         role_tab_selector='.tab[data-target="teacher"]',
-        fallback_path="/background/course-management/school-curriculum",
+        fallback_path="/school-home-page/class-management1",
     ),
     "teacher": LoginFlow(
         path="/login",

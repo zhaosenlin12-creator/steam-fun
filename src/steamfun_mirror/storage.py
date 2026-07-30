@@ -1692,6 +1692,32 @@ class MirrorStore:
                     continue
                 entries_by_curriculum_id[curriculum_id] = entry
 
+        # A fresh offline runtime has local curriculum snapshots but no
+        # captured campus-authorisation response. Expose those snapshots in
+        # the same shape so the original course and preparation screens can
+        # render their real catalog instead of an empty state.
+        for snapshot in self.list_local_curriculum_snapshots():
+            curriculum_id = str(snapshot.get("id") or "").strip()
+            if not curriculum_id or curriculum_id in entries_by_curriculum_id:
+                continue
+            curriculum_info = dict(snapshot)
+            curriculum_info.setdefault("teaching_type", 1)
+            curriculum_info.setdefault("curriculum_type", 1)
+            curriculum_info.setdefault("check_state", 2)
+            curriculum_info.setdefault("state", 1)
+            curriculum_info.setdefault("is_effective", True)
+            curriculum_info.setdefault("sort_num", int(curriculum_id))
+            curriculum_info.setdefault("curriculum_desc", "")
+            entries_by_curriculum_id[curriculum_id] = {
+                "id": int(curriculum_id),
+                "curriculum_id": int(curriculum_id),
+                "subject_id": curriculum_info.get("subject_id"),
+                "subjectName": curriculum_info.get("subjectName") or curriculum_info.get("subject_name") or "",
+                "price": 0,
+                "check_state": 2,
+                "curriculumInfo": curriculum_info,
+            }
+
         def sort_key(entry: dict[str, Any]) -> tuple[int, int]:
             curriculum_info = entry.get("curriculumInfo") or {}
             return (

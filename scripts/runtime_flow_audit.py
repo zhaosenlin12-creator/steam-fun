@@ -27,13 +27,13 @@ ROLE_ACCOUNTS = {
 
 ROLE_ROUTES = {
     "admin": (
-        ("/workspace/admin", "/background/course-management/school-curriculum"),
-        ("/workspace/admin#teachers", "/background/course-management/school-curriculum"),
-        ("/workspace/admin#campuses", "/background/course-management/school-curriculum"),
-        ("/background/course-management/platform-curriculum", "/background/course-management/school-curriculum"),
+        ("/workspace/admin", "/school-home-page/class-management1"),
+        ("/workspace/admin#teachers", "/school-home-page/class-management1"),
+        ("/workspace/admin#campuses", "/school-home-page/class-management1"),
+        ("/background/course-management/platform-curriculum", "/school-home-page/class-management1"),
         (
             "/background/course-management/school-curriculum",
-            "/background/course-management/school-curriculum",
+            "/school-home-page/course-list",
         ),
         ("/school-home-page/school-user-list", "/school-home-page/school-user-list"),
         ("/school-home-page/class-management1", "/school-home-page/class-management1"),
@@ -74,7 +74,7 @@ ROLE_HOME_RETURN = {
     "admin": (
         "/school-home-page/class-management1",
         "返回首页",
-        "/background/course-management/school-curriculum",
+        "/school-home-page/class-management1",
     ),
     "teacher": (
         "/code-classroom/classroom-index",

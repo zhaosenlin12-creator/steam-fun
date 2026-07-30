@@ -27,7 +27,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
-  font-family: 'Noto Sans SC', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Microsoft YaHei", "Noto Sans CJK SC", -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.6;
   color: var(--dark);
   background: linear-gradient(180deg, var(--warm-bg) 0%, var(--warm-bg-alt) 50%, var(--warm-bg) 100%);

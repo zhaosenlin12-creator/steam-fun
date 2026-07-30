@@ -24,7 +24,7 @@ def test_get_login_flow_returns_admin_background_entry() -> None:
 
     assert flow.path == "/background/login"
     assert flow.role_tab_selector == '.tab[data-target="teacher"]'
-    assert flow.fallback_path == "/background/course-management/school-curriculum"
+    assert flow.fallback_path == "/school-home-page/class-management1"
 
 
 def test_has_login_token_reads_vuex_user_token() -> None:
