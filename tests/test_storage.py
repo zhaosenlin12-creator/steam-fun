@@ -11,6 +11,43 @@ EXTERNAL_AVATAR_URL = "https://wugecdn.steam.fun/resources/static/homepage/perso
 LOCAL_AVATAR_URL = "/_external/wugecdn.steam.fun/resources/static/homepage/person-icon.jpeg"
 
 
+def test_local_campus_upsert_preserves_id_sparse_fields_and_state(tmp_path: Path) -> None:
+    store = MirrorStore(tmp_path)
+
+    created = store.upsert_local_campus(
+        {
+            "id": 851,
+            "name": "中心校区",
+            "address": "科创路 1 号",
+            "phone": "021-55550000",
+            "state": 1,
+        }
+    )
+    disabled = store.upsert_local_campus({"id": 851, "state": 0})
+
+    assert created == {
+        "id": 851,
+        "name": "中心校区",
+        "address": "科创路 1 号",
+        "phone": "021-55550000",
+        "state": 1,
+    }
+    assert disabled["name"] == "中心校区"
+    assert disabled["state"] == 0
+    assert MirrorStore(tmp_path).list_local_campuses() == [disabled]
+
+
+def test_local_campus_requires_name_when_creating(tmp_path: Path) -> None:
+    store = MirrorStore(tmp_path)
+
+    try:
+        store.upsert_local_campus({"id": 852, "state": 1})
+    except ValueError as exc:
+        assert str(exc) == "Campus name is required"
+    else:
+        raise AssertionError("Expected a missing campus name to be rejected")
+
+
 def test_store_profile_localizes_nested_external_urls_before_persisting(tmp_path: Path) -> None:
     store = MirrorStore(tmp_path)
 

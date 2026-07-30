@@ -31,6 +31,16 @@ DB_PATH = ROOT / "runtime" / "mirror.sqlite3"
 STORE = MirrorStore(ROOT)
 REQUEST_TIMEOUT = 30
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
+DISABLED_FEATURE_MARKERS = (
+    "orderpay",
+    "financial",
+    "recharge",
+    "starcoin",
+    "starmanagement",
+    "cluemanagement",
+    "order-report",
+    "enrollmentoperation",
+)
 
 
 def _new_network_audit() -> dict[str, Any]:
@@ -39,6 +49,7 @@ def _new_network_audit() -> dict[str, Any]:
         "failed_responses": [],
         "page_errors": [],
         "console_errors": [],
+        "disabled_feature_requests": [],
     }
 
 
@@ -49,6 +60,10 @@ def _register_page_network_audit(page: Page, network_audit: dict[str, Any]) -> N
         if parsed.scheme in {"http", "https"} and host and host not in LOCAL_HOSTS:
             network_audit["external_requests"].append(
                 {"url": req.url, "method": req.method, "host": host, "resource_type": req.resource_type}
+            )
+        if req.resource_type != "document" and any(marker in req.url.lower() for marker in DISABLED_FEATURE_MARKERS):
+            network_audit["disabled_feature_requests"].append(
+                {"url": req.url, "method": req.method, "resource_type": req.resource_type}
             )
 
     def on_response(resp) -> None:
@@ -128,8 +143,37 @@ def load_profiles() -> dict[str, dict[str, Any]]:
     return profiles
 
 
-def open_page(context: BrowserContext, path: str, *, wait_ms: int = 4000) -> Page:
+def authenticated_context(
+    browser: Browser,
+    profile_name: str,
+    *,
+    viewport: dict[str, int],
+) -> BrowserContext:
+    context = browser.new_context(ignore_https_errors=True, viewport=viewport)
+    context.add_cookies(
+        [
+            {
+                "name": "mirror_profile",
+                "value": profile_name,
+                "url": BASE,
+                "httpOnly": True,
+                "sameSite": "Lax",
+            }
+        ]
+    )
+    return context
+
+
+def open_page(
+    context: BrowserContext,
+    path: str,
+    *,
+    wait_ms: int = 4000,
+    network_audit: dict[str, Any] | None = None,
+) -> Page:
     page = context.new_page()
+    if network_audit is not None:
+        _register_page_network_audit(page, network_audit)
     navigate_for_audit(page, f"{BASE}{path}", settle_timeout_ms=wait_ms)
     return page
 
@@ -197,7 +241,11 @@ def audit_student_validity_flow(
         "created_student": created,
     }
 
-    context = browser.new_context(ignore_https_errors=True, viewport={"width": 1900, "height": 1000})
+    context = authenticated_context(
+        browser,
+        "teacher",
+        viewport={"width": 1900, "height": 1000},
+    )
     page = context.new_page()
     api_events: list[dict[str, Any]] = []
     _register_page_network_audit(page, network_audit)
@@ -502,7 +550,11 @@ def audit_class_flow(
     if not material_id:
         raise RuntimeError("Could not resolve curriculum material id for first audit plan")
 
-    teacher_context = browser.new_context(ignore_https_errors=True, viewport={"width": 1900, "height": 1000})
+    teacher_context = authenticated_context(
+        browser,
+        "teacher",
+        viewport={"width": 1900, "height": 1000},
+    )
     class_detail_page = open_page(
         teacher_context,
         class_detail_route(
@@ -510,8 +562,8 @@ def audit_class_flow(
             class_id=created_class["class_id"],
             teacher_user_id=teacher_user_id,
         ),
+        network_audit=network_audit,
     )
-    _register_page_network_audit(class_detail_page, network_audit)
     class_detail_body = body_sample(class_detail_page)
     result["class_detail_page"] = {
         "url": class_detail_page.url,
@@ -526,8 +578,8 @@ def audit_class_flow(
     teach_ppt_page = open_page(
         teacher_context,
         f"/code-classroom/teach-lessons/lessons/ppt?curriculumMaterial_id={material_id}&teaching_plan_id={first_plan['id']}",
+        network_audit=network_audit,
     )
-    _register_page_network_audit(teach_ppt_page, network_audit)
     teach_ppt_body = body_sample(teach_ppt_page)
     result["teach_ppt_page"] = {
         "url": teach_ppt_page.url,
@@ -539,9 +591,17 @@ def audit_class_flow(
     }
     teacher_context.close()
 
-    student_context = browser.new_context(ignore_https_errors=True, viewport={"width": 1900, "height": 1000})
-    student_page = open_page(student_context, "/code-classroom/myClass", wait_ms=5000)
-    _register_page_network_audit(student_page, network_audit)
+    student_context = authenticated_context(
+        browser,
+        "student",
+        viewport={"width": 1900, "height": 1000},
+    )
+    student_page = open_page(
+        student_context,
+        "/code-classroom/myClass",
+        wait_ms=5000,
+        network_audit=network_audit,
+    )
     student_body = body_sample(student_page, limit=4000)
     result["student_myclass_page"] = {
         "url": student_page.url,
@@ -564,24 +624,86 @@ def audit_class_flow(
 
 
 def audit_admin_page(browser: Browser, *, network_audit: dict[str, Any]) -> dict[str, Any]:
-    context = browser.new_context(ignore_https_errors=True, viewport={"width": 1900, "height": 1000})
-    page = open_page(context, "/background/course-management/school-curriculum")
-    _register_page_network_audit(page, network_audit)
-    body = body_sample(page)
+    context = authenticated_context(
+        browser,
+        "admin",
+        viewport={"width": 1900, "height": 1000},
+    )
+    page = open_page(context, "/workspace/admin", network_audit=network_audit)
+    overview_body = body_sample(page)
+    desktop_screenshot = safe_screenshot(page, OUTDIR / "admin_original_home.png")
+
+    class_page = open_page(context, "/school-home-page/class-management1", network_audit=network_audit)
+    class_body = body_sample(class_page)
+    class_rows = class_page.locator("tbody tr").count()
+    class_screenshot = safe_screenshot(class_page, OUTDIR / "admin_original_classes.png")
+
+    student_page = open_page(context, "/school-home-page/class-management1/students-management1", network_audit=network_audit)
+    student_body = body_sample(student_page)
+    student_rows = student_page.locator("tbody tr").count()
+    student_screenshot = safe_screenshot(student_page, OUTDIR / "admin_original_students.png")
+
+    mobile_context = authenticated_context(
+        browser,
+        "admin",
+        viewport={"width": 390, "height": 844},
+    )
+    mobile_page = open_page(
+        mobile_context,
+        "/workspace/admin",
+        network_audit=network_audit,
+    )
+    mobile_overflow_free = bool(
+        mobile_page.evaluate(
+            "document.documentElement.scrollWidth <= document.documentElement.clientWidth"
+        )
+    )
+    mobile_screenshot = safe_screenshot(
+        mobile_page,
+        OUTDIR / "admin_workspace_mobile.png",
+        full_page=False,
+    )
+    mobile_context.close()
+
     result = {
         "url": page.url,
         "title": page.title(),
         "is_login_redirect": "/login" in page.url,
-        "contains_admin_username": "18164173640" in body,
-        "contains_curriculum_text": "课程体系名称" in body,
-        "body_sample": body,
-        "screenshot": safe_screenshot(page, OUTDIR / "admin_school_curriculum.png"),
+        "contains_original_admin_home": (
+            "/background/course-management/school-curriculum" in page.url
+            and "课程体系名称" in overview_body
+            and "课程中心" in overview_body
+        ),
+        "class_page": {
+            "url": class_page.url,
+            "contains_class_management": "班级管理" in class_body,
+            "contains_create_class": "新建班级" in class_body,
+            "rows": class_rows,
+            "screenshot": class_screenshot,
+        },
+        "student_page": {
+            "url": student_page.url,
+            "contains_student_management": "学员管理" in student_body,
+            "contains_create_student": "新增学员" in student_body,
+            "rows": student_rows,
+            "screenshot": student_screenshot,
+        },
+        "mobile_overflow_free": mobile_overflow_free,
+        "body_sample": overview_body,
+        "screenshot": desktop_screenshot,
+        "mobile_screenshot": mobile_screenshot,
     }
     context.close()
     result["passed"] = (
         not result["is_login_redirect"]
-        and result["contains_admin_username"]
-        and result["contains_curriculum_text"]
+        and result["contains_original_admin_home"]
+        and result["class_page"]["contains_class_management"]
+        and result["class_page"]["contains_create_class"]
+        and result["class_page"]["rows"] > 0
+        and result["student_page"]["contains_student_management"]
+        and result["student_page"]["contains_create_student"]
+        and result["student_page"]["rows"] > 0
+        and result["mobile_overflow_free"]
     )
     return result
 
@@ -644,21 +766,38 @@ def main() -> None:
                     }
                 browser.close()
 
-    summary["all_passed"] = all(
-        summary[section]["passed"]
-        for section in ("admin_page", "student_validity_flow", "class_flow")
-    )
     summary["network_audit"] = {
         "external_requests": network_audit["external_requests"],
         "failed_responses": network_audit["failed_responses"],
         "page_errors": network_audit["page_errors"],
         "console_errors": network_audit["console_errors"],
+        "disabled_feature_requests": network_audit["disabled_feature_requests"],
         "external_request_count": len(network_audit["external_requests"]),
         "failed_response_count": len(network_audit["failed_responses"]),
         "page_error_count": len(network_audit["page_errors"]),
         "console_error_count": len(network_audit["console_errors"]),
+        "disabled_feature_request_count": len(network_audit["disabled_feature_requests"]),
     }
+    summary["all_passed"] = (
+        all(
+            summary[section]["passed"]
+            for section in ("admin_page", "student_validity_flow", "class_flow")
+        )
+        and all(
+            not network_audit[key]
+            for key in (
+                "external_requests",
+                "failed_responses",
+                "page_errors",
+                "console_errors",
+                "disabled_feature_requests",
+            )
+        )
+    )
     dump_json(OUTDIR / "summary.json", summary)
+    print(f"audit_artifacts={OUTDIR}")
+    print(f"all_passed={summary['all_passed']}")
+    raise SystemExit(0 if summary["all_passed"] else 1)
 
 
 if __name__ == "__main__":

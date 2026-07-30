@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>乐启享 · 登录</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;color:#eef4ff}
+  body{display:grid;place-items:center;padding:24px;background:#07132d;overflow-x:hidden}
+  .login-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;opacity:.58;filter:saturate(1.12) contrast(1.05);z-index:0}
+  .login-shade{position:fixed;inset:0;background:linear-gradient(115deg,rgba(2,8,28,.9),rgba(2,8,28,.42) 52%,rgba(2,8,28,.82));z-index:1}
+  .back{position:fixed;z-index:3;left:24px;top:24px;color:#fff;text-decoration:none;padding:10px 16px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(3,12,35,.5);backdrop-filter:blur(12px)}
+  .back:hover{border-color:#6fff00;color:#6fff00}
+  .login-shell{position:relative;z-index:2;display:flex;flex-direction:column;width:min(960px,100%);min-height:600px;border:1px solid rgba(255,255,255,.18);border-radius:8px;overflow:hidden;background:rgba(4,15,42,.72);box-shadow:0 35px 100px rgba(0,0,0,.48);backdrop-filter:blur(20px)}
+  .tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.12)}
+  .tab{flex:1;padding:18px 24px;background:transparent;color:rgba(238,244,255,.55);border:0;border-bottom:2px solid transparent;font-size:16px;font-weight:600;cursor:pointer;letter-spacing:.06em;transition:all .2s ease;font-family:inherit}
+  .tab.active{color:#6fff00;border-bottom-color:#6fff00;background:rgba(111,255,0,.04)}
+  .tab:hover:not(.active){color:rgba(238,244,255,.85)}
+  .panels{flex:1;display:grid;grid-template-columns:minmax(220px,360px) 1fr;min-height:520px}
+  .brand-panel{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px;padding:42px;background:linear-gradient(150deg,rgba(111,255,0,.12),rgba(44,103,255,.08))}
+  .brand-panel img{width:min(180px,72%);filter:drop-shadow(0 18px 38px rgba(0,0,0,.38))}
+  .brand-panel h2{margin:0;font-size:24px;letter-spacing:.12em;color:#fff}
+  .brand-panel p{margin:0;color:rgba(238,244,255,.72);line-height:1.8;text-align:center;max-width:280px}
+  .card{display:flex;flex-direction:column;justify-content:center;padding:48px 54px;background:rgba(3,12,35,.5)}
+  h1{margin:0 0 8px;font-size:28px}
+  label{display:block;margin:14px 0 8px;font-size:14px;font-weight:600;color:rgba(238,244,255,.88)}
+  input{width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,.18);border-radius:6px;background:rgba(255,255,255,.08);color:#fff;font-size:15px;outline:none;font-family:inherit}
+  input:focus{border-color:#6fff00;box-shadow:0 0 0 3px rgba(111,255,0,.14)}
+  input::placeholder{color:rgba(238,244,255,.4)}
+  .submit-row{margin-top:24px;display:flex;align-items:center;gap:16px}
+  button[type=submit]{flex:1;padding:14px;border:0;border-radius:6px;background:#6fff00;color:#061128;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 28px rgba(111,255,0,.18);transition:transform .15s ease}
+  button[type=submit]:hover{transform:translateY(-1px)}
+  button[type=submit]:active{transform:translateY(0)}
+  button[type=submit][disabled]{opacity:.55;cursor:wait;transform:none}
+  .secondary{padding:14px 18px;border:1px solid rgba(255,255,255,.22);border-radius:6px;background:transparent;color:#fff;text-decoration:none;font-size:14px;font-weight:600}
+  .secondary:hover{border-color:#6fff00;color:#6fff00}
+  .error{margin-top:14px;color:#ff9c9c;font-size:14px;min-height:20px}
+  .panel{display:none}
+  .panel.active{display:block}
+  @media(max-width:760px){body{place-items:start center;padding:84px 24px 24px}.panels{grid-template-columns:1fr}.brand-panel{padding:28px;min-height:auto}.brand-panel p{display:none}.card{padding:34px 28px}.login-shell{min-height:auto}}
+</style>
+</head>
+<body>
+<video class="login-bg" autoplay loop muted playsinline poster="/_site/homepage/media/contact-bg.webp"><source src="/_site/homepage/media/signal-cloudfront-20260331-055729.mp4" type="video/mp4"></video>
+<div class="login-shade"></div>
+<a class="back" href="/">← 返回官网首页</a>
+<main class="login-shell">
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-target="student" type="button" role="tab" aria-selected="true">学员 / 家长登录</button>
+    <button class="tab" data-target="teacher" type="button" role="tab" aria-selected="false">教师 / 管理员登录</button>
+  </nav>
+  <div class="panels">
+    <section class="brand-panel">
+      <img src="/_site/homepage/media/brand-logo.png" alt="乐启享">
+      <h2>让创造真实发生</h2>
+      <p>乐高搭建 · 机器人工程 · 少儿编程 · AI 创赛</p>
+    </section>
+    <section class="card">
+      <section class="panel active" id="panel-student">
+        <h1>学员登录</h1>
+        <form id="form-student" autocomplete="on" novalidate>
+          <label for="stu-username">账号</label>
+          <input id="stu-username" name="userName" type="text" autocomplete="username" placeholder="请输入学员账号或手机号" required>
+          <label for="stu-password">密码</label>
+          <input id="stu-password" name="password" type="password" autocomplete="current-password" placeholder="请输入登录密码" required>
+          <div class="submit-row">
+            <button type="submit" data-action="/java-api/student/stu/login" data-target="/code-classroom/myClass" data-role="student">登 录</button>
+            <a class="secondary" href="/">返回首页</a>
+          </div>
+          <div class="error" id="error-student"></div>
+        </form>
+      </section>
+      <section class="panel" id="panel-teacher">
+        <h1>教师登录</h1>
+        <form id="form-teacher" autocomplete="on" novalidate>
+          <label for="tch-username">账号</label>
+          <input id="tch-username" name="userName" type="text" autocomplete="username" placeholder="请输入教师账号" required>
+          <label for="tch-password">密码</label>
+          <input id="tch-password" name="password" type="password" autocomplete="current-password" placeholder="请输入登录密码" required>
+          <div class="submit-row">
+            <button type="submit" data-action="/java-api/school/tch/login" data-target="/code-classroom/classroom-index" data-role="teacher">登 录</button>
+            <a class="secondary" href="/">返回首页</a>
+          </div>
+          <div class="error" id="error-teacher"></div>
+        </form>
+      </section>
+    </section>
+  </div>
+</main>
+<script>
+(function(){
+try{sessionStorage.removeItem('mirror_profile');}catch(e){}
+try{localStorage.removeItem('vuex');}catch(e){}
+var tabs=document.querySelectorAll('.tab');
+var panels={student:document.getElementById('panel-student'),teacher:document.getElementById('panel-teacher')};
+var errors={student:document.getElementById('error-student'),teacher:document.getElementById('error-teacher')};
+for(var i=0;i<tabs.length;i++){
+  tabs[i].addEventListener('click',(function(t){
+    return function(){
+      for(var j=0;j<tabs.length;j++){
+        var on=tabs[j].getAttribute('data-target')===t;
+        tabs[j].classList.toggle('active',on);
+        tabs[j].setAttribute('aria-selected',on?'true':'false');
+      }
+      for(var k in panels){panels[k].classList.toggle('active',k===t);}
+    };
+  })(tabs[i].getAttribute('data-target')));
+}
+function wire(formId,errorId){
+  var form=document.getElementById(formId);
+  if(!form)return;
+  var errorNode=document.getElementById(errorId);
+  var button=form.querySelector('button[type=submit]');
+  form.addEventListener('submit',async function(event){
+    event.preventDefault();
+    errorNode.textContent='';
+    if(!form.userName.value||!form.password.value){
+      errorNode.textContent='请输入账号和密码';
+      return;
+    }
+    var action=button.getAttribute('data-action');
+    var target=button.getAttribute('data-target')||'/';
+    var role=button.getAttribute('data-role')||'';
+    button.setAttribute('disabled','disabled');
+    var oldText=button.textContent;
+    button.textContent='登录中...';
+    try{
+      var response=await fetch(action,{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({userName:form.userName.value,password:form.password.value,captchaVerifyParam:''}),
+        credentials:'same-origin'
+      });
+      var data=await response.json();
+      if(data&&data.success){
+        var mirror=data.mirror||{};
+        var role=mirror.role||button.getAttribute('data-role')||'';
+        var profile=mirror.profile||role;
+        var target=mirror.redirect||button.getAttribute('data-target')||'/';
+        try{sessionStorage.setItem('login_redirect',target);}catch(e){}
+        if(profile){
+          try{sessionStorage.setItem('mirror_profile',profile);}catch(e){}
+        }
+        if(role){
+          var content=data.content;
+          var token='';
+          if(typeof content==='string'){
+            token=content;
+          }else if(content&&typeof content==='object'){
+            token=content.token||content.adminToken||content.studentToken||'';
+          }
+          if(!token){token='local-session-'+Date.now();}
+          var vuex={user:{
+            isStudent:role==='student',
+            isTeacher:role==='teacher',
+            isAdmin:role==='admin',
+            identity:role==='student'?2:1,
+            token:token
+          }};
+          try{localStorage.setItem('vuex',JSON.stringify(vuex));}catch(e){}
+        }
+        window.location.assign(target);
+        return;
+      }
+      var msg=((data||{}).error||{}).message||'登录失败，请检查账号密码';
+      if(!msg||msg==='Invalid username or password'){
+        msg='账号或密码错误，请重新输入';
+      }
+      errorNode.textContent=msg;
+    }catch(err){
+      errorNode.textContent='网络异常，请稍后重试';
+    }finally{
+      button.removeAttribute('disabled');
+      button.textContent=oldText;
+    }
+  });
+}
+wire('form-student','error-student');
+wire('form-teacher','error-teacher');
+})();
+</script>
+</body></html>

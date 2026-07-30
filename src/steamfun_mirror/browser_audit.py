@@ -65,3 +65,27 @@ def split_request_failures(raw_failures: list[dict[str, Any]]) -> tuple[list[dic
         else:
             actionable.append(row)
     return actionable, benign_aborted
+
+
+def summarize_browser_events(
+    *,
+    console_messages: list[dict[str, Any]],
+    page_errors: list[dict[str, Any]],
+    request_failures: list[dict[str, Any]],
+    bad_responses: list[dict[str, Any]],
+) -> dict[str, Any]:
+    actionable_requests, benign_aborted_requests = split_request_failures(request_failures)
+    console_errors = [
+        row
+        for row in console_messages
+        if str(row.get("type") or "").strip().lower() in {"error", "warning"}
+    ]
+    passed = not (console_errors or page_errors or actionable_requests or bad_responses)
+    return {
+        "passed": passed,
+        "console_errors": console_errors,
+        "page_errors": list(page_errors),
+        "request_failures": actionable_requests,
+        "benign_aborted_requests": benign_aborted_requests,
+        "bad_responses": list(bad_responses),
+    }

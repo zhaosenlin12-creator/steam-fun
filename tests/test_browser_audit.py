@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
+from steamfun_mirror import browser_audit
 from steamfun_mirror.browser_audit import navigate_for_audit, split_request_failures
 
 
@@ -56,3 +57,43 @@ def test_split_request_failures_classifies_download_and_placeholder_abort_as_ben
     assert len(actionable) == 1
     assert actionable[0]["url"].endswith("script.js")
     assert len(benign) == 2
+
+
+def test_summarize_browser_events_fails_on_every_actionable_channel() -> None:
+    summary = browser_audit.summarize_browser_events(
+        console_messages=[
+            {"type": "log", "text": "ready"},
+            {"type": "warning", "text": "deprecated"},
+        ],
+        page_errors=[{"message": "render failed"}],
+        request_failures=[
+            {"url": "http://127.0.0.1:8000/course.mp4", "failure": "net::ERR_ABORTED"},
+            {"url": "http://127.0.0.1:8000/app.js", "failure": "net::ERR_CONNECTION_RESET"},
+        ],
+        bad_responses=[{"url": "http://127.0.0.1:8000/api/data", "status": 500}],
+    )
+
+    assert summary["passed"] is False
+    assert summary["console_errors"] == [{"type": "warning", "text": "deprecated"}]
+    assert summary["page_errors"] == [{"message": "render failed"}]
+    assert summary["request_failures"] == [
+        {"url": "http://127.0.0.1:8000/app.js", "failure": "net::ERR_CONNECTION_RESET"}
+    ]
+    assert summary["benign_aborted_requests"] == [
+        {"url": "http://127.0.0.1:8000/course.mp4", "failure": "net::ERR_ABORTED"}
+    ]
+    assert summary["bad_responses"] == [{"url": "http://127.0.0.1:8000/api/data", "status": 500}]
+
+
+def test_summarize_browser_events_passes_with_only_benign_activity() -> None:
+    summary = browser_audit.summarize_browser_events(
+        console_messages=[{"type": "log", "text": "ready"}],
+        page_errors=[],
+        request_failures=[
+            {"url": "http://127.0.0.1:8000/course.pdf", "failure": "net::ERR_ABORTED"}
+        ],
+        bad_responses=[],
+    )
+
+    assert summary["passed"] is True
+    assert summary["benign_aborted_requests"]

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN" data-workspace-role="{{ROLE}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{PAGE_TITLE}} · 乐启享</title>
+  <link rel="stylesheet" href="/_site/workspace/styles.css">
+</head>
+<body>
+  <div class="workspace-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <a class="brand" href="{{DEFAULT_ROUTE}}" aria-label="返回工作台">
+        <img src="/_site/homepage/media/brand-logo.png" alt="乐启享">
+        <span><strong>乐启享</strong><small>教学管理系统</small></span>
+      </a>
+      <div class="role-badge">{{ROLE_LABEL}}</div>
+      <nav class="nav-list">{{NAVIGATION}}</nav>
+      <div class="sidebar-footer">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>本地服务运行正常</span>
+      </div>
+    </aside>
+
+    <section class="workspace-main">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" type="button" aria-label="打开导航" title="打开导航">
+          <span aria-hidden="true">☰</span>
+        </button>
+        <div class="topbar-context">
+          <span class="context-label">当前机构</span>
+          <strong id="school-name">正在读取...</strong>
+        </div>
+        <div class="account-menu">
+          <button class="account-button" type="button" aria-expanded="false" aria-controls="account-popover">
+            <span class="avatar" id="account-avatar" aria-hidden="true">L</span>
+            <span><strong id="account-name">{{ROLE_LABEL}}</strong><small>{{ROLE_LABEL}}</small></span>
+            <span aria-hidden="true">⌄</span>
+          </button>
+          <div class="account-popover" id="account-popover" hidden>
+            <a href="/logout">退出登录</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="content" id="workspace-content">
+        <section class="view is-active" data-view="overview" aria-labelledby="page-heading">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow" id="today-label"></p>
+              <h1 id="page-heading">{{PAGE_TITLE}}</h1>
+              <p class="page-summary" id="welcome-copy">正在同步教学数据...</p>
+            </div>
+            <div class="heading-actions" data-admin-only>
+              <button class="button secondary" type="button" data-open-view="teachers">教师账号</button>
+              <a class="button primary" href="/school-home-page/class-management1">新建班级</a>
+            </div>
+          </div>
+
+          <div class="metric-grid" id="metric-grid" aria-live="polite">
+            <div class="metric skeleton"></div><div class="metric skeleton"></div>
+            <div class="metric skeleton"></div><div class="metric skeleton"></div>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel schedule-panel">
+              <div class="section-heading"><div><span class="section-kicker">TODAY</span><h2>今日课程</h2></div><a href="/code-classroom/classroom-index" data-teacher-only>查看全部</a></div>
+              <div id="today-lessons" class="list-state" aria-live="polite">正在加载课程...</div>
+            </section>
+            <section class="panel" id="classes-panel" data-teacher-only>
+              <div class="section-heading"><div><span class="section-kicker">CLASSES</span><h2>我的班级</h2></div><a href="/code-classroom/classroom-index">进入班级</a></div>
+              <div id="teacher-classes" class="list-state">正在加载班级...</div>
+            </section>
+            <section class="panel" id="exceptions-panel" data-admin-only>
+              <div class="section-heading"><div><span class="section-kicker">ACTION</span><h2>待处理事项</h2></div></div>
+              <div id="exceptions" class="list-state">正在检查...</div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" data-view="teachers" aria-labelledby="teachers-heading" data-admin-only>
+          <div class="page-heading compact">
+            <div><p class="eyebrow">账号与教学权限</p><h1 id="teachers-heading">教师账号</h1><p class="page-summary">管理教师登录、校区范围、任职状态和密码。</p></div>
+            <button class="button primary" type="button" id="add-teacher">新增教师</button>
+          </div>
+          <section class="table-region panel">
+            <div class="table-toolbar"><label class="search-field"><span>搜索</span><input id="teacher-search" type="search" placeholder="姓名或账号"></label><button class="button secondary" id="refresh-teachers" type="button">刷新</button></div>
+            <div id="teacher-table" class="list-state">进入页面后加载教师账号。</div>
+          </section>
+        </section>
+
+        <section class="view" data-view="campuses" aria-labelledby="campuses-heading" data-admin-only>
+          <div class="page-heading compact">
+            <div><p class="eyebrow">机构基础资料</p><h1 id="campuses-heading">校区设置</h1><p class="page-summary">维护校区资料与启用状态，历史业务 ID 保持不变。</p></div>
+            <button class="button primary" type="button" id="add-campus">新增校区</button>
+          </div>
+          <section class="table-region panel"><div id="campus-table" class="list-state">进入页面后加载校区资料。</div></section>
+        </section>
+      </main>
+    </section>
+  </div>
+
+  <dialog id="record-dialog" aria-labelledby="dialog-title">
+    <form method="dialog" id="record-form">
+      <div class="dialog-heading"><div><p class="eyebrow" id="dialog-kicker"></p><h2 id="dialog-title"></h2></div><button class="icon-button" type="button" data-dialog-cancel aria-label="关闭" title="关闭">×</button></div>
+      <div id="dialog-fields" class="form-grid"></div>
+      <p class="form-error" id="dialog-error" role="alert"></p>
+      <div class="dialog-actions"><button class="button secondary" type="button" data-dialog-cancel>取消</button><button class="button primary" id="dialog-save" value="default" type="submit">保存</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script>window.__WORKSPACE__={{BOOTSTRAP}};</script>
+  <script src="/_site/workspace/app.js" defer></script>
+</body>
+</html>

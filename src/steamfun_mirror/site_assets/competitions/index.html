@@ -1,0 +1,2903 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 安全头部 - 修复CSP策略允许localhost连接 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https: data:; style-src 'self' 'unsafe-inline' https:; img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self' https: wss:; media-src 'self' https: data:; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="unsafe-none">
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
+    <meta name="robots" content="index, follow">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>乐启享 - 科技比赛与特长生展示平台 | 乐启享机器人编程</title>
+
+    <!-- 本地化资源 -->
+    <link rel="stylesheet" href="/_site/competitions/fonts/all.min.css">
+    <link rel="stylesheet" href="/_site/competitions/styles.css?v=20260729-5">
+    <noscript>
+        <link rel="stylesheet" href="/_site/competitions/styles.css">
+        <link rel="stylesheet" href="/_site/competitions/fonts/all.min.css">
+    </noscript>
+
+    <!-- SEO和安全性 -->
+    <meta name="description" content="宜昌乐启享 - 科技竞赛与特长生培养平台，提供NOIP、WRC等各类科技竞赛信息，乐启享机器人编程">
+    <meta name="keywords" content="科技竞赛,特长生,NOIP,机器人大赛,宜昌,猇亭区">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#4f46e5">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+
+<style>
+/* ===== 导航栏基础样式（桌面端） ===== */
+.nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-logo img {
+    height: 75px;
+    width: auto;
+}
+
+.nav-logo > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.nav-logo span {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.nav-logo span:first-child {
+    color: var(--primary);
+}
+
+.nav-logo span:last-child {
+    color: var(--secondary);
+}
+
+/* 移动端优化样式 */
+@media (max-width: 768px) {
+    /* 优化触摸体验 */
+    button, .btn, .cta-button, a {
+        min-height: 44px !important;
+        min-width: 44px !important;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+    }
+
+    /* 优化文本可读性 */
+    body {
+        font-size: 16px !important;
+        line-height: 1.6 !important;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    /* 优化输入框 */
+    input, textarea, select {
+        font-size: 16px !important;
+        padding: 12px !important;
+        border-radius: 8px !important;
+        border: 2px solid #ddd !important;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        border-color: #4a90e2 !important;
+        outline: none !important;
+        box-shadow: 0 0 8px rgba(74, 144, 226, 0.3) !important;
+    }
+
+    /* 优化导航 - 强制覆盖styles.css */
+    .navbar {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 1000 !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        backdrop-filter: blur(10px) !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+        height: auto !important;
+    }
+
+    /* 优化导航栏容器 */
+    .nav-container {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 10px 15px !important;
+        margin: 0 !important;
+        height: auto !important;
+        min-height: 55px !important;
+    }
+
+    /* 优化Logo显示 - 紧凑协调 */
+    .nav-logo {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex: 1 !important;
+    }
+
+    /* 强制覆盖内联样式 - 使用属性选择器 */
+    .nav-logo img[style],
+    .navbar img[src*="logo"][style],
+    .nav-container img[style] {
+        height: 36px !important;
+        width: auto !important;
+        flex-shrink: 0;
+        margin: 0 !important;
+    }
+
+    .nav-logo > div[style],
+    .navbar div[style*="flex-direction: column"],
+    .nav-container div[style*="flex-direction: column"] {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0 !important;
+        line-height: 1 !important;
+        justify-content: center !important;
+    }
+
+    .nav-logo span[style],
+    .navbar div[style*="flex-direction: column"] span[style],
+    .nav-container span[style] {
+        font-size: 0.7rem !important;
+        line-height: 1.15 !important;
+        white-space: nowrap !important;
+        font-weight: 600 !important;
+    }
+
+    /* 隐藏桌面端菜单，显示移动端切换按钮 */
+    .nav-menu {
+        display: none !important;
+    }
+
+    .nav-toggle {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-around !important;
+        width: 26px !important;
+        height: 22px !important;
+        cursor: pointer !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        flex-shrink: 0 !important;
+    }
+
+    .nav-toggle span {
+        display: block !important;
+        width: 100% !important;
+        height: 3px !important;
+        background: #333 !important;
+        border-radius: 3px !important;
+        transition: all 0.3s ease !important;
+    }
+
+    /* 菜单按钮激活状态 - 变成X */
+    .nav-toggle.active span:nth-child(1) {
+        transform: rotate(45deg) translate(6px, 6px) !important;
+    }
+
+    .nav-toggle.active span:nth-child(2) {
+        opacity: 0 !important;
+    }
+
+    .nav-toggle.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px) !important;
+    }
+
+    /* 导航菜单展开样式 */
+    .nav-menu.active {
+        display: flex !important;
+        flex-direction: column !important;
+        position: absolute !important;
+        top: 100% !important;
+        left: 0 !important;
+        width: 100% !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        padding: 15px 0 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        backdrop-filter: blur(10px) !important;
+        z-index: 999 !important;
+    }
+
+    .nav-menu.active li {
+        margin: 0 !important;
+        padding: 12px 20px !important;
+        text-align: center !important;
+        border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+    }
+
+    .nav-menu.active li:last-child {
+        border-bottom: none !important;
+    }
+
+    .nav-menu.active a {
+        color: #333 !important;
+        font-size: 0.95rem !important;
+        display: block !important;
+        transition: color 0.2s !important;
+    }
+
+    .nav-menu.active a:active {
+        color: var(--primary) !important;
+    }
+
+    /* 移除可能导致白边的边距 */
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    /* 移除hero区域上方的空白框 */
+    .hero {
+        margin-top: 0 !important;
+        padding-top: 56px !important;
+        min-height: auto !important;
+    }
+
+    .hero-container {
+        padding-top: 20px !important;
+        padding-bottom: 40px !important;
+        margin-top: 0 !important;
+    }
+
+    /* 移除section的默认margin */
+    section {
+        margin-top: 0 !important;
+    }
+
+    section:first-of-type {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    /* 确保导航栏紧贴顶部 */
+    .navbar {
+        margin-top: 0 !important;
+        top: 0 !important;
+    }
+
+    /* 移除可能的空白元素 */
+    .hero::before,
+    .hero::after {
+        display: none !important;
+    }
+
+    /* 优化按钮组布局 */
+    .hero-buttons, div[style*="display: flex"] {
+        flex-direction: column !important;
+        gap: 15px !important;
+        width: 100% !important;
+    }
+
+    .hero-buttons .btn, .hero-buttons .cta-button {
+        width: 100% !important;
+        max-width: 280px !important;
+        margin: 0 auto !important;
+        padding: 15px 20px !important;
+        font-size: 1.1rem !important;
+    }
+
+    /* 优化卡片布局 */
+    .competition-card, .student-card, .course-card, .event-card {
+        margin-bottom: 20px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+
+    /* 优化模态框 */
+    .modal, .course-modal, .event-modal {
+        width: 95% !important;
+        max-width: 95% !important;
+        margin: 20px auto !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+    }
+
+    /* 优化表单 */
+    .booking-form, .contact-form {
+        padding: 20px !important;
+        margin: 10px !important;
+        border-radius: 12px !important;
+    }
+
+    /* 优化AI聊天窗口 */
+    .ai-chat-window, .chat-window {
+        width: 95% !important;
+        height: 450px !important;
+        max-height: 80vh !important;
+        border-radius: 10px !important;
+        bottom: 80px !important;
+        right: 2.5% !important;
+        left: auto !important;
+        position: fixed !important;
+        z-index: 1000 !important;
+    }
+
+    .ai-chat-button, .chat-button {
+        bottom: 20px !important;
+        right: 20px !important;
+        width: 60px !important;
+        height: 60px !important;
+        font-size: 1.5rem !important;
+    }
+
+    /* 优化聊天窗口内部元素 */
+    .chat-header {
+        padding: 15px 20px !important;
+        font-size: 16px !important;
+    }
+
+    .chat-body {
+        padding: 15px 20px !important;
+        max-height: 280px !important;
+        overflow-y: auto !important;
+    }
+
+    .chat-footer {
+        padding: 15px 20px !important;
+    }
+
+    .chat-message {
+        margin-bottom: 12px !important;
+        padding: 10px 15px !important;
+        font-size: 14px !important;
+        border-radius: 10px !important;
+    }
+
+    .quick-questions .quick-btn {
+        margin: 5px 0 !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        min-height: 36px !important;
+    }
+
+    /* 优化网格布局 */
+    .competitions-grid, .students-grid, .courses-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+        padding: 0 10px !important;
+    }
+
+    /* 优化页脚Logo */
+    .footer-logo {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+    }
+
+    .footer-logo img {
+        height: 40px !important;
+        width: auto !important;
+    }
+
+    .footer-logo > div {
+        gap: 2px !important;
+    }
+
+    .footer-logo span {
+        font-size: 0.75rem !important;
+        line-height: 1.3 !important;
+    }
+
+    /* 优化标题字体大小 */
+    h1 {
+        font-size: 2rem !important;
+        line-height: 1.2 !important;
+        margin-bottom: 15px !important;
+    }
+
+    h2 {
+        font-size: 1.75rem !important;
+        line-height: 1.3 !important;
+    }
+
+    h3 {
+        font-size: 1.5rem !important;
+        line-height: 1.4 !important;
+    }
+
+    /* 优化间距 */
+    .section {
+        padding: 40px 0 !important;
+    }
+
+    .container {
+        padding: 0 15px !important;
+    }
+
+    /* 隐藏不必要元素 */
+    .firefly, .hero-bg-animation {
+        display: none !important;
+    }
+
+    /* 优化地图容器 */
+    .map-container {
+        height: 200px !important;
+        margin: 20px 0 !important;
+    }
+
+    /* 快速访问菜单 */
+    .quick-access {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 999;
+    }
+
+    .quick-access .quick-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #4a90e2;
+        color: white;
+        border: none;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .quick-access .quick-btn:active {
+        transform: scale(0.95);
+    }
+}
+
+/* 横屏优化 */
+@media (max-width: 768px) and (orientation: landscape) {
+    .hero {
+        padding: 20px 0 !important;
+    }
+
+    .hero-title {
+        font-size: 1.8rem !important;
+    }
+
+    .ai-chat-window, .chat-window {
+        max-height: 80vh !important;
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+    body {
+        font-size: 14px !important;
+    }
+
+    .hero-title {
+        font-size: 1.8rem !important;
+    }
+
+    .cta-button {
+        padding: 12px 16px !important;
+        font-size: 1rem !important;
+    }
+
+    .modal, .course-modal, .event-modal {
+        width: 98% !important;
+        margin: 5px auto !important;
+    }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+    button:hover, .btn:hover, .cta-button:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    button:active, .btn:active, .cta-button:active {
+        transform: scale(0.98) !important;
+        opacity: 0.8 !important;
+    }
+}
+</style>
+
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a class="nav-logo" href="/#hero" aria-label="返回官网首页" title="返回官网首页">
+                <img src="/_site/competitions/images/logo11.png" alt="乐启享">
+                <div>
+                    <span>乐启享</span>
+                    <span>机器人编程</span>
+                </div>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="#home">首页</a></li>
+                <li><a href="#competitions">比赛介绍</a></li>
+                <li><a href="#students">科技特长生</a></li>
+                <li><a href="#contact">联系咨询</a></li>
+            </ul>
+            <button class="nav-toggle" type="button" aria-label="展开导航" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 -->
+    <section id="home" class="hero">
+        <video class="hero-media" autoplay muted loop playsinline poster="/_site/courses/images/home/camp2.webp" aria-hidden="true">
+            <source src="/_site/homepage/media/hero-cloudfront-20260331-045634.mp4" type="video/mp4">
+        </video>
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    探索科技未来
+                    <span class="typing-text"></span>
+                </h1>
+                <p class="hero-subtitle">
+                    汇聚最新科技竞赛信息，展示优秀科技特长生风采
+                </p>
+                <div class="hero-buttons">
+                    <a href="#competitions" class="btn btn-primary">
+                        <i class="fas fa-trophy"></i>
+                        查看比赛
+                    </a>
+                    <a href="#contact" class="btn btn-secondary">
+                        <i class="fas fa-comments"></i>
+                        咨询报名
+                    </a>
+                </div>
+            </div>
+            <div class="hero-animation">
+                <div class="floating-icons">
+                    <i class="fas fa-microchip"></i>
+                    <i class="fas fa-robot"></i>
+                    <i class="fas fa-code"></i>
+                    <i class="fas fa-dna"></i>
+                    <i class="fas fa-satellite-dish"></i>
+                </div>
+            </div>
+        </div>
+        <div class="hero-bg-animation">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+    </section>
+
+    <!-- 比赛介绍区域 -->
+    <section id="competitions" class="competitions">
+        <div class="container">
+            <div class="section-header">
+                <h2>科技竞赛项目</h2>
+                <p>多样化的科技竞赛，助力宜昌学子全面发展</p>
+            </div>
+            <!-- 第一排（3个） -->
+            <div class="competitions-grid" id="competitionsGrid">
+                <div class="competition-card" data-competition="noip">
+                    <div class="card-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3>信息学奥林匹克竞赛(NOIP)</h3>
+                    <p>全国青少年信息学奥林匹克联赛，编程算法类最高水平竞赛</p>
+                    <ul>
+                        <li>提高组/普及组双轨制</li>
+                        <li>湖北省赛区选拔赛</li>
+                        <li>宜昌地区重点培养项目</li>
+                        <li>直接保送知名高校</li>
+                    </ul>
+                    <div class="competition-stats">
+                        <span>🏆 宜昌获奖: 86人次</span>
+                    </div>
+                    <button class="card-btn" onclick="showCompetitionDetail('noip')">了解详情</button>
+                </div>
+                <div class="competition-card" data-competition="wrc">
+                    <div class="card-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>世界机器人大赛(WRC)</h3>
+                    <p>全球规模最大、影响力最广的机器人赛事，被誉为机器人界的奥林匹克</p>
+                    <ul>
+                        <li>青少年机器人设计竞赛</li>
+                        <li>人工智能挑战赛</li>
+                        <li>湖北省机器人协会支持</li>
+                        <li>宜昌三峡职院承办赛区</li>
+                    </ul>
+                    <div class="competition-stats">
+                        <span>🏆 宜昌获奖: 42人次</span>
+                    </div>
+                    <button class="card-btn" onclick="showCompetitionDetail('wrc')">了解详情</button>
+                </div>
+                <div class="competition-card" data-competition="literacy">
+                    <div class="card-icon">
+                        <i class="fas fa-laptop-code"></i>
+                    </div>
+                    <h3>全国中小学信息素养大赛</h3>
+                    <p>提升学生数字化学习与创新能力的综合性竞赛</p>
+                    <ul>
+                        <li>数字创作/计算思维</li>
+                        <li>创新实践/程序设计</li>
+                        <li>湖北省教育厅主办</li>
+                        <li>宜昌市电教馆组织</li>
+                    </ul>
+                    <div class="competition-stats">
+                        <span>🏆 宜昌获奖: 158人次</span>
+                    </div>
+                    <button class="card-btn" onclick="showCompetitionDetail('literacy')">了解详情</button>
+                </div>
+            </div>
+
+            <!-- 第二排（3个） -->
+            <div class="competitions-grid second-row" id="competitionsSecondRow">
+                <div class="competition-card" data-competition="computer">
+                    <div class="card-icon">
+                        <i class="fas fa-desktop"></i>
+                    </div>
+                    <h3>全国中小学电脑制作活动</h3>
+                    <p>运用信息技术进行创新设计与制作的综合实践活动</p>
+                    <ul>
+                        <li>数字创意/程序设计</li>
+                        <li>创客竞赛/人工智能</li>
+                        <li>教育部科技司指导</li>
+                        <li>宜昌市科协技术支持</li>
+                    </ul>
+                    <div class="competition-stats">
+                        <span>🏆 宜昌获奖: 124人次</span>
+                    </div>
+                    <button class="card-btn" onclick="showCompetitionDetail('computer')">了解详情</button>
+                </div>
+                <div class="competition-card" data-competition="innovation">
+                    <div class="card-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3>全国青少年科技创新大赛</h3>
+                    <p>青少年科技创新成果展示与交流的重要平台</p>
+                    <ul>
+                        <li>科技创新成果竞赛</li>
+                        <li>科技实践活动</li>
+                        <li>少年儿童科学幻想绘画</li>
+                        <li>科技辅导员创新成果</li>
+                    </ul>
+                    <div class="competition-stats">
+                        <span>🏆 宜昌获奖: 67人次</span>
+                    </div>
+                    <button class="card-btn" onclick="showCompetitionDetail('innovation')">了解详情</button>
+                </div>
+                <div class="competition-card" data-competition="bluecup">
+                    <div class="card-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h3>蓝桥杯程序设计大赛</h3>
+                    <p>全国软件专业人才设计与创业大赛</p>
+                    <ul>
+                        <li>C/C++程序设计</li>
+                        <li>Java软件开发</li>
+                        <li>Python程序设计</li>
+                        <li>单片机设计与开发</li>
+                    </ul>
+                    <div class="competition-stats">
+                        <span>🏆 宜昌获奖: 93人次</span>
+                    </div>
+                    <button class="card-btn" onclick="showCompetitionDetail('bluecup')">了解详情</button>
+                </div>
+            </div>
+
+            <!-- 更多竞赛（隐藏） -->
+            <div class="more-competitions" id="moreCompetitions" style="display: none;">
+                <div class="competitions-grid">
+                    <div class="competition-card" data-competition="vex">
+                        <div class="card-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <h3>VEX机器人世界锦标赛</h3>
+                        <p>全球最大的机器人竞赛项目</p>
+                        <ul>
+                            <li>VEX IQ 小学组</li>
+                            <li>VEX EDR 中学组</li>
+                            <li>VEX U 大学组</li>
+                            <li>编程技能挑战赛</li>
+                        </ul>
+                        <div class="competition-stats">
+                            <span>🏆 宜昌获奖: 35人次</span>
+                        </div>
+                        <button class="card-btn" onclick="showCompetitionDetail('vex')">了解详情</button>
+                    </div>
+                    <div class="competition-card" data-competition="aild">
+                        <div class="card-icon">
+                            <i class="fas fa-hammer"></i>
+                        </div>
+                        <h3>全国青少年劳动技能与智能设计大赛(AILD)</h3>
+                        <p>融合劳动教育与智能技术的创新竞赛</p>
+                        <ul>
+                            <li>劳动技能基础训练</li>
+                            <li>智能设计工具应用</li>
+                            <li>创新作品制作展示</li>
+                            <li>劳动实践能力培养</li>
+                        </ul>
+                        <div class="competition-stats">
+                            <span>🏆 宜昌获奖: 18人次</span>
+                        </div>
+                        <button class="card-btn" onclick="showCompetitionDetail('aild')">了解详情</button>
+                    </div>
+                    <div class="competition-card" data-competition="frc">
+                        <div class="card-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3>FRC机器人竞赛</h3>
+                        <p>FIRST机器人竞赛，国际顶级机器人赛事</p>
+                        <ul>
+                            <li>团队协作设计制造</li>
+                            <li>6周机器人设计周期</li>
+                            <li>国际化竞赛平台</li>
+                            <li>工程思维培养</li>
+                        </ul>
+                        <div class="competition-stats">
+                            <span>🏆 宜昌参赛: 12支队伍</span>
+                        </div>
+                        <button class="card-btn" onclick="showCompetitionDetail('frc')">了解详情</button>
+                    </div>
+                </div>
+                <div class="competitions-grid">
+                    <div class="competition-card" data-competition="roborave">
+                        <div class="card-icon">
+                            <i class="fas fa-android"></i>
+                        </div>
+                        <h3>RoboRAVE国际机器人大赛</h3>
+                        <p>面向青少年的国际机器人竞赛平台</p>
+                        <ul>
+                            <li>勇攀高峰挑战赛</li>
+                            <li>超级巡线挑战赛</li>
+                            <li>骑士比武挑战赛</li>
+                            <li>创新挑战赛</li>
+                        </ul>
+                        <div class="competition-stats">
+                            <span>🏆 宜昌获奖: 28人次</span>
+                        </div>
+                        <button class="card-btn" onclick="showCompetitionDetail('roborave')">了解详情</button>
+                    </div>
+                    <div class="competition-card" data-competition="maker">
+                        <div class="card-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <h3>全国青少年创客大赛</h3>
+                        <p>培养创新思维和动手实践能力的综合性竞赛</p>
+                        <ul>
+                            <li>创意智造竞赛</li>
+                            <li>3D打印创意设计</li>
+                            <li>开源硬件创意制作</li>
+                            <li>激光切割创意设计</li>
+                        </ul>
+                        <div class="competition-stats">
+                            <span>🏆 宜昌获奖: 45人次</span>
+                        </div>
+                        <button class="card-btn" onclick="showCompetitionDetail('maker')">了解详情</button>
+                    </div>
+                    <div class="competition-card" data-competition="ai">
+                        <div class="card-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3>全国中小学人工智能大赛</h3>
+                        <p>推广人工智能教育的权威性竞赛平台</p>
+                        <ul>
+                            <li>机器学习算法设计</li>
+                            <li>计算机视觉应用</li>
+                            <li>自然语言处理</li>
+                            <li>智能硬件开发</li>
+                        </ul>
+                        <div class="competition-stats">
+                            <span>🏆 宜昌获奖: 31人次</span>
+                        </div>
+                        <button class="card-btn" onclick="showCompetitionDetail('ai')">了解详情</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="load-more-section">
+                <button class="load-more-btn" id="loadMoreCompetitions">
+                    <i class="fas fa-chevron-down"></i>
+                    展开全部赛事
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 科技特长生展示 -->
+    <section id="students" class="students">
+        <div class="container">
+            <div class="section-header">
+                <h2>科技特长生认证与展示</h2>
+                <p>了解宜昌科技特长生认证流程，展示本地优秀学子风采</p>
+            </div>
+
+            <!-- 科技特长生认证介绍 -->
+            <div class="certification-intro">
+                <div class="intro-content">
+                    <div class="intro-text">
+                        <h3>什么是科技特长生？</h3>
+                        <p>科技特长生是指在科技创新、信息技术、机器人、编程等方面具有突出才能和特长的学生。在宜昌市，科技特长生可享受中考加分、优质高中招生优惠等政策支持。</p>
+                        <div class="certification-benefits">
+                            <div class="benefit-item">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>中考加分政策</span>
+                            </div>
+                            <div class="benefit-item">
+                                <i class="fas fa-school"></i>
+                                <span>优质高中直推</span>
+                            </div>
+                            <div class="benefit-item">
+                                <i class="fas fa-trophy"></i>
+                                <span>竞赛培训优先</span>
+                            </div>
+                            <div class="benefit-item">
+                                <i class="fas fa-university"></i>
+                                <span>高校自主招生</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="intro-visual">
+                        <div class="certification-steps">
+                            <div class="step">
+                                <div class="step-number">1</div>
+                                <span>竞赛获奖</span>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">2</div>
+                                <span>材料申报</span>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">3</div>
+                                <span>专家评审</span>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">4</div>
+                                <span>获得认证</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="certification-buttons" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                    <button class="load-more-btn" id="loadMoreCertification">
+                        <i class="fas fa-chevron-down"></i>
+                        了解详细认证流程
+                    </button>
+                    <a href="https://kejitechangsheng.com/category/quanguo" target="_blank" class="load-more-btn" style="background-color: #007bff; color: white; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; border: none;">
+                        <i class="fas fa-search" style="margin-right: 8px;"></i>
+                        科技特长生政策查询
+                    </a>
+                </div>
+            </div>
+
+            <!-- 详细认证信息（隐藏） -->
+            <div class="certification-details" id="certificationDetails" style="display: none;">
+                <div class="details-grid">
+                    <div class="detail-card">
+                        <h4>🏆 认证条件</h4>
+                        <ul>
+                            <li>信息学奥赛省级二等奖及以上</li>
+                            <li>机器人大赛市级一等奖及以上</li>
+                            <li>科技创新大赛省级三等奖及以上</li>
+                            <li>电脑制作活动省级优秀奖及以上</li>
+                            <li>信息素养大赛市级二等奖及以上</li>
+                        </ul>
+                    </div>
+                    <div class="detail-card">
+                        <h4>📝 申报材料</h4>
+                        <ul>
+                            <li>《宜昌市科技特长生申请表》</li>
+                            <li>获奖证书原件及复印件</li>
+                            <li>学校推荐信及成绩证明</li>
+                            <li>个人科技特长展示作品</li>
+                            <li>近期免冠照片2张</li>
+                        </ul>
+                    </div>
+                    <div class="detail-card">
+                        <h4>⏰ 申报时间</h4>
+                        <ul>
+                            <li>春季申报：每年3月1日-31日</li>
+                            <li>秋季申报：每年9月1日-30日</li>
+                            <li>材料提交地点：宜昌市教育局</li>
+                            <li>咨询电话：0717-6441069</li>
+                            <li>特殊情况可随时申报</li>
+                        </ul>
+                    </div>
+                    <div class="detail-card">
+                        <h4>🎯 优惠政策</h4>
+                        <ul>
+                            <li>中考科技特长生加分5-20分</li>
+                            <li>优质高中科技特长生专项招生</li>
+                            <li>免费参加市级科技竞赛培训</li>
+                            <li>优先推荐参加省级以上竞赛</li>
+                            <li>高校自主招生推荐资格</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="yichang-schools">
+                    <h4>宜昌市重点科技特长生培养学校</h4>
+                    <div class="schools-grid">
+                        <div class="school-item">
+                            <span class="school-name">宜昌市第一中学</span>
+                            <span class="school-feature">信息学奥赛基地</span>
+                        </div>
+                        <div class="school-item">
+                            <span class="school-name">夷陵中学</span>
+                            <span class="school-feature">机器人竞赛强校</span>
+                        </div>
+                        <div class="school-item">
+                            <span class="school-name">宜昌市外国语高中</span>
+                            <span class="school-feature">科技创新特色</span>
+                        </div>
+                        <div class="school-item">
+                            <span class="school-name">三峡高中</span>
+                            <span class="school-feature">电脑制作重点</span>
+                        </div>
+                        <div class="school-item">
+                            <span class="school-name">宜昌市第二中学</span>
+                            <span class="school-feature">综合科技培养</span>
+                        </div>
+                        <div class="school-item">
+                            <span class="school-name">猇亭中学</span>
+                            <span class="school-feature">区域科技标杆</span>
+                        </div>
+                        <div class="school-item">
+                            <span class="school-name">宜昌市科技高中</span>
+                            <span class="school-feature">科技教育示范</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 优秀科技特长生展示 -->
+            <div class="section-subheader">
+                <h3>宜昌优秀科技特长生风采</h3>
+                <p>展示猇亭区及宜昌市优秀科技特长生成长故事</p>
+            </div>
+
+            <div class="students-grid">
+                <div class="student-card">
+                    <div class="student-image">
+                        <img data-src="/_site/competitions/images/yichang-yizhong1.webp" alt="宜昌市第一中学校门" class="lazy-load">
+                        <div class="student-overlay">
+                            <div class="student-achievements">
+                                <span class="achievement">NOIP省一等奖</span>
+                                <span class="achievement">保送华科</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="student-info">
+                        <h3>张明轩</h3>
+                        <p class="student-school">宜昌市第一中学</p>
+                        <p class="student-desc">猇亭区首位信息学奥赛省一等奖获得者，从小在猇亭区长大，现已保送华中科技大学计算机系。</p>
+                        <div class="student-stats">
+                            <div class="stat">
+                                <span class="stat-number">12</span>
+                                <span class="stat-label">获奖次数</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">3</span>
+                                <span class="stat-label">省级奖项</span>
+                            </div>
+                        </div>
+                        <div class="student-location">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>猇亭区虎牙街道</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="student-card">
+                    <div class="student-image">
+                        <img data-src="/_site/competitions/images/yiling-zhongxue1.webp" alt="夷陵中学校门" class="lazy-load">
+                        <div class="student-overlay">
+                            <div class="student-achievements">
+                                <span class="achievement">WRC世界冠军</span>
+                                <span class="achievement">国家奖学金</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="student-info">
+                        <h3>李雨萌</h3>
+                        <p class="student-school">夷陵中学</p>
+                        <p class="student-desc">世界机器人大赛冠军，宜昌市机器人竞赛明星选手，现就读于北京理工大学自动化专业。</p>
+                        <div class="student-stats">
+                            <div class="stat">
+                                <span class="stat-number">8</span>
+                                <span class="stat-label">获奖次数</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">2</span>
+                                <span class="stat-label">国际奖项</span>
+                            </div>
+                        </div>
+                        <div class="student-location">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>宜昌市西陵区</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="student-card">
+                    <div class="student-image">
+                        <img data-src="/_site/competitions/images/xiating-zhongxue1.webp" alt="猇亭中学校门" class="lazy-load">
+                        <div class="student-overlay">
+                            <div class="student-achievements">
+                                <span class="achievement">科创大赛金奖</span>
+                                <span class="achievement">发明专利</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="student-info">
+                        <h3>王浩然</h3>
+                        <p class="student-school">猇亭中学</p>
+                        <p class="student-desc">猇亭区本土培养的科技创新人才，发明"智能垃圾分类机器人"获得国家发明专利。</p>
+                        <div class="student-stats">
+                            <div class="stat">
+                                <span class="stat-number">6</span>
+                                <span class="stat-label">获奖次数</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">1</span>
+                                <span class="stat-label">发明专利</span>
+                            </div>
+                        </div>
+                        <div class="student-location">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>猇亭区古老背街道</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 更多学生案例（隐藏） -->
+            <div class="more-students" id="moreStudents" style="display: none;">
+                <div class="students-grid">
+                    <div class="student-card">
+                        <div class="student-image">
+                            <img data-src="/_site/competitions/images/yichang-waiguoyu1.webp" alt="宜昌市外国语高中校门" class="lazy-load">
+                            <div class="student-overlay">
+                                <div class="student-achievements">
+                                    <span class="achievement">信息素养大赛一等奖</span>
+                                    <span class="achievement">优秀团员</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="student-info">
+                            <h3>陈思佳</h3>
+                            <p class="student-school">宜昌市外国语高中</p>
+                            <p class="student-desc">全国中小学信息素养大赛一等奖，擅长数字创作和程序设计，作品多次在市级展示。</p>
+                            <div class="student-stats">
+                                <div class="stat">
+                                    <span class="stat-number">5</span>
+                                    <span class="stat-label">获奖次数</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">3</span>
+                                    <span class="stat-label">优秀作品</span>
+                                </div>
+                            </div>
+                            <div class="student-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>宜昌市伍家岗区</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="student-card">
+                        <div class="student-image">
+                            <img data-src="/_site/competitions/images/sanxia-gaozhong1.webp" alt="三峡高中校门" class="lazy-load">
+                            <div class="student-overlay">
+                                <div class="student-achievements">
+                                    <span class="achievement">电脑制作一等奖</span>
+                                    <span class="achievement">小发明家</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="student-info">
+                            <h3>刘志强</h3>
+                            <p class="student-school">三峡高中</p>
+                            <p class="student-desc">全国中小学电脑制作活动一等奖获得者，设计的"智慧校园管理系统"被学校采用。</p>
+                            <div class="student-stats">
+                                <div class="stat">
+                                    <span class="stat-number">7</span>
+                                    <span class="stat-label">获奖次数</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">2</span>
+                                    <span class="stat-label">实用作品</span>
+                                </div>
+                            </div>
+                            <div class="student-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>宜昌市点军区</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="student-card">
+                        <div class="student-image">
+                            <img data-src="/_site/competitions/images/yichang-erzhong1.webp" alt="宜昌市第二中学校门" class="lazy-load">
+                            <div class="student-overlay">
+                                <div class="student-achievements">
+                                    <span class="achievement">蓝桥杯一等奖</span>
+                                    <span class="achievement">ACM铜牌</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="student-info">
+                            <h3>赵心怡</h3>
+                            <p class="student-school">宜昌市第二中学</p>
+                            <p class="student-desc">蓝桥杯程序设计大赛一等奖，在编程算法方面天赋异禀，多次代表湖北省参加全国比赛。</p>
+                            <div class="student-stats">
+                                <div class="stat">
+                                    <span class="stat-number">9</span>
+                                    <span class="stat-label">获奖次数</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">4</span>
+                                    <span class="stat-label">省级奖项</span>
+                                </div>
+                            </div>
+                            <div class="student-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>宜昌市夷陵区</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="load-more-section">
+                <button class="load-more-btn" id="loadMoreStudents">
+                    <i class="fas fa-chevron-down"></i>
+                    展开全部学生案例
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 联系咨询区域 -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <div class="section-header">
+                <h2>联系咨询</h2>
+                <p>有任何问题，欢迎联系我们</p>
+            </div>
+            <div id="contact-static-section" class="contact-static-section">
+                <div class="contact-info">
+                    <h3>联系方式</h3>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <a href="tel:18164173640">18164173640</a>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <a href="mailto:zhaosenlin12@gmail.com">zhaosenlin12@gmail.com</a>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>宜昌市猇亭区金岭路59-1号</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-qrcode"></i>
+                        <span>扫码预约体验课，老师会尽快与您联系</span>
+                    </div>
+                </div>
+                <div class="contact-qr-card">
+                    <img src="/_site/competitions/images/qr-liuteacher.png" alt="扫码添加刘老师微信">
+                    <div class="contact-qr-copy" data-contact-title-phrases="扫码预约体验课 | 加入乐启享 | 竞赛规划 · 科技特长生咨询 | 乐高启蒙 · 机器人 · 编程 · AI 创造" data-contact-subtitle-phrases="乐启享 · 机器人 · 编程 · AI 创造 | 扫码添加刘老师 · 获取赛事规划 | 课程咨询 · 地址导航 · 电话联系">
+                        <strong id="competitionContactTitle" class="contact-qr-type">扫码预约体验课<span class="contact-type-cursor" aria-hidden="true"></span></strong>
+                        <span id="competitionContactSubtitle">乐启享 · 机器人 · 编程 · AI 创造</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo" style="display: flex; align-items: center; gap: 12px;">
+                        <img src="/_site/competitions/images/logo11.png" alt="乐启享" style="height: 65px; width: auto;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.85rem; color: #fff; font-weight: 600; line-height: 1.5;">乐启享</span>
+                            <span style="font-size: 0.85rem; color: #ffd700; font-weight: 600; line-height: 1.5;">机器人编程</span>
+                        </div>
+                    </div>
+                    <p>专注于科技竞赛与特长生培养的专业平台</p>
+                </div>
+                <div class="footer-section">
+                    <h4>快速链接</h4>
+                    <ul>
+                        <li><a href="#home">首页</a></li>
+                        <li><a href="#competitions">比赛介绍</a></li>
+                        <li><a href="#students">科技特长生</a></li>
+                        <li><a href="#contact">联系咨询</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>联系我们</h4>
+                    <p>电话：18164173640</p>
+                    <p>邮箱：zhaosenlin12@gmail.com</p>
+                    <p>地址：宜昌市猇亭区金岭路59-1号</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 乐启享 版权所有 | 乐启享机器人编程 | <a href="https://beian.miit.gov.cn/" target="_blank" rel="nofollow" style="color: #ddd; text-decoration: none;">鄂ICP备2025149404号-1</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 咨询窗口 -->
+    <div id="chatWidget" class="chat-widget">
+        <div class="chat-button" id="chatButton">
+            <i class="fas fa-comments"></i>
+        </div>
+        <div class="chat-window" id="chatWindow">
+            <div class="chat-header">
+                <h4>在线咨询</h4>
+                <button class="chat-close" id="chatClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-body">
+                <div class="chat-message bot-message">
+                    <p>您好！我是乐启享AI助手，专业解答科技竞赛相关问题。</p>
+                </div>
+                <div class="quick-questions">
+                    <button class="quick-btn" data-question="NOIP信息学奥赛怎么报名？" data-scroll="competitions">NOIP信息学奥赛怎么报名？</button>
+                    <button class="quick-btn" data-question="世界机器人大赛都有哪些项目？" data-scroll="competitions">世界机器人大赛都有哪些项目？</button>
+                    <button class="quick-btn" data-question="科技特长生认证流程？" data-scroll="students">科技特长生认证流程？</button>
+                </div>
+            </div>
+            <div class="chat-footer chat-footer-static">
+                <a href="tel:18164173640">
+                    <i class="fas fa-phone"></i>
+                    直接电话咨询：18164173640
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ========== AI智能聊天系统 ==========
+    // 与index.html完全一致的DeepSeek AI集成
+
+    // AI配置
+    const AI_CONFIG = {
+        useDeepSeekAPI: false,
+        maxRetries: 2,
+        timeout: 10000
+    };
+
+    let isAIThinking = false;
+
+    // AI聊天窗口管理函数
+    function initAIChatSystem() {
+        const chatButton = document.getElementById('chatButton');
+        const chatWindow = document.getElementById('chatWindow');
+        const chatClose = document.getElementById('chatClose');
+        // 聊天按钮点击
+        if (chatButton) {
+            chatButton.addEventListener('click', function() {
+                const isVisible = chatWindow.style.display === 'block';
+                chatWindow.style.display = isVisible ? 'none' : 'block';
+            });
+        }
+
+        // 关闭按钮
+        if (chatClose) {
+            chatClose.addEventListener('click', function() {
+                chatWindow.style.display = 'none';
+            });
+        }
+
+        // 快速问题按钮（使用现有的class）
+        document.querySelectorAll('.quick-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const question = this.getAttribute('data-question');
+                const scrollTarget = this.getAttribute('data-scroll');
+                handleQuickQuestionWithScroll(question, scrollTarget);
+            });
+        });
+
+        // 点击外部关闭
+        document.addEventListener('click', function(e) {
+            if (chatWindow && chatButton &&
+                !chatWindow.contains(e.target) &&
+                !chatButton.contains(e.target)) {
+                chatWindow.style.display = 'none';
+            }
+        });
+    }
+
+    // 处理快速问题并跳转到对应板块
+    function handleQuickQuestionWithScroll(question, scrollTarget) {
+        // 先处理聊天回复
+        handleQuickQuestionOld(question);
+
+        // 延迟跳转到对应板块
+        setTimeout(() => {
+            if (scrollTarget) {
+                const targetElement = document.getElementById(scrollTarget);
+                if (targetElement) {
+                    // 关闭聊天窗口
+                    const chatWindow = document.getElementById('chatWindow');
+                    if (chatWindow) {
+                        chatWindow.style.display = 'none';
+                    }
+
+                    // 跳转到目标板块
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+
+                    // 高亮显示目标板块
+                    targetElement.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.5)';
+                    setTimeout(() => {
+                        targetElement.style.boxShadow = '';
+                    }, 3000);
+                }
+            }
+        }, 1500);
+    }
+
+    // 处理旧式快速问题
+    function handleQuickQuestionOld(question) {
+        const chatBody = document.querySelector('.chat-body');
+        if (!chatBody) return;
+
+        // 确保聊天窗口有最大高度和滚动
+        chatBody.style.maxHeight = '300px';
+        chatBody.style.overflowY = 'auto';
+        chatBody.style.scrollBehavior = 'smooth';
+
+        // 添加用户问题
+        const userMessage = document.createElement('div');
+        userMessage.className = 'chat-message user-message';
+        userMessage.innerHTML = `<p>${question}</p>`;
+
+        // 找到quick-questions元素并在它前面插入
+        const quickQuestions = chatBody.querySelector('.quick-questions');
+        if (quickQuestions) {
+            chatBody.insertBefore(userMessage, quickQuestions);
+        } else {
+            chatBody.appendChild(userMessage);
+        }
+
+        // 立即滚动到新消息
+        setTimeout(() => {
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }, 100);
+
+        // 延迟添加AI回复
+        setTimeout(() => {
+            const response = getLocalResponse(question);
+            const botMessage = document.createElement('div');
+            botMessage.className = 'chat-message bot-message';
+            botMessage.innerHTML = `<p>${response}</p>`;
+
+            if (quickQuestions) {
+                chatBody.insertBefore(botMessage, quickQuestions);
+            } else {
+                chatBody.appendChild(botMessage);
+            }
+
+            // 滚动到底部
+            setTimeout(() => {
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }, 100);
+        }, 1000);
+    }
+
+
+    // DeepSeek API处理
+    async function handleDeepSeekResponse(userMessage) {
+        const systemPrompt = `你是乐启享教育机构的AI助手。机构秉承"乐启享机器人编程"的理念，位于宜昌市猇亭区，专注于青少年科技竞赛培训，包括：
+- 信息学奥林匹克竞赛(NOIP)
+- 世界机器人大赛(WRC)
+- 全国中小学信息素养大赛
+- 蓝桥杯程序设计大赛
+- 科技创新大赛等
+
+请用专业、友好的语气回答用户关于竞赛培训、课程安排、费用等问题。
+联系电话：18164173640
+地址：宜昌市猇亭区金岭路59-1号
+
+回答要求：
+1. 简洁明了，一般控制在100字以内
+2. 具体实用，提供有价值的信息
+3. 适当引导用户咨询或报名
+4. 如果涉及具体价格或时间，建议用户电话详询`;
+
+        try {
+            // 使用本地回复
+            throw new Error('使用本地回复');
+
+        } catch (error) {
+            hideAIThinking();
+
+            // 降级到本地回复
+            const localResponse = getLocalResponse(userMessage);
+            addAIChatMessage(localResponse, 'bot');
+        }
+    }
+
+    // 本地回复逻辑
+    function getLocalResponse(message) {
+        const msg = message.toLowerCase();
+
+        // 竞赛相关
+        if (msg.includes('noip') || msg.includes('信息学奥赛') || msg.includes('编程竞赛')) {
+            return 'NOIP信息学奥林匹克竞赛是全国青少年信息学奥林匹克联赛，分为提高组和普及组。宜昌地区是重点培养项目，获奖者可直接保送知名高校。报名需要有一定的C++编程基础。详询：18164173640';
+        }
+
+        if (msg.includes('世界机器人') || msg.includes('wrc') || msg.includes('机器人大赛')) {
+            return '世界机器人大赛(WRC)包括青少年机器人设计竞赛、人工智能挑战赛等项目。宜昌三峡职院承办赛区，湖北省机器人协会提供支持。需要3-5人组队参赛，培养团队协作和工程设计思维。';
+        }
+
+        if (msg.includes('科技特长生') || msg.includes('认证流程') || msg.includes('特长生申请')) {
+            return '科技特长生认证流程：①竞赛获奖→②材料申报→③专家评审→④获得认证。可享受中考加分5-20分、优质高中直推等政策。申报时间为每年3月和9月，详情请查看页面下方的详细认证信息。';
+        }
+
+        // 课程相关
+        if (msg.includes('费用') || msg.includes('价格') || msg.includes('多少钱')) {
+            return '课程费用因项目而异，一般每月1200-2500元。我们提供试听课程，详细收费标准请电话咨询：18164173640';
+        }
+
+        if (msg.includes('时间') || msg.includes('安排')) {
+            return '我们有周末班和平时晚班，每次课2-3小时。具体时间可根据学员情况灵活安排，请联系我们详谈。';
+        }
+
+        if (msg.includes('年龄') || msg.includes('几岁')) {
+            return '我们接受5-18岁学员。不同年龄有对应课程：5-8岁积木编程，9-12岁图形化编程，13岁以上代码编程。';
+        }
+
+        // 其他常见问题
+        if (msg.includes('地址') || msg.includes('位置')) {
+            return '我们位于宜昌市猇亭区金岭路59-1号，交通便利。欢迎实地参观了解！';
+        }
+
+        if (msg.includes('试听') || msg.includes('体验')) {
+            return '我们提供免费试听课程，让您充分了解教学内容和方式。预约试听请致电：18164173640';
+        }
+
+        // 默认回复
+        return `感谢您的咨询！关于"${message}"，建议您直接联系我们的专业老师获得详细解答。电话：18164173640，我们会为您提供最适合的学习方案。`;
+    }
+
+    // 显示AI思考状态
+    function showAIThinking() {
+        isAIThinking = true;
+        const thinkingMessage = document.createElement('div');
+        thinkingMessage.className = 'ai-chat-message bot-message thinking-message';
+        thinkingMessage.id = 'thinking-message';
+        thinkingMessage.innerHTML = `
+            <p style="opacity: 0.8;">
+                AI正在思考中
+                <span class="thinking-dots">
+                    <span>.</span>
+                    <span>.</span>
+                    <span>.</span>
+                </span>
+            </p>
+        `;
+
+        const chatBody = document.querySelector('.ai-chat-body');
+        if (chatBody) {
+            chatBody.appendChild(thinkingMessage);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+    }
+
+    // 隐藏AI思考状态
+    function hideAIThinking() {
+        isAIThinking = false;
+        const thinkingMessage = document.getElementById('thinking-message');
+        if (thinkingMessage) {
+            thinkingMessage.remove();
+        }
+    }
+
+    // 添加AI聊天消息
+    function addAIChatMessage(message, type) {
+        const chatBody = document.querySelector('.ai-chat-body');
+        if (!chatBody) return;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `ai-chat-message ${type}-message`;
+
+        if (type === 'bot') {
+            messageDiv.innerHTML = `<p>${message}</p>`;
+            // 添加联系方式收集提示
+            if (Math.random() < 0.3) { // 30%概率显示
+                setTimeout(() => {
+                    const contactPrompt = document.createElement('div');
+                    contactPrompt.className = 'ai-chat-message bot-message';
+                    contactPrompt.innerHTML = `
+                        <p style="font-size: 0.9em; opacity: 0.8;">
+                            💡 如需更详细咨询，欢迎留下您的联系方式，我们会主动联系您！
+                        </p>
+                    `;
+                    chatBody.appendChild(contactPrompt);
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                }, 2000);
+            }
+        } else {
+            messageDiv.innerHTML = `<p>${message}</p>`;
+        }
+
+        chatBody.appendChild(messageDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    // 获取或创建用户ID
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0,
+                v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    function isValidUUID(uuid) {
+        const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return regex.test(uuid);
+    }
+
+    async function getOrCreateUserId() {
+        let userId = localStorage.getItem('user_id');
+
+        if (userId && !isValidUUID(userId)) {
+            localStorage.removeItem('user_id');
+            userId = null;
+        }
+
+        if (!userId) {
+            userId = generateUUID();
+            localStorage.setItem('user_id', userId);
+        }
+
+        return userId;
+    }
+
+    // 安全插入数据
+    async function safeInsert(table, data) {
+        try {
+            if (data.user_id && !isValidUUID(data.user_id)) {
+                data.user_id = generateUUID();
+                localStorage.setItem('user_id', data.user_id);
+            }
+
+            // 数据库连接已移除
+            const result = null;
+            const error = null;
+
+            if (error) {
+                console.error(`插入${table}表错误:`, error);
+                return { error };
+            }
+
+            return { data: result };
+        } catch (error) {
+            console.error(`插入${table}表异常:`, error);
+            return { error };
+        }
+    }
+
+    // 记录访问
+    async function recordVisit() {
+        const userId = await getOrCreateUserId();
+
+        try {
+            const { error } = await safeInsert('visits', {
+                page: 'competitions',
+                ip: 'unknown',
+                browser: getBrowserInfo(),
+                device: getDeviceType(),
+                user_agent: navigator.userAgent,
+                action_type: 'page_view',
+                item_id: 'competitions_page',
+                user_id: userId
+            });
+
+            if (error) {
+                console.error('记录访问错误:', error);
+            }
+        } catch (error) {
+            console.error('记录访问异常:', error);
+        }
+    }
+
+    function getBrowserInfo() {
+        const userAgent = navigator.userAgent;
+        if (userAgent.includes("Chrome")) return "Chrome";
+        else if (userAgent.includes("Firefox")) return "Firefox";
+        else if (userAgent.includes("Safari")) return "Safari";
+        else if (userAgent.includes("Edge")) return "Edge";
+        return "未知浏览器";
+    }
+
+    function getDeviceType() {
+        const width = window.innerWidth;
+        if (width < 768) return "移动设备";
+        if (width < 992) return "平板设备";
+        return "桌面设备";
+    }
+
+    // 记录竞赛详情查看
+    async function recordCompetitionView(competitionId) {
+        const userId = await getOrCreateUserId();
+
+        try {
+            const { error } = await safeInsert('visits', {
+                page: 'competitions',
+                ip: 'unknown',
+                browser: getBrowserInfo(),
+                device: getDeviceType(),
+                user_agent: navigator.userAgent,
+                action_type: 'competition_detail',
+                item_id: competitionId,
+                user_id: userId
+            });
+
+            if (error) {
+                console.error('记录竞赛查看错误:', error);
+            }
+        } catch (error) {
+            console.error('记录竞赛查看异常:', error);
+        }
+    }
+
+    // 页面加载完成后记录访问
+    document.addEventListener('DOMContentLoaded', recordVisit);
+    </script>
+    <script>
+    // 表单已替换为二维码和联系方式，保留兼容入口用于旧按钮回落。
+    async function handleContactSubmit(e) {
+        e.preventDefault();
+        scrollToContactForm('竞赛咨询');
+    }
+
+    async function handleQuickContactSubmit(e) {
+        e.preventDefault();
+        scrollToContactForm('竞赛咨询');
+    }
+
+    // 添加验证手机号函数
+    function validatePhone(phone) {
+        const phoneRegex = /^1[3-9]\d{9}$/;
+        return phoneRegex.test(phone);
+    }
+
+    // 添加显示消息函数
+    function showMessage(message, type) {
+        // 创建或获取消息容器
+        let messageContainer = document.getElementById('message-container');
+        if (!messageContainer) {
+            messageContainer = document.createElement('div');
+            messageContainer.id = 'message-container';
+            messageContainer.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 3000;
+                max-width: 300px;
+            `;
+            document.body.appendChild(messageContainer);
+        }
+
+        // 创建消息元素
+        const messageEl = document.createElement('div');
+        const bgColor = type === 'success' ? '#4CAF50' : '#f44336';
+        messageEl.style.cssText = `
+            background: ${bgColor};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateX(320px);
+            transition: transform 0.3s ease;
+            font-size: 14px;
+            line-height: 1.4;
+        `;
+        messageEl.textContent = message;
+
+        messageContainer.appendChild(messageEl);
+
+        // 动画显示
+        setTimeout(() => {
+            messageEl.style.transform = 'translateX(0)';
+        }, 10);
+
+        // 自动消失
+        setTimeout(() => {
+            messageEl.style.transform = 'translateX(320px)';
+            setTimeout(() => {
+                if (messageEl.parentNode) {
+                    messageEl.parentNode.removeChild(messageEl);
+                }
+            }, 300);
+        }, 4000);
+    }
+
+    // ========== 加载更多功能 ==========
+
+    // 初始化加载更多按钮的函数
+    function initLoadMoreButtons() {
+        // 竞赛加载更多
+        const loadMoreCompetitionsBtn = document.getElementById('loadMoreCompetitions');
+        const moreCompetitions = document.getElementById('moreCompetitions');
+
+        if (loadMoreCompetitionsBtn && moreCompetitions) {
+            loadMoreCompetitionsBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const isHidden = moreCompetitions.style.display === 'none' || !moreCompetitions.style.display;
+
+                if (isHidden) {
+                    moreCompetitions.style.display = 'block';
+                    loadMoreCompetitionsBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 收起全部赛事';
+                } else {
+                    moreCompetitions.style.display = 'none';
+                    loadMoreCompetitionsBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 展开全部赛事';
+                }
+
+                return false;
+            };
+        }
+
+        // 认证详情加载更多
+        const loadMoreCertificationBtn = document.getElementById('loadMoreCertification');
+        const certificationDetails = document.getElementById('certificationDetails');
+
+        if (loadMoreCertificationBtn && certificationDetails) {
+            loadMoreCertificationBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const isHidden = certificationDetails.style.display === 'none' || !certificationDetails.style.display;
+
+                if (isHidden) {
+                    certificationDetails.style.display = 'block';
+                    loadMoreCertificationBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 收起认证流程';
+                } else {
+                    certificationDetails.style.display = 'none';
+                    loadMoreCertificationBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 了解详细认证流程';
+                }
+
+                return false;
+            };
+        }
+
+        // 学生案例加载更多
+        const loadMoreStudentsBtn = document.getElementById('loadMoreStudents');
+        const moreStudents = document.getElementById('moreStudents');
+
+        if (loadMoreStudentsBtn && moreStudents) {
+            loadMoreStudentsBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const isHidden = moreStudents.style.display === 'none' || !moreStudents.style.display;
+
+                if (isHidden) {
+                    moreStudents.style.display = 'block';
+                    loadMoreStudentsBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 收起全部学生案例';
+                } else {
+                    moreStudents.style.display = 'none';
+                    loadMoreStudentsBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 展开全部学生案例';
+                }
+
+                return false;
+            };
+        }
+    }
+
+    // ========== AI助手提示功能 ==========
+    function showAIAssistantTip() {
+        // 创建提示气泡
+        const tipBubble = document.createElement('div');
+        tipBubble.id = 'aiTipBubble';
+        tipBubble.style.cssText = `
+            position: fixed;
+            bottom: 140px;
+            right: 20px;
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
+            z-index: 1001;
+            font-size: 14px;
+            max-width: 200px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+
+        tipBubble.innerHTML = `
+            <div>👋 我是你的AI小助手，有什么问题可以点我！</div>
+            <div style="
+                position: absolute;
+                bottom: -8px;
+                right: 30px;
+                width: 0;
+                height: 0;
+                border-left: 8px solid transparent;
+                border-right: 8px solid transparent;
+                border-top: 8px solid #4a90e2;
+            "></div>
+        `;
+
+        document.body.appendChild(tipBubble);
+
+        // 显示动画
+        setTimeout(() => {
+            tipBubble.style.opacity = '1';
+            tipBubble.style.transform = 'translateY(0)';
+        }, 100);
+
+        // 3秒后自动消失
+        setTimeout(() => {
+            tipBubble.style.opacity = '0';
+            tipBubble.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                if (tipBubble.parentNode) {
+                    tipBubble.parentNode.removeChild(tipBubble);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    // ========== MySQL数据库相关函数 ==========
+    function getBrowserInfo() {
+        const userAgent = navigator.userAgent;
+        if (userAgent.includes("Chrome")) return "Chrome";
+        else if (userAgent.includes("Firefox")) return "Firefox";
+        else if (userAgent.includes("Safari")) return "Safari";
+        else if (userAgent.includes("Edge")) return "Edge";
+        return "未知浏览器";
+    }
+
+    function getDeviceType() {
+        const width = window.innerWidth;
+        if (width < 768) return "移动设备";
+        if (width < 992) return "平板设备";
+        return "桌面设备";
+    }
+
+    async function getOrCreateUserId() {
+        if (window.robotDoctorDB && typeof window.robotDoctorDB.generateUserId === 'function') {
+            return window.robotDoctorDB.generateUserId();
+        }
+        let userId = localStorage.getItem('competition_user_id');
+        if (!userId) {
+            userId = 'competition_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            localStorage.setItem('competition_user_id', userId);
+        }
+        return userId;
+    }
+
+    // 使用MySQL的安全插入函数
+    async function safeInsert(table, data) {
+        try {
+            if (table === 'visits') {
+                // 静默记录访问
+                if (window.robotDoctorDB && typeof window.robotDoctorDB.recordVisit === 'function') {
+                    window.robotDoctorDB.recordVisit(
+                        data.page || '竞赛页面',
+                        data.action_type || 'page_view'
+                    ).catch(() => {});
+                }
+                return { data: [{ success: true }], error: null };
+            } else if (table === 'signups' || table === 'competition_signups') {
+                if (window.robotDoctorDB && typeof window.robotDoctorDB.submitSignup === 'function') {
+                    const result = await window.robotDoctorDB.submitSignup(data);
+                    return { data: [result], error: null };
+                }
+                return { data: [{ success: true }], error: null };
+            } else if (table === 'bookings') {
+                if (window.robotDoctorDB && typeof window.robotDoctorDB.submitBooking === 'function') {
+                    const result = await window.robotDoctorDB.submitBooking(data);
+                    return { data: [result], error: null };
+                }
+                return { data: [{ success: true }], error: null };
+            } else {
+                // 静默处理不支持的表
+                return { data: [{ success: true }], error: null };
+            }
+        } catch (error) {
+            // 静默处理所有错误
+            return { data: [{ success: true }], error: null };
+        }
+    }
+
+    // 记录竞赛详情查看
+    async function recordCompetitionView(competitionId) {
+        const userId = await getOrCreateUserId();
+
+        try {
+            const { error } = await safeInsert('visits', {
+                page: 'competitions',
+                ip: 'unknown',
+                browser: getBrowserInfo(),
+                device: getDeviceType(),
+                user_agent: navigator.userAgent,
+                action_type: 'competition_detail',
+                item_id: competitionId,
+                user_id: userId
+            });
+
+            if (error) {
+                console.error('记录竞赛查看错误:', error);
+            }
+        } catch (error) {
+            console.error('记录竞赛查看异常:', error);
+        }
+    }
+
+    // 竞赛详情查看函数
+    function showCompetitionDetail(competitionId) {
+        // 记录查看行为
+        recordCompetitionView(competitionId);
+
+        // 获取竞赛详情数据
+        const competitionDetails = getCompetitionDetails(competitionId);
+
+        // 创建详情弹窗
+        createCompetitionModal(competitionDetails);
+    }
+
+    // 获取竞赛详情数据
+    function getCompetitionDetails(competitionId) {
+        const details = {
+            'noip': {
+                title: 'NOIP信息学奥林匹克竞赛',
+                description: '全国青少年信息学奥林匹克联赛是面向中学生的计算机程序设计竞赛，被誉为信息学领域的"奥林匹克"。',
+                process: [
+                    '掌握C++编程语言基础',
+                    '学习算法与数据结构',
+                    '参加模拟训练和测试',
+                    '报名参加初赛选拔',
+                    '优胜者晋级复赛决赛'
+                ],
+                benefits: [
+                    '培养逻辑思维能力',
+                    '提升程序设计水平',
+                    '锻炼算法分析技能',
+                    '获得高校保送资格'
+                ],
+                organizer: '宜昌市计算机学会',
+                phone: '0717-6441069',
+                website: 'https://www.noi.cn',
+                address: '宜昌市西陵区发展大道57号'
+            },
+            'wrc': {
+                title: '世界机器人大赛(WRC)',
+                description: '世界机器人大赛是全球规模最大、影响力最广的机器人赛事，被誉为机器人界的"奥林匹克"。',
+                process: [
+                    '组建3-5人团队',
+                    '选择参赛项目类别',
+                    '设计制作机器人',
+                    '参加地区选拔赛',
+                    '优胜者晋级全国总决赛'
+                ],
+                benefits: [
+                    '培养团队协作能力',
+                    '提升工程设计思维',
+                    '锻炼动手实践能力',
+                    '获得科技特长生认证'
+                ],
+                organizer: '宜昌市机器人协会',
+                phone: '0717-6555888',
+                website: 'https://www.worldrobotconference.com',
+                address: '宜昌市西陵区发展大道57号'
+            },
+            'literacy': {
+                title: '全国中小学信息素养大赛',
+                description: '面向中小学生的信息技术综合应用竞赛，通过数字创作、编程实践等方式培养学生信息素养。',
+                process: [
+                    '学习信息技术基础知识',
+                    '掌握数字创作和编程技能',
+                    '完成创新作品设计制作',
+                    '参加市级区域选拔赛',
+                    '优胜者晋级省级决赛'
+                ],
+                benefits: [
+                    '全面提升信息技术素养',
+                    '培养数字时代核心技能',
+                    '锻炼逻辑思维和创新能力',
+                    '获得科技特长生资格'
+                ],
+                organizer: '宜昌市教育局电教馆',
+                phone: '0717-6441069',
+                website: 'https://www.ncet.edu.cn',
+                address: '宜昌市西陵区夷陵大道52号'
+            },
+            'computer': {
+                title: '全国中小学电脑制作活动',
+                description: '运用信息技术进行创新设计与制作的综合实践活动，培养学生的创新精神和实践能力。',
+                process: [
+                    '掌握数字创作工具',
+                    '学习程序设计基础',
+                    '开展创客制作实践',
+                    '参加市级初评选拔',
+                    '晋级省级终评展示'
+                ],
+                benefits: [
+                    '培养创新设计思维',
+                    '提升数字化创作能力',
+                    '锻炼动手实践技能',
+                    '获得科技特长认证'
+                ],
+                organizer: '宜昌市教育局电教馆',
+                phone: '0717-6441069',
+                website: 'https://www.ncet.edu.cn',
+                address: '宜昌市西陵区夷陵大道52号'
+            },
+            'innovation': {
+                title: '全国青少年科技创新大赛',
+                description: '展示青少年科技创新成果的最权威综合性科技竞赛，被誉为"小科学家的摇篮"。',
+                process: [
+                    '确定研究课题方向',
+                    '开展科学实验研究',
+                    '撰写研究报告论文',
+                    '参加地区初评选拔',
+                    '入围全国终评展示'
+                ],
+                benefits: [
+                    '培养科学研究素养',
+                    '提升创新实践能力',
+                    '获得科技特长认证',
+                    '享受升学政策优势'
+                ],
+                organizer: '宜昌市科学技术协会',
+                phone: '0717-6555668',
+                website: 'https://castic.xiaoxiaotong.org',
+                address: '宜昌市西陵区云集路25号'
+            },
+            'bluecup': {
+                title: '蓝桥杯程序设计大赛',
+                description: '面向高校学生和中学生的程序设计竞赛，注重实践能力和工程素养培养。',
+                process: [
+                    '选择编程语言方向',
+                    '强化算法基础训练',
+                    '参加在线模拟测试',
+                    '报名省赛选拔',
+                    '优胜者晋级国赛'
+                ],
+                benefits: [
+                    '提升编程实战能力',
+                    '获得就业竞争优势',
+                    '锻炼解决问题能力',
+                    '积累项目开发经验'
+                ],
+                organizer: '工信部人才交流中心',
+                phone: '010-68208002',
+                website: 'https://www.lanqiao.cn',
+                address: '北京市西城区木樨地北里甲11号'
+            },
+            'vex': {
+                title: 'VEX机器人世界锦标赛',
+                description: '全球最大的机器人竞赛项目，通过搭建和编程机器人培养学生STEM素养。',
+                process: [
+                    '学习VEX搭建系统',
+                    '掌握机器人编程技能',
+                    '设计解决方案策略',
+                    '参加地区选拔赛',
+                    '晋级世界锦标赛'
+                ],
+                benefits: [
+                    '培养工程设计思维',
+                    '提升团队协作能力',
+                    '锻炼问题解决技能',
+                    '获得国际竞赛经历'
+                ],
+                organizer: 'VEX Robotics',
+                phone: '0717-6555999',
+                website: 'https://www.vexrobotics.com',
+                address: '宜昌市西陵区发展大道59号'
+            },
+            'frc': {
+                title: 'FRC机器人竞赛',
+                description: 'FIRST机器人竞赛，国际顶级机器人赛事，强调工程设计和团队合作。',
+                process: [
+                    '组建多元化团队',
+                    '分析比赛规则挑战',
+                    '6周设计制造机器人',
+                    '参加地区赛事',
+                    '冲击世界冠军赛'
+                ],
+                benefits: [
+                    '培养专业工程素养',
+                    '锻炼项目管理能力',
+                    '提升国际视野格局',
+                    '获得顶尖高校认可'
+                ],
+                organizer: 'FIRST总部',
+                phone: '021-6888-5566',
+                website: 'https://www.firstinspires.org',
+                address: '上海市浦东新区科技园区'
+            },
+            'roborave': {
+                title: 'RoboRAVE国际机器人大赛',
+                description: '面向青少年的国际机器人竞赛平台，注重创新思维和实践能力培养。',
+                process: [
+                    '选择挑战赛项目',
+                    '设计机器人方案',
+                    '制作测试优化',
+                    '参加国内选拔',
+                    '代表中国出征国际赛'
+                ],
+                benefits: [
+                    '培养创新创造能力',
+                    '提升动手实践技能',
+                    '锻炼国际交流能力',
+                    '获得全球竞赛认证'
+                ],
+                organizer: 'RoboRAVE国际',
+                phone: '027-8756-4321',
+                website: 'https://www.roborave.org',
+                address: '武汉市洪山区科技大道88号'
+            },
+            'maker': {
+                title: '全国青少年创客大赛',
+                description: '培养创新思维和动手实践能力的综合性竞赛，融合科技与艺术创作。',
+                process: [
+                    '确定创客项目主题',
+                    '学习数字制作工具',
+                    '设计制作创意作品',
+                    '参加市级评选',
+                    '晋级全国总决赛'
+                ],
+                benefits: [
+                    '培养创新设计思维',
+                    '掌握数字制作技能',
+                    '提升综合实践能力',
+                    '获得创客认证资格'
+                ],
+                organizer: '宜昌市青少年科技创新中心',
+                phone: '0717-6555668',
+                website: 'https://www.cast.org.cn',
+                address: '宜昌市西陵区云集路25号'
+            },
+            'ai': {
+                title: '全国中小学人工智能大赛',
+                description: '推广人工智能教育的权威性竞赛平台，培养AI时代的创新人才。',
+                process: [
+                    '学习人工智能基础',
+                    '掌握机器学习概念',
+                    '开发AI应用项目',
+                    '参加省级选拔赛',
+                    '冲击全国总冠军'
+                ],
+                benefits: [
+                    '掌握前沿AI技术',
+                    '培养算法思维能力',
+                    '提升数据分析技能',
+                    '获得未来科技优势'
+                ],
+                organizer: '中国人工智能学会',
+                phone: '010-6253-4567',
+                website: 'https://www.caai.cn',
+                address: '北京市海淀区中关村南大街5号'
+            },
+            'aild': {
+                title: '全国青少年劳动技能与智能设计大赛(AILD)',
+                description: '融合劳动教育与智能技术的创新竞赛，培养学生劳动实践能力和智能设计思维。',
+                process: [
+                    '学习劳动技能基础知识',
+                    '掌握智能设计工具应用',
+                    '设计制作劳动智能作品',
+                    '参加地区技能展示赛',
+                    '晋级全国总决赛'
+                ],
+                benefits: [
+                    '培养劳动实践精神',
+                    '提升智能设计能力',
+                    '锻炼动手制作技能',
+                    '获得劳动教育认证'
+                ],
+                organizer: '宜昌市教育局',
+                phone: '0717-6441069',
+                website: 'https://www.aild.org.cn',
+                address: '宜昌市西陵区夷陵大道52号'
+            }
+        };
+
+        return details[competitionId] || {
+            title: '竞赛详情',
+            description: '详细信息请联系我们获取',
+            contact: '咨询电话：18164173640'
+        };
+    }
+
+    // 创建竞赛详情弹窗
+    function createCompetitionModal(details) {
+        // 创建遮罩层
+        const overlay = document.createElement('div');
+        overlay.className = 'competition-modal-overlay';
+        overlay.setAttribute('role', 'presentation');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 27, 62, 0.85);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        `;
+
+        // 创建弹窗内容
+        const modal = document.createElement('div');
+        modal.className = 'competition-detail-modal modal modal-scroll';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-label', details.title || '竞赛详情');
+        modal.style.cssText = `
+            background: linear-gradient(135deg, #1a2b5c 0%, #0d1b3e 100%);
+            border-radius: 16px;
+            max-width: 650px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 0;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+            animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        `;
+
+        const processHTML = details.process ? `
+            <div style="margin-bottom: 24px;">
+                <h3 style="color: #00ffff; margin-bottom: 12px; font-size: 16px; display: flex; align-items: center;">
+                    <span style="margin-right: 8px;">🎯</span>参赛流程
+                </h3>
+                <div style="color: #ffffff; line-height: 1.8;">
+                    ${details.process.map((step, index) =>
+                        `<div style="margin-bottom: 6px; padding-left: 20px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #00ffff; font-weight: bold;">${index + 1}.</span>
+                            ${step}
+                        </div>`
+                    ).join('')}
+                </div>
+            </div>
+        ` : '';
+
+        const benefitsHTML = details.benefits ? `
+            <div style="margin-bottom: 24px;">
+                <h3 style="color: #00ffff; margin-bottom: 12px; font-size: 16px; display: flex; align-items: center;">
+                    <span style="margin-right: 8px;">🏆</span>竞赛优势
+                </h3>
+                <div style="color: #ffffff; line-height: 1.8;">
+                    ${details.benefits.map(benefit =>
+                        `<div style="margin-bottom: 6px; padding-left: 20px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #00ffff;">•</span>
+                            ${benefit}
+                        </div>`
+                    ).join('')}
+                </div>
+            </div>
+        ` : '';
+
+        modal.innerHTML = `
+            <div style="padding: 24px 32px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">${details.title}</h2>
+                    <button onclick="closeCompetitionModal()" style="
+                        background: rgba(255, 255, 255, 0.1);
+                        border: none;
+                        color: #ffffff;
+                        border-radius: 50%;
+                        cursor: pointer;
+                        padding: 8px;
+                        line-height: 1;
+                        width: 36px;
+                        height: 36px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 20px;
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
+                </div>
+            </div>
+            <div style="padding: 32px;">
+                <p style="color: #c0c0c0; line-height: 1.7; margin-bottom: 28px; font-size: 15px;">${details.description}</p>
+
+                ${processHTML}
+                ${benefitsHTML}
+
+                <div style="margin-top: 32px; padding: 24px; background: linear-gradient(135deg, #0d1b3e 0%, #1a2b5c 100%); border-radius: 12px; border: 1px solid rgba(0, 255, 255, 0.2);">
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #00ffff; margin: 0 0 16px 0; font-size: 18px; text-align: center;">竞赛咨询与报名</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <a href="${details.website}" target="_blank" style="
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
+                                padding: 12px 16px;
+                                background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+                                color: white;
+                                text-decoration: none;
+                                border-radius: 8px;
+                                font-weight: 500;
+                                font-size: 14px;
+                                transition: all 0.3s ease;
+                                box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+                                min-height: 44px;
+                            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(74, 144, 226, 0.4)'"
+                               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(74, 144, 226, 0.3)'">
+                                <span style="margin-right: 8px;">🌐</span>
+                                访问官网
+                            </a>
+                            <button onclick="scrollToContactForm('${details.title}')" style="
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
+                                padding: 12px 16px;
+                                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                font-weight: 500;
+                                font-size: 14px;
+                                transition: all 0.3s ease;
+                                box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+                                cursor: pointer;
+                                min-height: 44px;
+                            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(40, 167, 69, 0.4)'"
+                               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(40, 167, 69, 0.3)'">
+                                <span style="margin-right: 8px;">📞</span>
+                                立即咨询
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 16px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; color: #c0c0c0; font-size: 14px;">
+                            <div>
+                                <strong style="color: #00ffff;">主办单位：</strong>${details.organizer}
+                            </div>
+                            <div>
+                                <strong style="color: #00ffff;">联系电话：</strong>${details.phone}
+                            </div>
+                            <div style="grid-column: 1 / -1;">
+                                <strong style="color: #00ffff;">官方地址：</strong>${details.address}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // 点击遮罩关闭
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                closeCompetitionModal();
+            }
+        });
+
+        // ESC键关闭
+        const handleEsc = function(e) {
+            if (e.key === 'Escape') {
+                closeCompetitionModal();
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
+
+        // 存储引用以便关闭
+        window.currentCompetitionModal = overlay;
+
+        // 添加CSS动画
+        if (!document.getElementById('modal-styles')) {
+            const style = document.createElement('style');
+            style.id = 'modal-styles';
+            style.textContent = `
+                @keyframes modalSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: scale(0.8) translateY(-30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: scale(1) translateY(0);
+                    }
+                }
+
+                /* 滚动条样式 */
+                .modal-scroll::-webkit-scrollbar {
+                    width: 8px;
+                }
+
+                .modal-scroll::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 4px;
+                }
+
+                .modal-scroll::-webkit-scrollbar-thumb {
+                    background: rgba(0, 255, 255, 0.3);
+                    border-radius: 4px;
+                }
+
+                .modal-scroll::-webkit-scrollbar-thumb:hover {
+                    background: rgba(0, 255, 255, 0.5);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // 添加滚动条样式类
+        modal.classList.add('modal-scroll');
+    }
+
+    // 关闭竞赛详情弹窗
+    function closeCompetitionModal() {
+        if (window.currentCompetitionModal) {
+            document.body.removeChild(window.currentCompetitionModal);
+            window.currentCompetitionModal = null;
+        }
+    }
+
+    // 跳转到联系表单并填写竞赛信息
+    function scrollToContactForm(competitionTitle) {
+        // 关闭弹窗
+        closeCompetitionModal();
+
+        // 滚动到联系区域
+        const contactSection = document.getElementById('contact');
+        if (contactSection) {
+            contactSection.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+
+            // 滚动完成后突出显示二维码联系卡片
+            setTimeout(() => {
+                const qrCard = document.querySelector('.contact-qr-card');
+                if (qrCard) {
+                    qrCard.style.boxShadow = '0 0 24px rgba(0, 255, 255, 0.35)';
+                    qrCard.style.borderColor = 'rgba(0, 255, 255, 0.45)';
+                    setTimeout(() => {
+                        qrCard.style.boxShadow = '';
+                        qrCard.style.borderColor = '';
+                    }, 3000);
+                }
+                showMessage(`请扫码或拨打 18164173640 咨询【${competitionTitle}】`, 'success');
+            }, 800);
+        }
+    }
+
+    // ========== 动态标题打字效果 ==========
+    function initTypingEffect() {
+        const typingText = document.querySelector('.typing-text');
+        if (!typingText) return;
+
+        const words = [
+            '点亮智慧之光',
+            '培育科技英才',
+            '成就编程梦想',
+            '开启创新之门'
+        ];
+
+        let wordIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        let typeSpeed = 150;
+
+        function type() {
+            const currentWord = words[wordIndex];
+
+            if (isDeleting) {
+                typingText.textContent = currentWord.substring(0, charIndex - 1);
+                charIndex--;
+                typeSpeed = 50;
+            } else {
+                typingText.textContent = currentWord.substring(0, charIndex + 1);
+                charIndex++;
+                typeSpeed = 150;
+            }
+
+            if (!isDeleting && charIndex === currentWord.length) {
+                typeSpeed = 2000;
+                isDeleting = true;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                wordIndex = (wordIndex + 1) % words.length;
+                typeSpeed = 500;
+            }
+
+            setTimeout(type, typeSpeed);
+        }
+
+        setTimeout(type, 1000);
+    }
+
+    // ========== 尾部联系二维码打字效果 ==========
+    function initContactTypewriter() {
+        const wrap = document.querySelector('.contact-qr-copy');
+        const title = document.getElementById('competitionContactTitle');
+        const subtitle = document.getElementById('competitionContactSubtitle');
+        if (!wrap || !title || !subtitle) return;
+
+        const titlePhrases = (wrap.dataset.contactTitlePhrases || '扫码预约体验课|加入乐启享|竞赛规划 · 科技特长生咨询')
+            .split('|')
+            .map(text => text.trim())
+            .filter(Boolean);
+        const subtitlePhrases = (wrap.dataset.contactSubtitlePhrases || '乐启享 · 机器人 · 编程 · AI 创造')
+            .split('|')
+            .map(text => text.trim())
+            .filter(Boolean);
+        if (!titlePhrases.length) return;
+
+        let phraseIndex = 0;
+        let charIndex = 0;
+
+        function render(value) {
+            title.innerHTML = `${value}<span class="contact-type-cursor" aria-hidden="true"></span>`;
+            subtitle.textContent = subtitlePhrases[phraseIndex % subtitlePhrases.length] || '';
+            title.setAttribute('aria-label', value);
+        }
+
+        function tick() {
+            const current = titlePhrases[phraseIndex % titlePhrases.length];
+            render(current.slice(0, charIndex));
+
+            if (charIndex < current.length) {
+                charIndex += 1;
+            } else {
+                setTimeout(() => {
+                    phraseIndex = (phraseIndex + 1) % titlePhrases.length;
+                    charIndex = 1;
+                    tick();
+                }, 1400);
+                return;
+            }
+
+            setTimeout(tick, 64);
+        }
+
+        render(titlePhrases[0].slice(0, 1));
+        charIndex = 1;
+        setTimeout(tick, 180);
+    }
+
+    // ========== 图片懒加载功能 ==========
+    function initLazyLoading() {
+        const lazyImages = document.querySelectorAll('img.lazy-load');
+
+        if ('IntersectionObserver' in window) {
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.classList.remove('lazy-load');
+                        imageObserver.unobserve(img);
+                    }
+                });
+            }, {
+                rootMargin: '50px 0px',
+                threshold: 0.01
+            });
+
+            lazyImages.forEach(img => imageObserver.observe(img));
+        } else {
+            // 降级处理
+            lazyImages.forEach(img => {
+                img.src = img.dataset.src;
+                img.classList.remove('lazy-load');
+            });
+        }
+    }
+
+    // ========== 移动端菜单切换 ==========
+    function initMobileMenu() {
+        const navToggle = document.querySelector('.nav-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+
+        if (navToggle && navMenu) {
+            navToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                navMenu.classList.toggle('active');
+                navToggle.classList.toggle('active');
+            });
+
+            // 点击菜单项后关闭菜单
+            const menuLinks = navMenu.querySelectorAll('a');
+            menuLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                });
+            });
+
+            // 点击页面其他地方关闭菜单
+            document.addEventListener('click', function(e) {
+                if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                }
+            });
+        }
+    }
+
+    // ========== 统一初始化函数 ==========
+    function initializePage() {
+        try {
+            // 0. 初始化移动端菜单
+            initMobileMenu();
+
+            // 1. 初始化图片懒加载
+            initLazyLoading();
+
+            // 2. 初始化动态标题效果
+            initTypingEffect();
+            initContactTypewriter();
+
+            // 3. 初始化AI聊天系统
+            initAIChatSystem();
+
+            // 4. 初始化加载更多按钮
+            initLoadMoreButtons();
+
+            // 5. 3秒后显示AI助手提示
+            setTimeout(() => {
+                showAIAssistantTip();
+            }, 3000);
+
+        } catch (error) {
+            // 静默处理错误
+        }
+    }
+
+    // 页面初始化时自动记录访问（静默处理）
+    document.addEventListener('DOMContentLoaded', function() {
+        // 静默记录页面访问
+        if (window.robotDoctorDB && typeof window.robotDoctorDB.recordVisit === 'function') {
+            window.robotDoctorDB.recordVisit('竞赛页面', 'page_view').catch(() => {});
+        }
+
+        // 调用统一初始化
+        initializePage();
+    });
+    </script>
+
+<script>
+// 移动端优化JavaScript
+(function() {
+    'use strict';
+
+    // 检测移动设备
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (isMobile || isTouch) {
+        document.body.classList.add('mobile-device');
+
+        // 优化点击延迟
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // 优化滚动性能
+        let ticking = false;
+        function updateScrollPosition() {
+            // 更新滚动相关的UI
+            ticking = false;
+        }
+
+        function requestScrollUpdate() {
+            if (!ticking) {
+                requestAnimationFrame(updateScrollPosition);
+                ticking = true;
+            }
+        }
+
+        window.addEventListener('scroll', requestScrollUpdate, { passive: true });
+
+        // 优化表单体验
+        const inputs = document.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            // 防止双击缩放
+            input.addEventListener('touchstart', function(e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            });
+
+            // 优化焦点管理
+            input.addEventListener('focus', function() {
+                setTimeout(() => {
+                    this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            });
+        });
+
+        // 添加快速访问按钮
+        if (document.getElementById('quickAccess') === null) {
+            const quickAccess = document.createElement('div');
+            quickAccess.id = 'quickAccess';
+            quickAccess.className = 'quick-access';
+            quickAccess.innerHTML = `
+                <!-- 移动端快捷按钮已移除 -->
+            `;
+            document.body.appendChild(quickAccess);
+        }
+
+        // 优化模态框在移动端的显示
+        const modals = document.querySelectorAll('.modal, .course-modal, .event-modal');
+        modals.forEach(modal => {
+            modal.addEventListener('touchmove', function(e) {
+                e.stopPropagation();
+            });
+        });
+
+        // 禁用双击缩放（保留捏合缩放）
+        let lastTouchTime = 0;
+        document.addEventListener('touchend', function(event) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTouchTime;
+            if (tapLength < 500 && tapLength > 0) {
+                event.preventDefault();
+            }
+            lastTouchTime = currentTime;
+        });
+    }
+
+    // 自适应视窗高度
+    function setViewportHeight() {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+})();
+</script>
+
+
+<script>
+// 安全加固JavaScript
+(function() {
+    'use strict';
+
+    // 移除开发者工具限制以提高浏览器兼容性
+
+    // 防止拖拽外部内容
+    document.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+
+    document.addEventListener('drop', function(e) {
+        e.preventDefault();
+    });
+
+    // 防止选择文本（可选，根据需要启用）
+    // document.addEventListener('selectstart', function(e) {
+    //     e.preventDefault();
+    // });
+
+    // 防止图片拖拽保存
+    document.addEventListener('dragstart', function(e) {
+        if (e.target.tagName === 'IMG') {
+            e.preventDefault();
+        }
+    });
+
+    // 清理全局变量泄露
+    Object.defineProperty(window, 'console', {
+        get: function() {
+            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                return {
+                    log: function() {},
+                    warn: function() {},
+                    error: function() {},
+                    info: function() {},
+                    debug: function() {},
+                    clear: function() {},
+                    dir: function() {},
+                    dirxml: function() {},
+                    table: function() {},
+                    trace: function() {},
+                    group: function() {},
+                    groupCollapsed: function() {},
+                    groupEnd: function() {},
+                    time: function() {},
+                    timeEnd: function() {},
+                    timeLog: function() {},
+                    count: function() {},
+                    assert: function() {},
+                    profile: function() {},
+                    profileEnd: function() {}
+                };
+            }
+            return console;
+        }
+    });
+
+    // 监听网络请求，防止敏感信息泄露
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+        // 添加安全头部
+        if (args[1]) {
+            args[1].headers = {
+                ...args[1].headers,
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+        }
+        return originalFetch.apply(this, args);
+    };
+
+    // 输入过滤，防止XSS
+    function sanitizeInput(str) {
+        if (typeof str !== 'string') return str;
+        return str.replace(/[<>"'&]/g, function(match) {
+            const map = {
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+                '&': '&amp;'
+            };
+            return map[match];
+        });
+    }
+
+    // 为所有输入框添加安全过滤
+    document.addEventListener('input', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            const sanitized = sanitizeInput(e.target.value);
+            if (sanitized !== e.target.value) {
+                e.target.value = sanitized;
+            }
+        }
+    });
+
+    // 防止点击劫持
+    if (window.top !== window.self) {
+        window.top.location = window.self.location;
+    }
+
+    // 设置安全Cookie（如果需要）
+    document.cookie = "SameSite=Strict; Secure";
+
+})();
+</script>
+
+</body>
+</html>

@@ -18,17 +18,17 @@ class LoginFlow:
 _LOGIN_FLOWS: dict[str, LoginFlow] = {
     "admin": LoginFlow(
         path="/background/login",
-        role_tab_selector=None,
+        role_tab_selector='.tab[data-target="teacher"]',
         fallback_path="/background/course-management/school-curriculum",
     ),
     "teacher": LoginFlow(
         path="/login",
-        role_tab_selector="#tab-manager",
-        fallback_path="/school-home-page/class-management1/students-management1",
+        role_tab_selector='.tab[data-target="teacher"]',
+        fallback_path="/code-classroom/classroom-index",
     ),
     "student": LoginFlow(
         path="/login",
-        role_tab_selector="#tab-student",
+        role_tab_selector='.tab[data-target="student"]',
         fallback_path="/code-classroom/myClass",
     ),
 }

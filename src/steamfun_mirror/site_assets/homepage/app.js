@@ -18,6 +18,45 @@
     sections.forEach((section) => observer.observe(section));
   }
 
+  // -- mobile hero navigation ------------------------------------------
+  const heroHeader = document.querySelector('.hero-header');
+  const heroMenuToggle = heroHeader ? heroHeader.querySelector('.hero-menu-toggle') : null;
+  const heroNav = document.getElementById('heroNav');
+  if (heroHeader && heroMenuToggle && heroNav) {
+    const menuClass = 'is-menu-open';
+    const setMenuOpen = (open) => {
+      heroHeader.classList.toggle(menuClass, open);
+      heroMenuToggle.setAttribute('aria-expanded', String(open));
+      document.body.classList.toggle('hero-nav-open', open);
+    };
+
+    setMenuOpen(false);
+
+    heroMenuToggle.addEventListener('click', () => {
+      setMenuOpen(!heroHeader.classList.contains(menuClass));
+    });
+
+    heroNav.addEventListener('click', (event) => {
+      const target = event.target instanceof Element ? event.target.closest('.nav-link') : null;
+      if (!target || !window.matchMedia('(max-width: 1023.98px)').matches) return;
+      setMenuOpen(false);
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!heroHeader.classList.contains(menuClass)) return;
+      if (heroHeader.contains(event.target)) return;
+      setMenuOpen(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024) setMenuOpen(false);
+    });
+  }
+
   // -- cinema wall + thumbs + lightbox ----------------------------------
   const cinemaWall = document.getElementById('cinemaWall');
   const cinemaThumbs = document.querySelectorAll('.cinema-thumb');
@@ -115,6 +154,37 @@
     window.setInterval(() => { if (!paused) move(1); }, 3200);
     render(false);
   };
+
+  const removeCarouselCards = (rootSel, removeNeedles, countText) => {
+    const root = document.querySelector(rootSel);
+    if (!root) return;
+    const cards = Array.from(root.querySelectorAll('[data-lightbox-src]'));
+    cards.forEach((card) => {
+      const source = card.getAttribute('data-lightbox-src') || '';
+      if (removeNeedles.some((needle) => source.includes(needle))) card.remove();
+    });
+    const remaining = root.querySelectorAll('[data-lightbox-src]').length;
+    root.dataset.count = String(remaining);
+    const countLabel = root.querySelector('.honor-carousel__count, .campus-carousel__count');
+    if (countLabel && countText) countLabel.textContent = countText(remaining);
+  };
+
+  removeCarouselCards(
+    '#campusCarousel',
+    ['home/2.webp', 'home/3.webp', 'campus-02.webp', 'campus-classroom-3.webp', 'campus-classroom-6.webp', 'campus-space-1.webp', 'campus-space-2.webp'],
+    (count) => `${count} 张实拍 . 真实可感的校区空间`
+  );
+  removeCarouselCards(
+    '#honorCarousel',
+    [
+      '3c4b1c9a2f99fd3aedb86712b709b6a2.webp',
+      '47cdc27feee3d1ca5a1c2de341202475.webp',
+      '6e43b26aa8d461efbe6bfd108898c4bf.webp',
+      'c61cbbd3848e84e3ef947fb05a6ea4e4.webp',
+      'd3112f025a571be58aa80e2ee73623d2.webp'
+    ],
+    (count) => `${count} 项荣誉 . 见证成长的关键时刻`
+  );
 
   initCarousel('#honorCarousel', '.honor-carousel__viewport', '.honor-carousel__track', '.honor-carousel__nav--prev', '.honor-carousel__nav--next');
   initCarousel('#campusCarousel', '.campus-carousel__viewport', '.campus-carousel__track', '.campus-carousel__nav--prev', '.campus-carousel__nav--next');
@@ -227,60 +297,173 @@
   });
 
 
-  // -- hero typewriter (Senlin-style sequential phrase) -----------
-  const heroTarget = document.getElementById('hero-typewriter-text');
-  if (heroTarget) {
-    const heroLines = [
-      '乐高启蒙 · 机器人工程 · 编程思维',
-      'NOI 竞赛指导 / 1000+ 学员成果',
-      '乐启享教育 / 校长 / 合伙人',
-      'Python / C++ / Web / AI 教学实践'
-    ];
-    let hi = 0;
-    let ci = 0;
-    let deleting = false;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const tick = () => {
-      const current = heroLines[hi % heroLines.length];
-      heroTarget.textContent = current.slice(0, ci);
-      if (!deleting) {
-        if (ci < current.length) {
-          ci += 1;
-        } else {
-          deleting = true;
-          setTimeout(tick, 1800);
-          return;
-        }
-      } else if (ci > 0) {
-        ci -= 1;
-      } else {
-        deleting = false;
-        hi = (hi + 1) % heroLines.length;
-      }
-      setTimeout(tick, deleting ? 36 : (reduced ? 80 : 60));
-    };
-    tick();
-  }
-
-  // -- hero title per-character typing -----------------------------
+  // -- hero title large typewriter ---------------------------------
   (function () {
-    var title = document.getElementById('heroTitle');
+    const title = document.getElementById('heroTitle');
     if (!title) return;
-    var chars = title.querySelectorAll('.hero-title__char');
-    if (!chars.length) return;
-    chars.forEach(function (c) { c.style.opacity = '0'; c.style.transform = 'translateY(0.35em)'; });
-    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var stepDelay = reduced ? 0 : 130;
-    function revealAll() {
-      chars.forEach(function (c) { c.style.opacity = '1'; c.style.transform = 'none'; });
+    title.classList.add('hero-title--typing');
+    const defaultPhrases = '从乐高启蒙 到 AI 创造|让好奇心 在指尖生长|不止于搭建 · 更创造未来|把每一个奇思妙想 · 都变成作品|与未来同行 · 从第一块积木开始';
+    const phrases = (title.dataset.heroTitlePhrases || defaultPhrases)
+      .split('|')
+      .map((phrase) => phrase.trim())
+      .filter(Boolean);
+    if (!phrases.length) return;
+    const reduced = false;
+    const escapeHtml = (value) => value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    const renderText = (value) => escapeHtml(value).replace(/AI/g, '<span class="hero-title__ai">AI</span>');
+    const splitRows = (value) => {
+      const toIndex = value.indexOf(' 到 ');
+      if (toIndex !== -1) {
+        const tail = value.slice(toIndex + 3);
+        if (!tail.trim()) return [{ prefix: '', text: value.trim() }];
+        return [
+          { prefix: '', text: value.slice(0, toIndex) },
+          { prefix: '<span class="hero-title__space" aria-hidden="true">&nbsp;</span>到 ', text: tail }
+        ];
+      }
+      const dotIndex = value.indexOf(' · ');
+      if (dotIndex !== -1) {
+        const tail = value.slice(dotIndex + 3);
+        if (!tail.trim()) return [{ prefix: '', text: value.trim() }];
+        return [
+          { prefix: '', text: value.slice(0, dotIndex) },
+          { prefix: '<span class="hero-title__mark" aria-hidden="true">·</span> ', text: tail }
+        ];
+      }
+      const spaceIndex = value.indexOf(' ');
+      if (spaceIndex !== -1) {
+        return [
+          { prefix: '', text: value.slice(0, spaceIndex) },
+          { prefix: '', text: value.slice(spaceIndex + 1) }
+        ];
+      }
+      return [{ prefix: '', text: value }];
+    };
+    const renderTitle = (value, showCursor) => {
+      const cursor = showCursor ? '<span class="hero-title__cursor" aria-hidden="true"></span>' : '';
+      const rows = splitRows(value);
+      title.innerHTML = rows.map((row, rowIndex) => {
+        const suffix = rowIndex === rows.length - 1 ? cursor : '';
+        return '<span class="hero-title__row">' + row.prefix + renderText(row.text) + suffix + '</span>';
+      }).join('');
+      title.setAttribute('aria-label', value.replace(/\s+/g, ''));
+    };
+    if (reduced) {
+      renderTitle(phrases[0], false);
+      return;
     }
-    if (reduced) { revealAll(); return; }
-    chars.forEach(function (c, idx) {
-      window.setTimeout(function () {
-        c.style.transition = 'opacity 360ms ease, transform 420ms ease';
-        c.style.opacity = '1';
-        c.style.transform = 'none';
-      }, idx * stepDelay);
-    });
+    const splitUnits = (phrase) => {
+      const units = [];
+      for (let index = 0; index < phrase.length;) {
+        if (phrase.startsWith('AI', index)) {
+          units.push('AI');
+          index += 2;
+        } else if (phrase.startsWith('STEAM', index)) {
+          units.push('STEAM');
+          index += 5;
+        } else {
+          units.push(phrase[index]);
+          index += 1;
+        }
+      }
+      return units;
+    };
+    const typedPhrases = phrases.map((phrase) => ({
+      text: phrase,
+      units: splitUnits(phrase)
+    }));
+    let phraseIndex = 0;
+    let unitIndex = 0;
+    let deleting = false;
+    const typeDelay = 48;
+    const deleteDelay = 26;
+    const holdDelay = 850;
+    renderTitle('', true);
+    const tick = () => {
+      const current = typedPhrases[phraseIndex % typedPhrases.length];
+      renderTitle(current.units.slice(0, unitIndex).join(''), true);
+      if (!deleting && unitIndex < current.units.length) {
+        unitIndex += 1;
+        setTimeout(tick, typeDelay);
+        return;
+      }
+      if (!deleting) {
+        deleting = true;
+        setTimeout(tick, holdDelay);
+        return;
+      }
+      if (unitIndex > 0) {
+        unitIndex -= 1;
+        setTimeout(tick, deleteDelay);
+        return;
+      }
+      deleting = false;
+      phraseIndex = (phraseIndex + 1) % typedPhrases.length;
+      setTimeout(tick, 220);
+    };
+    setTimeout(tick, 120);
+  })();
+
+  // -- signal section big typewriter (right-side copy) ------------
+  (function () {
+    const target = document.getElementById('signalTitle');
+    if (!target) return;
+    target.classList.add('signal-title--typing');
+    const fallback = '加入乐启享 · 扫码预约体验课 | 7 年深耕 · STEAM 教育 | 乐高启蒙 · 机器人工程 · 编程思维 | 让每一次好奇 · 都被认真对待 | 扫码 · 让孩子的未来 提前开始';
+    const phrases = (target.dataset.signalTitlePhrases || fallback)
+      .split('|')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (!phrases.length) return;
+    const reduced = false;
+    const escapeHtml = (value) => value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    const renderText = (value) => escapeHtml(value);
+    const renderTitle = (value, showCursor) => {
+      const cursor = showCursor ? '<span class="hero-title__cursor" aria-hidden="true"></span>' : '';
+      target.innerHTML = '<span class="hero-title__row">' + renderText(value) + cursor + '</span>';
+      target.setAttribute('aria-label', value.replace(/\s+/g, ''));
+    };
+    if (reduced) {
+      renderTitle(phrases[0], false);
+      return;
+    }
+    let pIdx = 0;
+    let uIdx = 0;
+    let deleting = false;
+    const typeDelay = 44;
+    const deleteDelay = 24;
+    const holdDelay = 850;
+    renderTitle('', true);
+    const tick = () => {
+      const current = phrases[pIdx % phrases.length];
+      renderTitle(current.slice(0, uIdx), true);
+      if (!deleting && uIdx < current.length) {
+        uIdx += 1;
+        setTimeout(tick, typeDelay);
+        return;
+      }
+      if (!deleting) {
+        deleting = true;
+        setTimeout(tick, holdDelay);
+        return;
+      }
+      if (uIdx > 0) {
+        uIdx -= 1;
+        setTimeout(tick, deleteDelay);
+        return;
+      }
+      deleting = false;
+      pIdx = (pIdx + 1) % phrases.length;
+      setTimeout(tick, 220);
+    };
+    setTimeout(tick, 120);
   })();
 })();

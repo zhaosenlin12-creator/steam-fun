@@ -9,9 +9,13 @@ HOMEPAGE_ASSET_PREFIX = "/_site/homepage"
 HOMEPAGE_ASSET_ROOT = Path(__file__).resolve().parent / "site_assets" / "homepage"
 COURSES_ASSET_PREFIX = "/_site/courses"
 COURSES_ASSET_ROOT = Path(__file__).resolve().parent / "site_assets" / "courses"
+COMPETITIONS_ASSET_PREFIX = "/_site/competitions"
+COMPETITIONS_ASSET_ROOT = Path(__file__).resolve().parent / "site_assets" / "competitions"
+COMPETITIONS_ASSET_INDEX = COMPETITIONS_ASSET_ROOT / "index.html"
 GOOGLE_FONTS_URL = (
     "https://fonts.googleapis.com/css2?family=Anton&family=Condiment&family=Noto+Sans+SC:wght@400;600&display=swap"
 )
+ASSET_VERSION = "20260730-1"
 
 HERO_VIDEO_FILE = "hero-cloudfront-20260331-045634.mp4"
 ABOUT_VIDEO_FILE = "about-cloudfront-20260331-151551.mp4"
@@ -45,6 +49,7 @@ NAV_ITEMS = [
     ("#collection", "\u8bfe\u7a0b\u77e9\u9635"),
     ("#collection", "\u6210\u957f\u7a79\u9876"),
     ("#signal", "\u8054\u7cfb\u6211\u4eec"),
+    ("/competitions.html", "\u5168\u90e8\u8d5b\u4e8b", True),
 ]
 
 SIGNAL_ITEMS = [
@@ -70,7 +75,6 @@ TEACHER_POSTERS = [
 ]
 
 HONOR_CARDS = [
-    ("honors/3c4b1c9a2f99fd3aedb86712b709b6a2.webp", "全国青少年机器人竞赛颁奖合影", "一等奖 2024"),
     ("honors/3eec15d34062bf6ef680de67fb74689f.webp", "WRCC2025 宜昌锦标赛 BoxBot 小学组 颁奖", "冠军 2025"),
     ("honors/415738909ed8cf9eb1594535c8e3537e.webp", "WRCC2025 北京锦标赛 三学员合影", "参赛 2025"),
     ("honors/47cdc27feee3d1ca5a1c2de341202475.webp", "全国青少年机器人竞赛颁奖合影", "获奖 2024"),
@@ -144,6 +148,22 @@ def courses_asset_path(asset_path: str):
         return None
     return candidate
 
+def competitions_asset_path(asset_path: str):
+    normalized = asset_path.strip().lstrip(chr(47)).replace(chr(92), chr(47))
+    if not normalized:
+        return None
+    candidate = (COMPETITIONS_ASSET_ROOT / normalized).resolve()
+    try:
+        candidate.relative_to(COMPETITIONS_ASSET_ROOT.resolve())
+    except ValueError:
+        return None
+    if not candidate.is_file():
+        return None
+    return candidate
+
+
+
+
 
 def _icon_svg(name: str) -> str:
     paths = {
@@ -200,11 +220,31 @@ def _icon_svg(name: str) -> str:
     return paths[name]
 
 
-def _render_nav() -> str:
-    items = "".join(
-        f'<a class="nav-link font-grotesk" href="{escape(href)}">{escape(label)}</a>'
-        for href, label in NAV_ITEMS
+def _render_nav_link(href: str, label: str, external: bool = False) -> str:
+    safe_href = escape(href)
+    safe_label = escape(label)
+    auto_external = (
+        href.startswith("http://") or href.startswith("https://") or href.startswith("//")
     )
+    if external or auto_external:
+        return (
+            f'<a class="nav-link font-grotesk nav-link--external" '
+            f'href="{safe_href}" target="_blank" rel="noreferrer">{safe_label}</a>'
+        )
+    return f'<a class="nav-link font-grotesk" href="{safe_href}">{safe_label}</a>'
+
+
+def _render_nav() -> str:
+    rendered = []
+    for entry in NAV_ITEMS:
+        if len(entry) == 3:
+            href, label, external_flag = entry
+            external = bool(external_flag)
+        else:
+            href, label = entry
+            external = False
+        rendered.append(_render_nav_link(href, label, external=external))
+    items = "".join(rendered)
     login = (
         f'<a class="nav-link nav-link--login font-grotesk" href="{escape(LOGIN_HREF)}">'
         f'<span>\u767b\u5f55</span>'
@@ -487,8 +527,8 @@ def _render_campus_row() -> str:
 
 def render_marketing_homepage(request: Request) -> str:
     _ = request
-    stylesheet_url = homepage_asset_url("styles.css")
-    script_url = homepage_asset_url("app.js")
+    stylesheet_url = homepage_asset_url(f"styles.css?v={ASSET_VERSION}")
+    script_url = homepage_asset_url(f"app.js?v={ASSET_VERSION}")
     hero_video_url = homepage_asset_url("media/" + HERO_VIDEO_FILE)
     about_video_url = homepage_asset_url("media/" + ABOUT_VIDEO_FILE)
     signal_video_url = homepage_asset_url("media/" + SIGNAL_VIDEO_FILE)
@@ -503,6 +543,18 @@ def render_marketing_homepage(request: Request) -> str:
     about_text = escape(ABOUT_COPY)
     subtitle = escape(BRAND_SUBTITLE)
     course_url = escape(BRAND_COURSE_URL)
+    hero_title_phrases = (
+        "\u4ece\u4e50\u9ad8\u542f\u8499 \u5230 AI \u521b\u9020 | "
+        "\u8ba9\u597d\u5947\u5fc3 \u5728\u6307\u5c16\u751f\u957f | "
+        "\u4e0d\u6b62\u4e8e\u642d\u5efa \u00b7 \u66f4\u521b\u9020\u672a\u6765 | "
+        "\u628a\u6bcf\u4e00\u4e2a\u5947\u601d\u5999\u60f3 \u00b7 \u90fd\u53d8\u6210\u4f5c\u54c1 | "
+        "\u4e0e\u672a\u6765\u540c\u884c \u00b7 \u4ece\u7b2c\u4e00\u5757\u79ef\u6728\u5f00\u59cb"
+    )
+    hero_title_html = (
+        '<span class="hero-title__row">\u4ece\u4e50\u9ad8\u542f\u8499</span>'
+        '<span class="hero-title__row">\u5230 <span class="hero-title__ai">AI</span> \u521b\u9020'
+        '<span class="hero-title__cursor" aria-hidden="true"></span></span>'
+    )
     parts = []
     parts.append('<!doctype html><html lang="zh-CN"><head>')
     parts.append('<meta charset="utf-8">')
@@ -527,17 +579,24 @@ def render_marketing_homepage(request: Request) -> str:
     parts.append('<a class="hero-logo font-grotesk" href="#hero">')
     parts.append('<img class="hero-logo__image" src="' + homepage_asset_url('media/brand-logo.png') + '" alt="\u4e50\u542f\u4eab">')
     parts.append('</a>')
-    parts.append('<nav class="hero-nav liquid-glass" aria-label="Primary">' + nav_html + '</nav>')
+    parts.append('<button class="hero-menu-toggle" type="button" aria-label="\u5c55\u5f00\u5bfc\u822a" aria-expanded="false" aria-controls="heroNav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg></button>')
+    parts.append('<nav class="hero-nav liquid-glass" id="heroNav" aria-label="Primary">' + nav_html + '</nav>')
     parts.append('</header>')
     parts.append('<div class="hero-body">')
     parts.append('<div class="hero-copy">')
     parts.append('<span class="hero-eyebrow font-condiment">\u4e50\u542f\u4eab \u00b7 STEAM \u6559\u80b2</span>')
-    parts.append('<h1 class="hero-title font-grotesk" id="heroTitle"><span class="hero-title__row"><span class="hero-title__char" aria-hidden="true">从</span><span class="hero-title__char" aria-hidden="true">乐</span><span class="hero-title__char" aria-hidden="true">高</span><span class="hero-title__char" aria-hidden="true">启</span><span class="hero-title__char" aria-hidden="true">蒙</span></span><span class="hero-title__row"><span class="hero-title__space" aria-hidden="true">&nbsp;</span>\u5230 <span class="hero-title__ai">AI</span> <span class="hero-title__char" aria-hidden="true">创</span><span class="hero-title__char" aria-hidden="true">造</span></span></h1>')
+    parts.append(
+        '<h1 class="hero-title font-grotesk" id="heroTitle" data-hero-title-phrases="'
+        + hero_title_phrases
+        + '">'
+        + hero_title_html
+        + '</h1>'
+    )
     parts.append('<p class="hero-accent font-condiment">\u4e50\u542f\u4eab\u673a\u5668\u4eba</p>')
     parts.append('<p class="hero-tagline font-mono">' + subtitle + '</p>')
-    parts.append('<div class="hero-typewriter" aria-live="polite">' + '<span id="hero-typewriter-text" class="hero-typewriter__text font-mono"></span>' + '<span class="hero-typewriter__cursor" aria-hidden="true"></span></div>')
     parts.append('<div class="hero-cta-row">')
     parts.append('<a class="hero-cta hero-cta--primary font-grotesk" href="' + course_url + '" target="_blank" rel="noreferrer">\u67e5\u770b\u5b8c\u6574\u8bfe\u7a0b\u4f53\u7cfb</a>')
+    parts.append('<a class="hero-cta hero-cta--competition font-grotesk" href="/competitions.html" target="_blank" rel="noreferrer">\u5168\u90e8\u8d5b\u4e8b</a>')
     parts.append('<a class="hero-cta hero-cta--ghost font-grotesk" href="#signal">\u9884\u7ea6\u4f53\u9a8c\u8bfe</a>')
     parts.append('</div>')
     parts.append('</div>')
@@ -589,7 +648,7 @@ def render_marketing_homepage(request: Request) -> str:
     parts.append('<section class="signal-stage" id="signal"><div class="container signal-stage__container"><div class="signal-stage__media">')
     parts.append('<video class="signal-stage__video" autoplay loop muted playsinline src="' + escape(signal_video_url) + '"></video>')
     parts.append('<div class="signal-copy"><p class="signal-accent font-condiment">\u52a0\u5165\u4e50\u542f\u4eab</p>')
-    parts.append('<h2 class="signal-title font-grotesk"><span class="signal-title__lead">\u9884\u7ea6\u4f53\u9a8c\u8bfe.</span><span>\u8d70\u8fdb\u4e50\u9ad8\u5de5\u574a.</span><span>\u8ba9\u5b69\u5b50\u4eb2\u624b\u521b\u9020.</span><span>\u627e\u5230\u5c5e\u4e8e\u4ed6\u7684\u4fe1\u53f7.</span></h2></div>')
+    parts.append('<h2 class="signal-title font-grotesk" id="signalTitle" data-signal-title-phrases="\u52a0\u5165\u4e50\u542f\u4eab \u00b7 \u626b\u7801\u9884\u7ea6\u4f53\u9a8c\u8bfe | 7 \u5e74\u6df1\u8015 \u00b7 STEAM \u6559\u80b2 | \u4e50\u9ad8\u542f\u8499 \u00b7 \u673a\u5668\u4eba\u5de5\u7a0b \u00b7 \u7f16\u7a0b\u601d\u7ef4 | \u8ba9\u6bcf\u4e00\u6b21\u597d\u5947 \u00b7 \u90fd\u88ab\u8ba4\u771f\u5bf9\u5f85 | \u626b\u7801 \u00b7 \u8ba9\u5b69\u5b50\u7684\u672a\u6765 \u63d0\u524d\u5f00\u59cb">加入乐启享 · 扫码预约体验课<span class="hero-title__cursor" aria-hidden="true"></span></h2></div>')
     parts.append('<aside class="signal-qr-card liquid-glass" aria-label="扫码预约体验课">'
         + '<p class="signal-qr-card__title font-condiment">\u4e50\u542f\u4eab</p>'
         + '<p class="signal-qr-card__lede font-mono">\u626b\u7801 / \u5bfc\u822a / \u62e8\u6253</p>'

@@ -170,28 +170,6 @@
     });
   }
 
-  function initBookingForm() {
-    const form = $('#courseBookingForm');
-    if (!form) return;
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = $('#bookingName').value.trim();
-      const phone = $('#bookingPhone').value.trim();
-
-      if (!name || !phone) {
-        showMessage('请填写姓名和联系电话', 'warning');
-        return;
-      }
-      if (!/^1\d{10}$/.test(phone)) {
-        showMessage('请输入正确的手机号码', 'warning');
-        return;
-      }
-
-      const btn = form.querySelector('.booking-submit');
-      btn.innerHTML = '<i class="fas fa-phone" style="margin-right:6px"></i>请直接联系 18164173640';
-      showMessage('已记录您的体验课意向，请直接添加微信或拨打 18164173640 预约。', 'success');
-    });
-  }
   // ========== 详情页逻辑 ==========
   function isDetailPage() {
     return !!$('#detailHero');
@@ -469,7 +447,6 @@
       renderTimeline();
       renderCourseCards();
       renderRoutes();
-      initBookingForm();
       setTimeout(initScrollAnimations, 100);
     } else if (isDetailPage()) {
       renderDetailPage();

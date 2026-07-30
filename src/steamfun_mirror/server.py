@@ -19,12 +19,15 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 
 from .config import BASE_URL, STUDENT_LOGIN_PATH, TEACHER_LOGIN_PATH
+from .capabilities import default_route_for_role, permission_tree_for_role, resolve_profile_role, roles_for_frontend_route
 from .course_offline import build_course_asset_not_local_response, lookup_course_archive_asset
-from .homepage import COURSES_ASSET_ROOT, courses_asset_path, homepage_asset_path, render_marketing_homepage
+from .homepage import COMPETITIONS_ASSET_INDEX, COMPETITIONS_ASSET_PREFIX, COURSES_ASSET_ROOT, competitions_asset_path, courses_asset_path, homepage_asset_path, render_marketing_homepage
 from .rewrite import is_same_origin_host, rewrite_external_urls
 from .storage import MirrorStore
+from .workspaces import build_workspace_payload, workspace_asset_path
 
 
+LOGIN_HTML_PATH = Path(__file__).resolve().parent / "site_assets" / "login" / "index.html"
 TEXTUAL_RESPONSE_MARKERS = ("json", "javascript", "css", "html", "svg", "xml", "text")
 HOP_BY_HOP_HEADERS = {"content-length", "transfer-encoding", "content-encoding", "connection", "host"}
 ASSET_FALLBACK_FILENAMES = {"favicon.ico", "manifest.json", "robots.txt", "asset-manifest.json", "service-worker.js", "sw.js"}
@@ -46,6 +49,19 @@ ADMIN_PREVIEW_TO_LOCAL_PPT_PATTERN = re.compile(
     r'this\.\$router\.push\(\{name:"look-curriculum",params:\{curriculumMaterial:([A-Za-z_$][\w$]*)\}\}\)'
 )
 VERSION_RELOAD_PATTERN = re.compile(r'e&&"(v\d+)"!=e\.version&&window\.location\.reload\(\)')
+SPA_LOGOUT_PATTERN = re.compile(
+    r'this\.\$store\.dispatch\("LogOut"\)\.then\(\(\)=>\{'
+    r'sessionStorage\.setItem\("schoolInfo",null\),'
+    r'localStorage\.removeItem\("editor_opentype"\),'
+    r'this\.\$message\.success\("退出成功"\),'
+    r'this\.\$router\.push\(\{path:"/"\}\),location\.reload\(\)\}\)'
+)
+ADMIN_SPA_LOGOUT_PATTERN = re.compile(
+    r'this\.\$store\.dispatch\("AdminLogOut"\)\.then\(\(\)=>\{'
+    r'this\.\$message\.success\("[^"]*"\),'
+    r'this\.\$router\.push\(\{path:"/background/login"\}\),'
+    r'sessionStorage\.setItem\("schoolInfo",null\)\}\)'
+)
 COURSE_BROWSER_SUPPORT_REDIRECT = (
     'e("data/html5-unsupported.html");',
     "performRedirectIfNeeded=function(){return!1};",
@@ -103,6 +119,154 @@ CLASSROOM_PPT_LAYOUT_GUARD = (
     "html.local-classroom-ppt .school-home-page .course-left-ppt,"
     "html.local-classroom-ppt .school-home-page .course-view{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;}"
     "html.local-classroom-ppt .school-home-page .course-view{min-height:60vh!important;}"
+    "}"
+    "</style>"
+)
+STUDENT_MYCLASS_LAYOUT_GUARD = (
+    "<script>"
+    "(function(){"
+    "if(window.__localStudentMyClassLayout){return;}"
+    "window.__localStudentMyClassLayout=true;"
+    "if(/\\/code-classroom\\/myClass(?:\\/)?$/.test(location.pathname||'')){"
+    "document.documentElement.classList.add('local-student-myclass');"
+    "}"
+    "}());"
+    "</script>"
+    "<style>"
+    "@media(max-width:760px){"
+    "html.local-student-myclass,html.local-student-myclass body,"
+    "html.local-student-myclass #app,html.local-student-myclass #app>.container,"
+    "html.local-student-myclass .school-home-page,html.local-student-myclass .school-home-page>.frame{"
+    "min-width:0!important;width:100%!important;max-width:100%!important;overflow-x:hidden!important;}"
+    "html.local-student-myclass #home_top>.el-row,"
+    "html.local-student-myclass #header_other>.el-row{display:flex!important;align-items:center!important;padding:0 12px!important;}"
+    "html.local-student-myclass #header_other>.el-row>.el-col-4{display:none!important;}"
+    "html.local-student-myclass #header_other>.el-row>.el-col-14{float:none!important;flex:1 1 auto!important;width:auto!important;}"
+    "html.local-student-myclass #header_other>.el-row>.el-col-6{float:none!important;flex:0 0 auto!important;width:auto!important;margin-left:auto!important;}"
+    "html.local-student-myclass #header_other>.el-row>.el-col-6 .el-col-18{display:none!important;}"
+    "html.local-student-myclass #header_other>.el-row>.el-col-6 .el-col-6{float:none!important;width:auto!important;}"
+    "html.local-student-myclass #header_other .el-menu--horizontal>.el-menu-item{padding:0 10px!important;}"
+    "html.local-student-myclass .school-home-page>.frame{display:block!important;padding-bottom:68px!important;}"
+    "html.local-student-myclass .school-home-page>.frame>.menu{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;z-index:120!important;display:block!important;width:100%!important;height:64px!important;min-height:0!important;background:#fff!important;box-shadow:0 -4px 18px rgba(32,45,64,.12)!important;}"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.el-row,"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.collapse-trigger{display:none!important;}"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.el-menu-demo{display:flex!important;width:100%!important;height:64px!important;margin:0!important;border:0!important;overflow-x:auto!important;overflow-y:hidden!important;}"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.el-menu-demo>.el-menu-item,"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.el-menu-demo>.el-submenu{display:flex!important;flex:1 0 76px!important;min-width:76px!important;height:64px!important;align-items:center!important;justify-content:center!important;padding:0 6px!important;line-height:1.2!important;}"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.el-menu-demo>.el-menu-item{flex-direction:column!important;gap:5px!important;}"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.el-menu-demo>.el-submenu>.el-submenu__title{display:flex!important;width:100%!important;height:64px!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;gap:5px!important;padding:0 6px!important;line-height:1.2!important;}"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.el-menu-demo .icon{margin:0!important;font-size:18px!important;}"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.el-menu-demo span{font-size:11px!important;white-space:nowrap!important;}"
+    "html.local-student-myclass .school-home-page>.frame>.menu>.el-menu-demo .el-submenu__icon-arrow{display:none!important;}"
+    "html.local-student-myclass .school-home-page>.frame>section,"
+    "html.local-student-myclass .school-home-page>.frame>section>.container{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow:visible!important;}"
+    "html.local-student-myclass .school-body-index-teacher{width:auto!important;max-width:none!important;min-width:0!important;margin:10px 8px!important;padding:14px!important;}"
+    "html.local-student-myclass .school-body-index-teacher .el-tabs__nav-wrap{padding:0 20px!important;}"
+    "html.local-student-myclass .school-body-index-teacher .filter-row{display:flex!important;flex-wrap:wrap!important;gap:8px!important;}"
+    "html.local-student-myclass .school-body-index-teacher .el-form--inline .el-form-item{max-width:100%!important;margin-right:8px!important;}"
+    "html.local-student-myclass .school-body-index-teacher .w-200{width:min(200px,calc(100vw - 82px))!important;}"
+    "html.local-student-myclass .school-body-index-teacher .el-checkbox-group{display:flex!important;flex-wrap:wrap!important;gap:8px 12px!important;}"
+    "html.local-student-myclass .school-body-index-teacher .el-checkbox{margin-right:0!important;}"
+    "html.local-student-myclass .school-body-index-teacher .class-list-wrapper .el-col{width:100%!important;max-width:100%!important;}"
+    "html.local-student-myclass .school-body-index-teacher .pagination-container{overflow-x:auto!important;padding-bottom:4px!important;}"
+    "html.local-student-myclass .school-body-index-teacher .el-pagination{white-space:nowrap!important;}"
+    "html.local-student-myclass .school-body-index-teacher .el-pagination__jump{display:none!important;}"
+    "}"
+    "</style>"
+)
+TEACHER_CLASSROOM_INDEX_LAYOUT_GUARD = (
+    "<script>"
+    "(function(){"
+    "if(window.__localTeacherClassroomIndexLayout){return;}"
+    "window.__localTeacherClassroomIndexLayout=true;"
+    "if(/\\/code-classroom\\/classroom-index(?:\\/)?$/.test(location.pathname||'')){"
+    "document.documentElement.classList.add('local-teacher-classroom-index');"
+    "}"
+    "}());"
+    "</script>"
+    "<style>"
+    "@media(max-width:760px){"
+    "html.local-teacher-classroom-index,html.local-teacher-classroom-index body,"
+    "html.local-teacher-classroom-index #app,html.local-teacher-classroom-index #app>.container,"
+    "html.local-teacher-classroom-index .school-home-page,html.local-teacher-classroom-index .school-home-page>.frame,"
+    "html.local-teacher-classroom-index .school-home-page>.frame>section,"
+    "html.local-teacher-classroom-index .school-home-page>.frame>section>.container{"
+    "min-width:0!important;width:100%!important;max-width:100%!important;overflow-x:hidden!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame{"
+    "display:block!important;padding-bottom:68px!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu{"
+    "position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;"
+    "z-index:120!important;display:block!important;width:100%!important;height:64px!important;min-height:0!important;"
+    "background:#fff!important;box-shadow:0 -4px 18px rgba(32,45,64,.12)!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.el-row,"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.collapse-trigger{display:none!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.el-menu-demo{"
+    "display:flex!important;width:100%!important;height:64px!important;margin:0!important;border:0!important;"
+    "overflow-x:auto!important;overflow-y:hidden!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.el-menu-demo>.el-menu-item,"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.el-menu-demo>.el-submenu{"
+    "display:flex!important;flex:1 0 82px!important;min-width:82px!important;height:64px!important;"
+    "align-items:center!important;justify-content:center!important;padding:0 6px!important;line-height:1.2!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.el-menu-demo>.el-menu-item{"
+    "flex-direction:column!important;gap:5px!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.el-menu-demo>.el-submenu>.el-submenu__title{"
+    "display:flex!important;width:100%!important;height:64px!important;align-items:center!important;"
+    "justify-content:center!important;flex-direction:column!important;gap:5px!important;"
+    "padding:0 6px!important;line-height:1.2!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.el-menu-demo .icon{"
+    "margin:0!important;font-size:18px!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.el-menu-demo span{"
+    "font-size:11px!important;white-space:nowrap!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>.menu>.el-menu-demo .el-submenu__icon-arrow{"
+    "display:none!important;}"
+    "html.local-teacher-classroom-index #home_top,"
+    "html.local-teacher-classroom-index #header_other{"
+    "height:60px!important;min-height:60px!important;overflow:hidden!important;}"
+    "html.local-teacher-classroom-index #header_other>.el-row{"
+    "display:flex!important;flex-wrap:nowrap!important;align-items:center!important;height:60px!important;"
+    "padding:0 10px!important;box-sizing:border-box!important;overflow:hidden!important;}"
+    "html.local-teacher-classroom-index #header_other>.el-row>.el-col-4{"
+    "float:none!important;flex:0 0 52px!important;width:52px!important;min-width:52px!important;overflow:hidden!important;}"
+    "html.local-teacher-classroom-index #header_other>.el-row>.el-col-14{"
+    "float:none!important;flex:1 1 auto!important;width:auto!important;min-width:0!important;overflow:hidden!important;}"
+    "html.local-teacher-classroom-index #header_other>.el-row>.el-col-14 .el-menu--horizontal{"
+    "display:flex!important;width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;"
+    "white-space:nowrap!important;}"
+    "html.local-teacher-classroom-index #header_other>.el-row>.el-col-6{"
+    "float:none!important;flex:0 0 auto!important;width:auto!important;min-width:0!important;max-width:56px!important;"
+    "margin-left:auto!important;overflow:hidden!important;}"
+    "html.local-teacher-classroom-index #header_other>.el-row>.el-col-6 .el-col-18{display:none!important;}"
+    "html.local-teacher-classroom-index #header_other>.el-row>.el-col-6 .el-col-6{"
+    "float:none!important;width:auto!important;min-width:0!important;}"
+    "html.local-teacher-classroom-index .school-home-page>.frame>section,"
+    "html.local-teacher-classroom-index .school-home-page>.frame>section>.container{"
+    "display:block!important;min-width:0!important;width:100%!important;max-width:100%!important;overflow:visible!important;}"
+    "html.local-teacher-classroom-index .school-body-teacher-index{"
+    "width:auto!important;max-width:none!important;min-width:0!important;height:auto!important;"
+    "min-height:calc(100vh - 188px)!important;margin:5px 0!important;padding:0!important;"
+    "overflow-x:hidden!important;overflow-y:auto!important;}"
+    "html.local-teacher-classroom-index .school-body-teacher-index .calendar-card,"
+    "html.local-teacher-classroom-index .school-body-teacher-index .wrapper-up-content,"
+    "html.local-teacher-classroom-index .school-body-teacher-index .wrapper-down-content{"
+    "box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;}"
+    "html.local-teacher-classroom-index .school-body-teacher-index .el-row--flex{"
+    "flex-wrap:wrap!important;}"
+    "html.local-teacher-classroom-index .school-body-teacher-index .el-row--flex>.el-col{"
+    "flex:0 0 100%!important;width:100%!important;max-width:100%!important;min-width:0!important;}"
+    "html.local-teacher-classroom-index .school-body-teacher-index .calendar-card,"
+    "html.local-teacher-classroom-index .school-body-teacher-index .wrapper-up-content,"
+    "html.local-teacher-classroom-index .school-body-teacher-index .wrapper-down-content{"
+    "width:calc(100% - 10px)!important;margin:5px!important;}"
+    "html.local-teacher-classroom-index .school-body-teacher-index .calendar-nav{"
+    "box-sizing:border-box!important;width:100%!important;min-width:0!important;}"
+    "html.local-teacher-classroom-index .school-body-teacher-index .calendar-days{"
+    "box-sizing:border-box!important;min-width:0!important;overflow:hidden!important;}"
+    "html.local-teacher-classroom-index .school-body-teacher-index .classname .el-tooltip{"
+    "display:block!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;"
+    "white-space:nowrap!important;}"
+    "html.local-teacher-classroom-index .school-body-teacher-index .weekday-item,"
+    "html.local-teacher-classroom-index .school-body-teacher-index .date-item-wrapper{"
+    "box-sizing:border-box!important;min-width:0!important;}"
     "}"
     "</style>"
 )
@@ -537,7 +701,7 @@ POST_LOGIN_REDIRECT_GUARD = (
     "window.__localPostLoginRedirectGuard=true;"
     "var targets={"
     "admin:'/background/course-management/school-curriculum',"
-    "teacher:'/school-home-page/class-management1/students-management1',"
+    "teacher:'/code-classroom/classroom-index',"
     "student:'/code-classroom/myClass'"
     "};"
     "function normalizePath(path){"
@@ -588,19 +752,41 @@ POST_LOGIN_REDIRECT_GUARD = (
     "return path==='/'||path==='/login'||path==='/background/login';"
     "}"
     "var scheduled=false;"
+    "var redirecting=false;"
+    "function handleHomeClick(event){"
+    "if(redirecting){return;}"
+    "var node=event.target;"
+    "if(node&&node.nodeType===3){node=node.parentElement;}"
+    "if(!node||typeof node.closest!=='function'){return;}"
+    "node=node.closest('a,button,li,[role=\"menuitem\"]');"
+    "if(!node){return;}"
+    "var label=((node.textContent||'')+'').replace(/\\s+/g,'').trim();"
+    "if(label!=='首页'&&label!=='返回首页'){return;}"
+    "var role=resolveRole();"
+    "var target=targets[role];"
+    "if(!target||!resolveToken()){return;}"
+    "event.preventDefault();"
+    "event.stopPropagation();"
+    "event.stopImmediatePropagation();"
+    "redirecting=true;"
+    "window.location.assign(target);"
+    "}"
     "function enforce(){"
     "scheduled=false;"
+    "if(redirecting){return;}"
     "var role=resolveRole();"
     "var token=resolveToken();"
     "if(!role||!token){return;}"
     "if(!shouldRedirect(location.pathname||'/',role)){return;}"
+    "redirecting=true;"
     "window.location.replace(targets[role]);"
     "}"
     "function schedule(){"
-    "if(scheduled){return;}"
+    "if(scheduled||redirecting){return;}"
     "scheduled=true;"
     "setTimeout(enforce,0);"
     "}"
+    "document.addEventListener('click',handleHomeClick,true);"
     "if(window.Storage&&window.Storage.prototype&&!window.__localStorageSetItemGuard){"
     "window.__localStorageSetItemGuard=true;"
     "var originalSetItem=window.Storage.prototype.setItem;"
@@ -665,6 +851,8 @@ TEXTUAL_REWRITE_PROBE_BYTES = (
     b"e.data.error.code",
     b"e.style[r]=n",
     b'name:"look-curriculum"',
+    b'$store.dispatch("LogOut")',
+    b'$store.dispatch("AdminLogOut")',
     b"html5-unsupported",
     b"performRedirectIfNeeded",
     b"PB_RESUME_PRESENTATION_WINDOW_TEXT",
@@ -879,6 +1067,9 @@ LOCAL_TEACHER_FALLBACK_PATHS = {
     "/java-api/school/community/work/queryStuWorkList",
     "/java-api/school/tch/employeeSetting/resetWeMiniOpenid",
     "/java-api/school//tch/employeeSetting/resetWeMiniOpenid",
+    "/java-api/school/tch/employeeSetting/selectEmployList",
+    "/java-api/school/edu/campus/selectEduCampusTchList",
+    "/api/get/school/right/info",
     "/java-api/school/stu/setEndDate",
     "/java-api/school/stu/batchSetEndDate",
     "/java-api/school/currCls/countSignedTchPlan",
@@ -929,6 +1120,9 @@ LOCAL_TEACHER_PREFER_LOCAL_FALLBACK_PATHS = {
     "/java-api/school/community/work/queryStuWorkList",
     "/java-api/school/tch/employeeSetting/resetWeMiniOpenid",
     "/java-api/school//tch/employeeSetting/resetWeMiniOpenid",
+    "/java-api/school/tch/employeeSetting/selectEmployList",
+    "/java-api/school/edu/campus/selectEduCampusTchList",
+    "/api/get/school/right/info",
     "/java-api/exam/sch/testExamStu/getPracticeRecords",
     "/java-api/exam/sch/testExamStu/getExamRecords",
     "/java-api/exam/sch/testExamStu/getScoreRankList",
@@ -1181,6 +1375,14 @@ def _patch_known_frontend_runtime(text: str, content_type: str) -> str:
 
         text = ADMIN_PREVIEW_TO_LOCAL_PPT_PATTERN.sub(_rewrite_admin_preview_to_local_ppt, text)
     text = VERSION_RELOAD_PATTERN.sub(r'e&&"\1"!=e.version&&void 0', text)
+    text = SPA_LOGOUT_PATTERN.sub(
+        'this.$store.dispatch("LogOut").then(()=>{window.location.assign("/logout")})',
+        text,
+    )
+    text = ADMIN_SPA_LOGOUT_PATTERN.sub(
+        'this.$store.dispatch("AdminLogOut").then(()=>{window.location.assign("/logout")})',
+        text,
+    )
     return text
 
 
@@ -1194,16 +1396,16 @@ def _inject_runtime_guards(text: str) -> str:
         guard_block += EDITOR_OPEN_TYPE_GUARD
     if CLASSROOM_PPT_LAYOUT_GUARD not in text:
         guard_block += CLASSROOM_PPT_LAYOUT_GUARD
+    if STUDENT_MYCLASS_LAYOUT_GUARD not in text:
+        guard_block += STUDENT_MYCLASS_LAYOUT_GUARD
+    if TEACHER_CLASSROOM_INDEX_LAYOUT_GUARD not in text:
+        guard_block += TEACHER_CLASSROOM_INDEX_LAYOUT_GUARD
     if CLASSROOM_LOADING_FEEDBACK_GUARD not in text:
         guard_block += CLASSROOM_LOADING_FEEDBACK_GUARD
-    if CORE_ROUTE_CLEANUP_GUARD not in text:
-        guard_block += CORE_ROUTE_CLEANUP_GUARD
     if CORE_STUDENT_UI_CLEANUP_GUARD_V2 not in text:
         guard_block += CORE_STUDENT_UI_CLEANUP_GUARD_V2
     if LEGACY_ISPRING_TEXT_LAYOUT_GUARD not in text:
         guard_block += LEGACY_ISPRING_TEXT_LAYOUT_GUARD
-    if NON_CORE_DASHBOARD_WIDGET_GUARD not in text:
-        guard_block += NON_CORE_DASHBOARD_WIDGET_GUARD
     if POST_LOGIN_REDIRECT_GUARD not in text:
         guard_block += POST_LOGIN_REDIRECT_GUARD
     if not guard_block:
@@ -1364,7 +1566,7 @@ def _normalized_frontend_redirect_target(store: MirrorStore, request: Request) -
 def _non_core_frontend_redirect_target(store: MirrorStore, request: Request, route_key: str) -> str | None:
     path = _normalize_route_path(route_key)
     if path in NON_CORE_ADMIN_FRONTEND_ROUTES:
-        return "/background/course-management/school-curriculum"
+        return _default_frontend_route_for_role("admin")
 
     is_non_core = False
     for prefix in NON_CORE_FRONTEND_ROUTE_PREFIXES:
@@ -1905,6 +2107,8 @@ def _prune_missing_frontend_asset_hints(store: MirrorStore, text: str) -> str:
             return tag
         if "stylesheet" in rel_tokens:
             return tag
+        if "prefetch" in rel_tokens:
+            return ""
 
         href_value = _html_attribute_value(tag, "href")
         if not href_value:
@@ -2203,42 +2407,99 @@ def _infer_profile_from_request(request: Request) -> str | None:
 
 
 def _profile_role(profile_name: str | None, profile: dict[str, Any] | None = None) -> str | None:
-    if isinstance(profile, dict):
-        login_path = str(profile.get("login_path") or "").strip()
-        if login_path == STUDENT_LOGIN_PATH:
-            return "student"
-        fresh_auth = profile.get("fresh_auth") or {}
-        if isinstance(fresh_auth, dict) and _coerce_int(fresh_auth.get("identity")) == 2:
-            return "student"
-        actual_name = str(profile.get("profile_name") or "").strip()
-        if actual_name == "admin":
-            return "admin"
-        if actual_name == "student":
-            return "student"
-        if actual_name:
-            return "teacher"
-
-    if profile_name == "admin":
-        return "admin"
-    if profile_name == "student":
-        return "student"
-    if profile_name:
-        return "teacher"
-    return None
+    return resolve_profile_role(profile_name, profile)
 
 
 def _default_frontend_route_for_role(profile_role: str | None) -> str | None:
-    if profile_role == "admin":
-        return "/background/course-management/school-curriculum"
-    if profile_role == "teacher":
-        return "/school-home-page/class-management1/students-management1"
-    if profile_role == "student":
-        return "/code-classroom/myClass"
-    return None
+    return default_route_for_role(profile_role)
 
 
 def _is_teacher_like_role(profile_role: str | None) -> bool:
     return profile_role in {"teacher", "admin"}
+
+
+def _allowed_frontend_roles(route_key: str) -> frozenset[str] | None:
+    return roles_for_frontend_route(_normalize_route_path(route_key))
+
+
+def _protected_frontend_redirect_target(
+    store: MirrorStore,
+    request: Request,
+    route_key: str,
+) -> str | None:
+    allowed_roles = _allowed_frontend_roles(route_key)
+    if allowed_roles is None:
+        return None
+
+    profile = _resolve_authenticated_profile(store, request)
+    profile_role = _profile_role(profile.get("profile_name"), profile) if profile else None
+    if profile_role is None:
+        local_target = request.url.path
+        if request.url.query:
+            local_target = f"{local_target}?{request.url.query}"
+        return f"/login?next={quote(local_target, safe='')}"
+    if profile_role not in allowed_roles:
+        return _default_frontend_route_for_role(profile_role) or "/login"
+    return None
+
+
+def _required_api_roles(path: str) -> frozenset[str] | None:
+    if path.startswith("/java-api/student/") or path.startswith("/api/stu/"):
+        return frozenset({"student"})
+    if path.startswith("/java-api/school/") or path.startswith("/java-api/auth/"):
+        return frozenset({"teacher", "admin"})
+    return None
+
+
+def _api_authorization_error(store: MirrorStore, request: Request) -> JSONResponse | None:
+    allowed_roles = _required_api_roles(request.url.path)
+    if allowed_roles is None or request.method == "OPTIONS":
+        return None
+
+    profile = _resolve_authenticated_profile(store, request)
+    if profile is None:
+        return JSONResponse(
+            {"success": False, "error": {"code": "AuthRequired", "message": "请先登录"}},
+            status_code=401,
+        )
+    profile_role = _profile_role(profile.get("profile_name"), profile)
+    if profile_role not in allowed_roles:
+        return JSONResponse(
+            {"success": False, "error": {"code": "Forbidden", "message": "无权访问该功能"}},
+            status_code=403,
+        )
+    return None
+
+
+def _workspace_role_error(
+    store: MirrorStore,
+    request: Request,
+    allowed_roles: frozenset[str],
+) -> JSONResponse | None:
+    profile = _resolve_authenticated_profile(store, request)
+    if profile is None:
+        return JSONResponse(
+            {"success": False, "error": {"code": "AuthRequired", "message": "请先登录"}},
+            status_code=401,
+        )
+    role = _profile_role(profile.get("profile_name"), profile)
+    if role not in allowed_roles:
+        return JSONResponse(
+            {"success": False, "error": {"code": "Forbidden", "message": "无权执行该操作"}},
+            status_code=403,
+        )
+    return None
+
+
+def _profile_is_disabled(profile: dict[str, Any] | None) -> bool:
+    if not isinstance(profile, dict):
+        return False
+    fresh_auth = profile.get("fresh_auth") if isinstance(profile.get("fresh_auth"), dict) else {}
+    user_info = fresh_auth.get("userInfo") if isinstance(fresh_auth.get("userInfo"), dict) else {}
+    if "tchState" in user_info and not bool(user_info.get("tchState")):
+        return True
+    normalized_state = str(user_info.get("state") or "").strip().lower()
+    return normalized_state in {"停用", "离职", "disabled", "inactive", "0"}
 
 
 def _profile_specific_route_aliases(route_key: str, preferred_profile: str | None) -> list[str]:
@@ -3038,6 +3299,12 @@ def _local_stuexam_seed_payloads() -> dict[str, dict[str, Any]]:
     }
 
 
+def _local_stuexam_fallback_title(exam_id: int) -> str:
+    if exam_id == 228978:
+        return "信息素养大赛 2024 复赛 小低组"
+    return f"Local Exam {exam_id}"
+
+
 def _local_stuexam_context(
     store: MirrorStore,
     request: Request,
@@ -3099,7 +3366,14 @@ def _local_stuexam_context(
     if selected_exam is None and exam_rows:
         selected_exam = _json_deep_copy(exam_rows[0])
     if not isinstance(selected_exam, dict):
-        selected_exam = {"id": exam_id, "title": f"Local Exam {exam_id}", "lasttime": 3600, "subject_id": 2}
+        selected_exam = {
+            "id": exam_id,
+            "title": _local_stuexam_fallback_title(exam_id),
+            "lasttime": 3600,
+            "subject_id": 2,
+            "is_show_answer": True,
+            "show_answer_type": 1,
+        }
 
     selected_exam["id"] = _coerce_int(selected_exam.get("id")) or exam_id
     exam_id = selected_exam["id"]
@@ -4237,14 +4511,8 @@ def _teacher_state_with_route_context(
         return None
 
     normalized_state = json.loads(json.dumps(vuex_state, ensure_ascii=False))
-    normalized_permissions = _maybe_filter_core_background_permission_tree(
-        _teacher_permission_tree(store, profile_name),
-        route_key=route_key,
-    )
-    normalized_admin_permissions = _maybe_filter_core_background_permission_tree(
-        _teacher_admin_permissions(store, profile_name),
-        route_key=route_key,
-    )
+    normalized_permissions = _teacher_permission_tree(store, profile_name)
+    normalized_admin_permissions = _teacher_admin_permissions(store, profile_name)
     teacher_school_info = _hydrate_teacher_school_info(
         store,
         _teacher_school_info(store, profile_name),
@@ -4807,17 +5075,27 @@ def _teacher_auth_tree_nodes(store: MirrorStore, profile_name: str = "teacher") 
 
 
 def _teacher_permission_tree(store: MirrorStore, profile_name: str = "teacher") -> list[dict[str, Any]]:
-    normalized_auth_tree = _teacher_auth_tree_nodes(store, profile_name)
-    if normalized_auth_tree:
-        return normalized_auth_tree
+    profile = store.get_profile(profile_name) or store.get_profile("teacher") or {}
+    return permission_tree_for_role(_profile_role(profile_name, profile))
 
-    teacher_profile = store.get_profile(profile_name) or store.get_profile("teacher") or {}
-    user_state = (teacher_profile.get("vuex_state") or {}).get("user") or {}
-    for key in ("adminpermisionList", "permisionList"):
-        normalized_permissions = _normalize_permission_tree(user_state.get(key))
-        if normalized_permissions:
-            return normalized_permissions
-    return []
+
+def _curated_permission_tree(profile_role: str | None) -> list[dict[str, Any]]:
+    return permission_tree_for_role(profile_role)
+
+
+def _permission_tree_as_auth_tree(nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    def convert(node: dict[str, Any]) -> dict[str, Any]:
+        resource = {
+            key: _json_deep_copy(value)
+            for key, value in node.items()
+            if key != "children" and value not in (None, "")
+        }
+        return {
+            "children": [convert(child) for child in node.get("children", []) if isinstance(child, dict)],
+            "userResource": resource,
+        }
+
+    return {"children": [convert(node) for node in nodes if isinstance(node, dict)]}
 
 
 def _filter_core_background_permission_tree(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -6019,19 +6297,7 @@ def _build_admin_permission_tree(nodes: list[dict[str, Any]]) -> list[dict[str, 
 
 
 def _teacher_admin_permissions(store: MirrorStore, profile_name: str = "teacher") -> list[Any]:
-    teacher_profile = store.get_profile(profile_name) or store.get_profile("teacher") or {}
-    user_state = (teacher_profile.get("vuex_state") or {}).get("user") or {}
-    permissions = user_state.get("adminpermisionList")
-    normalized = _normalize_permission_tree(permissions)
-    if normalized and not _has_admin_permission_fields(normalized):
-        normalized = []
-    if normalized:
-        return _json_deep_copy(normalized)
-
-    auth_tree_permissions = _build_admin_permission_tree(_teacher_auth_tree_nodes(store, profile_name))
-    if auth_tree_permissions:
-        return auth_tree_permissions
-    return []
+    return _build_admin_permission_tree(_teacher_permission_tree(store, profile_name))
 
 
 def _teacher_admin_user_id(store: MirrorStore, profile_name: str = "teacher") -> Any:
@@ -6499,7 +6765,7 @@ def _upsert_staff_account_profile(store: MirrorStore, request: Request, submitte
     user_info["subjectCurriculumList"] = _json_deep_copy(subject_rows)
     user_info["platformTch"] = bool(submitted.get("platformTch", user_info.get("platformTch", True)))
     user_info["eduTch"] = bool(submitted.get("eduTch", user_info.get("eduTch", True)))
-    user_info["tchState"] = bool(user_info.get("tchState", True))
+    user_info["tchState"] = bool(submitted.get("tchState")) if "tchState" in submitted else bool(user_info.get("tchState", True))
     user_info["tchJiaoyanAuth"] = bool(submitted.get("tchJiaoyanAuth", user_info.get("tchJiaoyanAuth", False)))
     user_info["tchShiziAuth"] = bool(submitted.get("tchShiziAuth", user_info.get("tchShiziAuth", False)))
     user_info["tchShixunAuth"] = bool(submitted.get("tchShixunAuth", user_info.get("tchShixunAuth", False)))
@@ -11007,10 +11273,6 @@ def _build_local_api_fallback(store: MirrorStore, request: Request, request_body
         teacher_profile = store.get_profile(teacher_profile_name) or store.get_profile("teacher") or {}
         teacher_user_info = (teacher_profile.get("fresh_auth") or {}).get("userInfo") or {}
         auth_user_permission = _teacher_admin_permissions(store, teacher_profile_name)
-        auth_user_permission = _maybe_filter_core_background_permission_tree(
-            auth_user_permission,
-            request=request,
-        )
         payload = {
             "success": True,
             "content": {
@@ -11069,6 +11331,64 @@ def _build_local_api_fallback(store: MirrorStore, request: Request, request_body
 
     if path == "/java-api/auth/sch/eduRole/queryListNoCheck":
         return _local_json_record(_success_payload(_json_deep_copy(_local_staff_role_rows())))
+
+    if normalized_path == "/java-api/school/tch/employeeSetting/selectEmployList":
+        submitted = _load_request_payload(request_body)
+        page_num, page_size = _page_request_window(submitted, default_page_size=20)
+        query = str(
+            _request_payload_value(request, submitted, "keyword", "query", "name", "realName") or ""
+        ).strip().lower()
+        rows = _staff_account_rows(store, include_admin=False, include_subjects=True)
+        if query:
+            rows = [
+                row
+                for row in rows
+                if query in str(row.get("name") or "").lower()
+                or query in str(row.get("realName") or "").lower()
+            ]
+        start = (page_num - 1) * page_size
+        page_rows = rows[start:start + page_size]
+        return _local_json_record(
+            _success_payload(
+                {
+                    "pageNum": page_num,
+                    "pageSize": page_size,
+                    "total": len(rows),
+                    "totalSize": len(rows),
+                    "records": page_rows,
+                    "content": page_rows,
+                    "rows": page_rows,
+                    "list": page_rows,
+                }
+            )
+        )
+
+    if path == "/api/get/school/right/info":
+        campuses = store.list_campuses()
+        return _local_json_record(
+            _success_payload(
+                {
+                    "campusList": campuses,
+                    "eduCampusList": campuses,
+                    "list": campuses,
+                    "rows": campuses,
+                }
+            )
+        )
+
+    if path == "/java-api/school/edu/campus/selectEduCampusTchList":
+        requested_campus_ids = _extract_campus_ids(
+            _request_payload_value(request, _load_request_payload(request_body), "eduCampusId", "campusId")
+        )
+        rows = _staff_account_rows(store, include_admin=False)
+        if requested_campus_ids:
+            allowed = set(requested_campus_ids)
+            rows = [
+                row
+                for row in rows
+                if allowed.intersection(_extract_campus_ids(row.get("eduCampusIdList") or row.get("eduCampusId")))
+            ]
+        return _local_json_record(_success_payload(rows))
 
     if path == "/api/admin/get/auth/user/list":
         submitted = _load_request_payload(request_body)
@@ -13432,28 +13752,80 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
 
     @app.get("/")
     def marketing_homepage(request: Request) -> Response:
-        return Response(
+        response = Response(
             content=render_marketing_homepage(request).encode("utf-8"),
             media_type="text/html",
         )
+        response.headers["cache-control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["pragma"] = "no-cache"
+        response.headers["expires"] = "0"
+        return response
 
     @app.get("/_site/homepage/{asset_path:path}")
     def homepage_static_asset(asset_path: str) -> Response:
         candidate = homepage_asset_path(asset_path)
         if candidate is None:
             return Response(status_code=404)
-        return _static_response_or_404(candidate, expected_asset_path=asset_path)
+        return _no_store_response(_static_response_or_404(candidate, expected_asset_path=asset_path))
 
     @app.get("/_site/courses/{asset_path:path}")
     def courses_static_asset(asset_path: str) -> Response:
         if asset_path in ("", "/"):
             index_path = COURSES_ASSET_ROOT / "index.html"
             if index_path.is_file():
-                return _static_response_or_404(index_path, expected_asset_path="index.html")
+                return _public_html_response(index_path)
         candidate = courses_asset_path(asset_path)
         if candidate is not None:
-            return _static_response_or_404(candidate, expected_asset_path=asset_path)
+            if candidate.suffix.lower() in {".html", ".htm"}:
+                return _public_html_response(candidate)
+            return _no_store_response(_static_response_or_404(candidate, expected_asset_path=asset_path))
         return Response(status_code=404)
+
+    @app.get("/courses")
+    @app.get("/courses/")
+    @app.get("/courses.html")
+    def public_courses_page() -> Response:
+        index_path = COURSES_ASSET_ROOT / "index.html"
+        if not index_path.is_file():
+            return Response(status_code=404)
+        return _public_html_response(index_path)
+
+    @app.get("/course-detail")
+    @app.get("/course-detail.html")
+    def public_course_detail_page() -> Response:
+        detail_path = COURSES_ASSET_ROOT / "course-detail.html"
+        if not detail_path.is_file():
+            return Response(status_code=404)
+        return _public_html_response(detail_path)
+
+    @app.get("/_site/competitions/{asset_path:path}")
+    def competitions_static_asset(asset_path: str) -> Response:
+        if asset_path in ("", "/"):
+            if COMPETITIONS_ASSET_INDEX.is_file():
+                return _public_html_response(COMPETITIONS_ASSET_INDEX)
+        candidate = competitions_asset_path(asset_path)
+        if candidate is not None:
+            if candidate.suffix.lower() in {".html", ".htm"}:
+                return _public_html_response(candidate)
+            return _no_store_response(_static_response_or_404(candidate, expected_asset_path=asset_path))
+        return Response(status_code=404)
+
+    @app.get("/competitions.html")
+    def competitions_page() -> Response:
+        if not COMPETITIONS_ASSET_INDEX.is_file():
+            return Response(status_code=404)
+        return _public_html_response(COMPETITIONS_ASSET_INDEX)
+
+    @app.get("/competitions")
+    def competitions_alias() -> Response:
+        return Response(status_code=302, headers={"Location": "/competitions.html"})
+
+    @app.get("/_site/workspace/{asset_path:path}")
+    def workspace_static_asset(asset_path: str) -> Response:
+        candidate = workspace_asset_path(asset_path)
+        if candidate is None:
+            return Response(status_code=404)
+        return _static_response_or_404(candidate, expected_asset_path=asset_path)
 
     @app.post(TEACHER_LOGIN_PATH)
     async def teacher_login(request: Request) -> Response:
@@ -13465,9 +13837,234 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
         payload = await request.json()
         return _local_login_response(store, payload, expected_login_path=STUDENT_LOGIN_PATH)
 
+    @app.get("/workspace/{requested_role}")
+    def workspace_page(requested_role: str, request: Request) -> Response:
+        if requested_role not in {"admin", "teacher"}:
+            return Response(status_code=404)
+        profile = _resolve_authenticated_profile(store, request)
+        if profile is None:
+            return RedirectResponse(
+                url=f"/login?next={quote(request.url.path, safe='')}",
+                status_code=303,
+            )
+        profile_role = _profile_role(profile.get("profile_name"), profile)
+        return RedirectResponse(
+            url=_default_frontend_route_for_role(profile_role) or "/login",
+            status_code=303,
+        )
+
+    @app.get("/api/workspace/bootstrap")
+    def workspace_bootstrap(request: Request) -> Response:
+        profile = _resolve_authenticated_profile(store, request)
+        if profile is None:
+            return JSONResponse(
+                {"success": False, "error": {"code": "AuthRequired", "message": "请先登录"}},
+                status_code=401,
+            )
+        role = _profile_role(profile.get("profile_name"), profile)
+        if role not in {"admin", "teacher"}:
+            return JSONResponse(
+                {"success": False, "error": {"code": "Forbidden", "message": "无权访问该工作台"}},
+                status_code=403,
+            )
+        return JSONResponse(_success_payload(build_workspace_payload(store, profile)))
+
+    @app.get("/api/workspace/teachers")
+    def workspace_teacher_list(request: Request, query: str = "") -> Response:
+        authorization_error = _workspace_role_error(store, request, frozenset({"admin"}))
+        if authorization_error is not None:
+            return authorization_error
+        normalized_query = str(query or "").strip().lower()
+        rows = _staff_account_rows(store, include_admin=False, include_subjects=True)
+        if normalized_query:
+            rows = [
+                row
+                for row in rows
+                if normalized_query in str(row.get("name") or "").lower()
+                or normalized_query in str(row.get("realName") or "").lower()
+            ]
+        return JSONResponse(_success_payload({"records": rows, "total": len(rows)}))
+
+    @app.post("/api/workspace/teachers")
+    async def workspace_teacher_create(request: Request) -> Response:
+        authorization_error = _workspace_role_error(store, request, frozenset({"admin"}))
+        if authorization_error is not None:
+            return authorization_error
+        submitted = await request.json()
+        username = str(submitted.get("name") or submitted.get("username") or "").strip()
+        password = str(submitted.get("password") or "")
+        if not username or len(password) < 6:
+            return JSONResponse(
+                {
+                    "success": False,
+                    "error": {"code": "ValidationError", "message": "账号不能为空，初始密码至少 6 位"},
+                },
+                status_code=400,
+            )
+        if _find_staff_profile(store, username=username, include_admin=True) is not None:
+            return JSONResponse(
+                {"success": False, "error": {"code": "Conflict", "message": "该教师账号已存在"}},
+                status_code=409,
+            )
+        stored = _upsert_staff_account_profile(store, request, submitted)
+        return JSONResponse(_success_payload(_staff_account_row(store, stored, include_subjects=True)))
+
+    @app.patch("/api/workspace/teachers/{user_id}")
+    async def workspace_teacher_update(user_id: int, request: Request) -> Response:
+        authorization_error = _workspace_role_error(store, request, frozenset({"admin"}))
+        if authorization_error is not None:
+            return authorization_error
+        existing = _find_staff_profile(store, user_id=user_id, include_admin=False)
+        if existing is None:
+            return JSONResponse(
+                {"success": False, "error": {"code": "NotFound", "message": "教师账号不存在"}},
+                status_code=404,
+            )
+        submitted = await request.json()
+        submitted["userId"] = user_id
+        stored = _upsert_staff_account_profile(store, request, submitted)
+        return JSONResponse(_success_payload(_staff_account_row(store, stored, include_subjects=True)))
+
+    @app.post("/api/workspace/teachers/{user_id}/password")
+    async def workspace_teacher_password(user_id: int, request: Request) -> Response:
+        authorization_error = _workspace_role_error(store, request, frozenset({"admin"}))
+        if authorization_error is not None:
+            return authorization_error
+        profile = _find_staff_profile(store, user_id=user_id, include_admin=False)
+        submitted = await request.json()
+        password = str(submitted.get("password") or "")
+        if profile is None:
+            return JSONResponse(
+                {"success": False, "error": {"code": "NotFound", "message": "教师账号不存在"}},
+                status_code=404,
+            )
+        if len(password) < 6:
+            return JSONResponse(
+                {"success": False, "error": {"code": "ValidationError", "message": "新密码至少 6 位"}},
+                status_code=400,
+            )
+        stored = _persist_local_profile(
+            store,
+            profile_name=str(profile.get("profile_name") or ""),
+            username=str(profile.get("username") or ""),
+            password_hash=_hash_login_password(password),
+            token=str(profile.get("token") or ""),
+            login_content=_json_deep_copy(profile.get("login_content") or {}),
+            fresh_auth=_json_deep_copy(profile.get("fresh_auth") or {}),
+            vuex_state=_json_deep_copy(profile.get("vuex_state") or {}),
+        )
+        return JSONResponse(_success_payload(_staff_account_row(store, stored)))
+
+    @app.delete("/api/workspace/teachers/{user_id}")
+    def workspace_teacher_delete(user_id: int, request: Request) -> Response:
+        authorization_error = _workspace_role_error(store, request, frozenset({"admin"}))
+        if authorization_error is not None:
+            return authorization_error
+        profile = _find_staff_profile(store, user_id=user_id, include_admin=False)
+        if profile is None:
+            return JSONResponse(
+                {"success": False, "error": {"code": "NotFound", "message": "教师账号不存在"}},
+                status_code=404,
+            )
+        if str(profile.get("profile_name") or "") == "teacher":
+            return JSONResponse(
+                {"success": False, "error": {"code": "ProtectedAccount", "message": "系统教师账号不能删除"}},
+                status_code=409,
+            )
+        referenced_classes = [
+            row
+            for row in store.list_classes()
+            if not bool(_coerce_int(row.get("deleted")))
+            and user_id
+            in {
+                _coerce_int(row.get("lecturer_id") or row.get("lecturerId")),
+                _coerce_int(row.get("assistant_teacher_id") or row.get("assistantTeacherId")),
+            }
+        ]
+        if referenced_classes:
+            return JSONResponse(
+                {
+                    "success": False,
+                    "error": {"code": "TeacherInUse", "message": "该教师仍关联班级，请先调整班级教师"},
+                },
+                status_code=409,
+            )
+        deleted = store.delete_profile(str(profile.get("profile_name") or ""))
+        return JSONResponse(_success_payload({"deleted": deleted}))
+
+    def workspace_campus_rows() -> list[dict[str, Any]]:
+        staff_rows = _staff_account_rows(store, include_admin=False)
+        class_rows = store.list_classes()
+        rows: list[dict[str, Any]] = []
+        for campus in store.list_campuses():
+            campus_id = _coerce_int(campus.get("id") or campus.get("eduCampusId") or campus.get("dept_id")) or 0
+            current = _json_deep_copy(campus)
+            current["id"] = campus_id
+            current["name"] = str(
+                current.get("name") or current.get("campusName") or current.get("dept_name") or f"校区 {campus_id}"
+            ).strip()
+            current["teacherCount"] = sum(
+                1
+                for row in staff_rows
+                if campus_id in _extract_campus_ids(row.get("eduCampusIdList") or row.get("eduCampusId"))
+            )
+            current["classCount"] = sum(
+                1
+                for row in class_rows
+                if _coerce_int(
+                    row.get("educational_institution_campus_id") or row.get("eduCampusId") or row.get("campusId")
+                ) == campus_id
+                and not bool(_coerce_int(row.get("deleted")))
+            )
+            rows.append(current)
+        return rows
+
+    @app.get("/api/workspace/campuses")
+    def workspace_campus_list(request: Request) -> Response:
+        authorization_error = _workspace_role_error(store, request, frozenset({"admin"}))
+        if authorization_error is not None:
+            return authorization_error
+        rows = workspace_campus_rows()
+        return JSONResponse(_success_payload({"records": rows, "total": len(rows)}))
+
+    @app.post("/api/workspace/campuses")
+    async def workspace_campus_create(request: Request) -> Response:
+        authorization_error = _workspace_role_error(store, request, frozenset({"admin"}))
+        if authorization_error is not None:
+            return authorization_error
+        submitted = await request.json()
+        try:
+            row = store.upsert_local_campus(submitted)
+        except ValueError as exc:
+            return JSONResponse(
+                {"success": False, "error": {"code": "ValidationError", "message": str(exc)}},
+                status_code=400,
+            )
+        return JSONResponse(_success_payload(row))
+
+    @app.patch("/api/workspace/campuses/{campus_id}")
+    async def workspace_campus_update(campus_id: int, request: Request) -> Response:
+        authorization_error = _workspace_role_error(store, request, frozenset({"admin"}))
+        if authorization_error is not None:
+            return authorization_error
+        submitted = await request.json()
+        submitted["id"] = campus_id
+        try:
+            row = store.upsert_local_campus(submitted)
+        except ValueError as exc:
+            return JSONResponse(
+                {"success": False, "error": {"code": "ValidationError", "message": str(exc)}},
+                status_code=400,
+            )
+        return JSONResponse(_success_payload(row))
+
     @app.api_route("/api/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
     @app.api_route("/java-api/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
     async def replay_api(full_path: str, request: Request) -> Response:
+        authorization_error = _api_authorization_error(store, request)
+        if authorization_error is not None:
+            return authorization_error
+
         if request.url.path == "/java-api/auth/sch/freshAuthData" or request.url.path == "/java-api/student/stu/freshData" or request.url.path == "/java-api/school/tch/freshData":
             return _local_fresh_auth_response(store, request)
 
@@ -13627,6 +14224,19 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
 
         return Response(status_code=404)
 
+    @app.get("/login")
+    @app.get("/background/login")
+    def login_page() -> Response:
+        return _serve_login_response()
+
+    @app.get("/logout")
+    def logout_page(request: Request) -> Response:
+        return _serve_logout_response(request)
+
+    @app.post("/logout")
+    def logout_page_post(request: Request) -> Response:
+        return _serve_logout_response(request)
+
     @app.get("/{requested_path:path}")
     def frontend_asset(requested_path: str, request: Request) -> Response:
         if requested_path == "":
@@ -13653,6 +14263,11 @@ def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
             return RedirectResponse(url="/competitionCenter/questionBankCenter/platform", status_code=307)
         if _is_benign_placeholder_route(normalized):
             return _benign_placeholder_response()
+
+        protected_redirect_target = _protected_frontend_redirect_target(store, request, route_key)
+        if protected_redirect_target:
+            return RedirectResponse(url=protected_redirect_target, status_code=303)
+
         for candidate in _local_asset_candidates(store, "steam.fun", normalized):
             if candidate.is_file():
                 response = _static_response_or_404(candidate, expected_asset_path=normalized)
@@ -13791,15 +14406,19 @@ def _local_login_response(store: MirrorStore, payload: dict[str, Any], *, expect
 
     profile_password_hash = str((profile or {}).get("password_hash") or "")
     submitted_password_hash = submitted_password if submitted_password == profile_password_hash else _hash_login_password(submitted_password)
+    profile_name = str((profile or {}).get("profile_name") or "")
+    allow_default_local_student_password = (
+        expected_login_path == STUDENT_LOGIN_PATH
+        and profile_name.startswith("local_student_")
+        and _is_default_local_password(submitted_password)
+    )
 
-    # For auto-provisioned local students we always accept default password "123456"
-    # unless the caller submitted a different hash that matches what we stored.
     if (
         not profile
         or profile["login_path"] != expected_login_path
         or (
             submitted_password_hash != profile_password_hash
-            and not _is_default_local_password(submitted_password)
+            and not allow_default_local_student_password
         )
     ):
         return JSONResponse(
@@ -13810,15 +14429,44 @@ def _local_login_response(store: MirrorStore, payload: dict[str, Any], *, expect
             status_code=200,
         )
 
+    if expected_login_path == TEACHER_LOGIN_PATH and _profile_is_disabled(profile):
+        return JSONResponse(
+            {
+                "success": False,
+                "error": {"code": "AccountDisabled", "message": "该账号已停用，请联系机构管理员"},
+            },
+            status_code=200,
+        )
+
+    profile_role = _profile_role(profile["profile_name"], profile)
+    response_content = profile["login_content"]
+    if _is_teacher_like_role(profile_role) and isinstance(response_content, dict):
+        response_content = _json_deep_copy(response_content)
+        response_content["authTree"] = json.dumps(
+            _permission_tree_as_auth_tree(_teacher_permission_tree(store, profile["profile_name"])),
+            ensure_ascii=False,
+        )
     response = JSONResponse(
         {
             "success": True,
-            "content": profile["login_content"],
+            "content": response_content,
+            "mirror": {
+                "profile": profile["profile_name"],
+                "role": profile_role,
+                "redirect": _default_frontend_route_for_role(profile_role),
+            },
             "error": {"message": "", "code": ""},
         },
         status_code=200,
     )
-    response.set_cookie("mirror_profile", profile["profile_name"], path="/", samesite="lax")
+    response.set_cookie(
+        "mirror_profile",
+        profile["profile_name"],
+        path="/",
+        max_age=8 * 60 * 60,
+        httponly=True,
+        samesite="lax",
+    )
     return response
 
 
@@ -13848,9 +14496,28 @@ def _mint_local_login_token(store: MirrorStore, *, prefix: str) -> str:
     return f"{prefix}.{body_b64}.{sig_b64}"
 
 
-def _resolve_profile(store: MirrorStore, request: Request) -> dict[str, Any] | None:
+def _resolve_authenticated_profile(store: MirrorStore, request: Request) -> dict[str, Any] | None:
     token = _normalize_auth_token(request.headers.get("authorization"))
     profile = store.get_profile_by_token(token)
+    if profile is not None:
+        return profile
+
+    explicit_profile_name = (request.headers.get("x-mirror-profile") or "").strip()
+    if explicit_profile_name:
+        profile = store.get_profile(explicit_profile_name)
+        if profile is not None:
+            return profile
+
+    cookie_profile_name = (request.cookies.get("mirror_profile") or "").strip()
+    if cookie_profile_name:
+        profile = store.get_profile(cookie_profile_name)
+        if profile is not None:
+            return profile
+    return None
+
+
+def _resolve_profile(store: MirrorStore, request: Request) -> dict[str, Any] | None:
+    profile = _resolve_authenticated_profile(store, request)
     if profile is not None:
         return profile
     inferred_profile_name = _infer_profile_from_request(request)
@@ -13924,7 +14591,13 @@ def _local_fresh_auth_response(store: MirrorStore, request: Request) -> Response
         }
         return JSONResponse({"success": True, "content": content, "error": {"message": "", "code": ""}}, status_code=200)
     if path == "/java-api/school/tch/freshData":
-        tch_user = login_content.get("userInfo") or login_content.get("tchUserInfo") or {}
+        fresh_auth_user = fresh_auth.get("userInfo") if isinstance(fresh_auth.get("userInfo"), dict) else {}
+        tch_user = (
+            fresh_auth_user
+            or login_content.get("userInfo")
+            or login_content.get("tchUserInfo")
+            or {}
+        )
         school_info = (fresh_auth.get("schoolInfo") if isinstance(fresh_auth, dict) else None) or {}
         role_list = (fresh_auth.get("roleList") if isinstance(fresh_auth, dict) else None) or [1, 2]
         content = {
@@ -13936,19 +14609,15 @@ def _local_fresh_auth_response(store: MirrorStore, request: Request) -> Response
         return JSONResponse({"success": True, "content": content, "error": {"message": "", "code": ""}}, status_code=200)
     # Default: legacy auth tree endpoint used by SPA bootstrap.
     message = None
-    if isinstance(login_content, dict):
+    profile_role = _profile_role((profile or {}).get("profile_name"), profile)
+    if _is_teacher_like_role(profile_role):
+        profile_name = str((profile or {}).get("profile_name") or "teacher")
+        message = json.dumps(
+            _permission_tree_as_auth_tree(_teacher_permission_tree(store, profile_name)),
+            ensure_ascii=False,
+        )
+    elif isinstance(login_content, dict):
         message = login_content.get("authTree")
-    if message and _is_core_background_request(request):
-        try:
-            auth_tree = json.loads(message) if isinstance(message, str) else message
-        except Exception:
-            auth_tree = None
-        if isinstance(auth_tree, dict):
-            filtered_children = _filter_core_background_permission_tree(
-                _normalize_permission_tree(auth_tree.get("children"), sort_nodes=True)
-            )
-            auth_tree = {"children": filtered_children}
-            message = json.dumps(auth_tree, ensure_ascii=False)
     auth_payload = {"flag": True, "message": message}
     stu_info = _student_user_info_from_profile(profile)
     if isinstance(stu_info, dict) and stu_info.get("id"):
@@ -14067,6 +14736,21 @@ def _static_response_or_404(path: Path, *, expected_asset_path: str | None = Non
     return Response(content=body, media_type=media_type)
 
 
+def _public_html_response(path: Path) -> Response:
+    if not path.is_file():
+        return Response(status_code=404)
+    response = Response(content=path.read_bytes(), media_type="text/html")
+    return _no_store_response(response)
+
+
+def _no_store_response(response: Response) -> Response:
+    if response.status_code != 404:
+        response.headers["cache-control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["pragma"] = "no-cache"
+        response.headers["expires"] = "0"
+    return response
+
+
 def _inject_back_to_home_button(text: str) -> str:
     """Brand the captured login page without changing its login behavior."""
     snippet = (
@@ -14106,10 +14790,66 @@ def _captured_route_response(
     if freeze_scripts:
         text = SCRIPT_TAG_RE.sub("", text)
         text = _sanitize_frozen_classroom_snapshot(text)
-    if route_key and route_key.startswith("/background/course-management"):
-        text = _prune_core_background_menu(text)
     text = _inject_teacher_session_bootstrap(text, teacher_session_bootstrap)
     text = _inject_runtime_guards(text)
     if route_key and route_key in {"/login", "/background/login"}:
         text = _inject_back_to_home_button(text)
     return Response(content=text.encode("utf-8"), media_type="text/html")
+
+
+def _serve_login_response() -> Response:
+    response = Response(content=LOGIN_HTML_PATH.read_bytes(), media_type="text/html")
+    response.delete_cookie("mirror_profile", path="/")
+    response.headers["cache-control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["pragma"] = "no-cache"
+    response.headers["expires"] = "0"
+    return response
+
+
+_LOGOUT_HTML_TEMPLATE = (
+    """<!doctype html>
+    <html lang="zh-CN">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>\u5df2\u9000\u51fa \u00b7 \u4e50\u542f\u4eab</title>
+    <style>
+    html,body{height:100%;margin:0;background:#07132d;color:#eef4ff;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+    .wrap{display:grid;place-items:center;height:100%;text-align:center;padding:24px}
+    .wrap h1{margin:0 0 10px;font-size:22px;letter-spacing:.06em}
+    .wrap p{margin:0;color:rgba(238,244,255,.6);font-size:14px}
+    </style>
+    </head>
+    <body>
+    <div class="wrap">
+      <h1>\u5df2\u5b89\u5168\u9000\u51fa</h1>
+      <p>\u6b63\u5728\u8df3\u8f6c\u767b\u5f55\u9875\u2026</p>
+    </div>
+    <script>
+    (function(){
+    var KEYS=["mirror_profile","schoolInfo","homepage","Classroom","teacherPlanList","subject_id","courseArranging","updatePhoneStorage","updatePasswordStorage","updateNoticeStorage","hasShownDialogStorage","login_redirect"];
+    for(var i=0;i<KEYS.length;i++){try{sessionStorage.removeItem(KEYS[i]);}catch(e){}}
+    try{localStorage.removeItem("vuex");}catch(e){}
+    try{document.cookie="mirror_profile=; Max-Age=0; path=/; SameSite=Lax";}catch(e){}
+    var qs=location.search||"";
+    var m=qs.match(/[?&](?:next|redirect|redirect_url|target)=([^&]+)/);
+    var target="/login";
+    if(m){try{target=decodeURIComponent(m[1]);}catch(e){}}
+    if(!target||target.charAt(0)!=="/"||target.indexOf("//")===0){target="/login";}
+    setTimeout(function(){window.location.replace(target);},120);
+    })();
+    </script>
+    </body>
+    </html>
+    """
+)
+
+
+def _serve_logout_response(request: Request) -> Response:
+    """Wrap the logout page: clears cookie, no-store, wipes storage client-side."""
+    response = Response(content=_LOGOUT_HTML_TEMPLATE.encode("utf-8"), media_type="text/html")
+    response.delete_cookie("mirror_profile", path="/")
+    response.headers["cache-control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["pragma"] = "no-cache"
+    response.headers["expires"] = "0"
+    return response

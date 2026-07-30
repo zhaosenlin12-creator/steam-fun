@@ -19,6 +19,17 @@ node_modules/
 .codex-tmp/
 .codex-*.log
 _tmp_review_bool/
+.superpowers/
+_audit_*.py
+_audit_shots/
+_codebn_*.html
+_codebn_*.css
+_extract_codebn.py
+_inspect_*.py
+_list_*.py
+_live_codebn_*.html
+_mirror_*.py
+qa-*.png
 
 # Local runtime data and mirrors
 external/

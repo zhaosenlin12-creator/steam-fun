@@ -251,6 +251,387 @@ def test_profile_role_distinguishes_admin_teacher_and_student(tmp_path: Path) ->
     assert server_module._profile_role("student", store.get_profile("student")) == "student"
 
 
+def test_role_capabilities_define_canonical_workspaces_and_route_scope() -> None:
+    assert server_module._default_frontend_route_for_role("admin") == "/background/course-management/school-curriculum"
+    assert server_module._default_frontend_route_for_role("teacher") == "/code-classroom/classroom-index"
+    assert server_module._default_frontend_route_for_role("student") == "/code-classroom/myClass"
+    assert server_module._allowed_frontend_roles("/school-home-page/school-user-list") == frozenset({"admin"})
+    assert server_module._allowed_frontend_roles("/workspace/admin") is None
+    assert server_module._allowed_frontend_roles("/workspace/teacher") is None
+    assert server_module._allowed_frontend_roles("/school-home-page/orderpay") == frozenset()
+
+
+def test_curated_permission_trees_include_core_operations_and_exclude_disabled_modules() -> None:
+    admin_tree = server_module._curated_permission_tree("admin")
+    teacher_tree = server_module._curated_permission_tree("teacher")
+    admin_serialized = json.dumps(admin_tree, ensure_ascii=False)
+    teacher_serialized = json.dumps(teacher_tree, ensure_ascii=False)
+
+    assert "school-user-list" in admin_serialized
+    assert "schoolSys" in admin_serialized
+    assert "class-management1" in admin_serialized
+    assert "teachplan1" in teacher_serialized
+    assert "school-user-list" not in teacher_serialized
+    for disabled_alias in ("orderpay", "financialCenter", "starManagement", "clueManagement", "order-report"):
+        assert disabled_alias not in admin_serialized
+        assert disabled_alias not in teacher_serialized
+
+
+def test_curated_permission_tree_preserves_legacy_tab_action_lookup_contract() -> None:
+    teacher_tree = server_module._curated_permission_tree("teacher")
+
+    def find(alias: str) -> dict[str, Any]:
+        pending = list(teacher_tree)
+        while pending:
+            node = pending.pop()
+            if node.get("alias") == alias:
+                return node
+            pending.extend(node.get("children") or [])
+        raise AssertionError(f"missing permission node: {alias}")
+
+    current_students = find("currentStudent")
+    scheduled = find("courseScheduled")
+    unscheduled = find("unscheduledClass")
+
+    assert any(child["name"] == "查询" for child in current_students["children"])
+    assert any(child["name"] == "查询" for child in scheduled["children"])
+    assert any(child["name"] == "查询" for child in unscheduled["children"])
+    assert all(child["viewScope"] == 0 for child in current_students["children"])
+    assert all(child["viewScope"] == 0 for child in scheduled["children"])
+    assert all(child["viewScope"] == 0 for child in unscheduled["children"])
+
+
+def test_runtime_guards_redirect_authenticated_spa_root_to_canonical_role_home() -> None:
+    html = "<!doctype html><html><head></head><body></body></html>"
+
+    patched = server_module._inject_runtime_guards(html)
+
+    assert "__localCoreRouteCleanup" not in patched
+    assert "__localNonCoreDashboardGuard" not in patched
+    assert "__localPostLoginRedirectGuard" in patched
+    assert "admin:'/background/course-management/school-curriculum'" in patched
+    assert "teacher:'/code-classroom/classroom-index'" in patched
+    assert "student:'/code-classroom/myClass'" in patched
+    assert "event.stopImmediatePropagation()" in patched
+    assert "redirecting=true" in patched
+    assert "history.pushState" in patched
+    assert "window.location.replace(targets[role])" in patched
+    assert "/workspace/admin" not in patched
+    assert "/workspace/teacher" not in patched
+    assert "/school-home-page/class-management1/students-management1" not in patched
+
+
+def test_runtime_guards_add_path_scoped_student_myclass_responsive_layout() -> None:
+    html = "<!doctype html><html><head></head><body></body></html>"
+
+    patched = server_module._inject_runtime_guards(html)
+
+    assert "__localStudentMyClassLayout" in patched
+    assert "local-student-myclass" in patched
+    assert "html.local-student-myclass .school-home-page>.frame>.menu" in patched
+    assert "html.local-student-myclass .school-home-page>.frame>section" in patched
+
+
+def test_admin_workspace_bootstrap_contains_operational_metrics(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(
+        tmp_path,
+        profile_name="admin",
+        username="principal",
+        token="admin-token",
+        user_info={"id": 9001, "realName": "Principal"},
+        school_info={"eduCampusId": 851, "name": "Mirror School"},
+    )
+    store = MirrorStore(tmp_path)
+    store.upsert_local_campus({"id": 851, "name": "中心校区"})
+    store.create_local_student(
+        {
+            "eduCampusId": 851,
+            "name": "student-one",
+            "realName": "Student One",
+            "sex": "",
+            "normalState": "1",
+            "parentAPhoneNum": "",
+            "schoolName": "Mirror School",
+            "grade": "",
+            "leader": "",
+            "remark": "",
+            "studyDate": "",
+            "headimgUrl": "",
+        }
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "admin")
+
+    response = client.get("/api/workspace/bootstrap")
+
+    assert response.status_code == 200
+    content = response.json()["content"]
+    assert content["role"] == "admin"
+    assert content["displayName"] == "Principal"
+    assert {"teachers", "activeClasses", "students", "todayLessons"} <= set(content["metrics"])
+    assert content["metrics"]["students"] == 1
+    assert content["campuses"][0]["id"] == 851
+
+
+def test_teacher_workspace_bootstrap_only_returns_own_classes(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(
+        tmp_path,
+        user_info={"id": 12385, "userId": 12385, "realName": "Teacher Li"},
+    )
+    store = MirrorStore(tmp_path)
+    store.upsert_local_class({"id": 4101, "name": "我的机器人班", "campusId": 851, "lecturer_id": 12385})
+    store.upsert_local_class({"id": 4102, "name": "其他教师班", "campusId": 851, "lecturer_id": 99881})
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
+
+    response = client.get("/api/workspace/bootstrap")
+
+    assert response.status_code == 200
+    content = response.json()["content"]
+    assert content["role"] == "teacher"
+    assert content["displayName"] == "Teacher Li"
+    assert [row["id"] for row in content["classes"]] == [4101]
+
+
+def test_workspace_bootstrap_requires_authenticated_session(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get("/api/workspace/bootstrap")
+
+    assert response.status_code == 401
+
+
+def test_workspace_pages_redirect_to_canonical_role_homes(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    _store_teacher_profile(tmp_path, profile_name="admin", username="principal", token="admin-token")
+    app = create_app(tmp_path, allow_live_proxy=False)
+
+    anonymous = TestClient(app)
+    anonymous_response = anonymous.get("/workspace/admin", follow_redirects=False)
+    assert anonymous_response.status_code in {302, 303, 307}
+    assert anonymous_response.headers["location"].startswith("/login?next=")
+
+    admin = TestClient(app)
+    admin.cookies.set("mirror_profile", "admin")
+    admin_response = admin.get("/workspace/admin", follow_redirects=False)
+    assert admin_response.status_code in {302, 303, 307}
+    assert admin_response.headers["location"] == "/background/course-management/school-curriculum"
+
+    teacher = TestClient(app)
+    teacher.cookies.set("mirror_profile", "teacher")
+    teacher_response = teacher.get("/workspace/teacher", follow_redirects=False)
+    assert teacher_response.status_code in {302, 303, 307}
+    assert teacher_response.headers["location"] == "/code-classroom/classroom-index"
+
+    forbidden = teacher.get("/workspace/admin", follow_redirects=False)
+    assert forbidden.status_code in {302, 303, 307}
+    assert forbidden.headers["location"] == "/code-classroom/classroom-index"
+
+
+def test_workspace_static_assets_remain_local_for_workspace_apis(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    assert client.get("/_site/workspace/styles.css").status_code == 200
+    assert client.get("/_site/workspace/app.js").status_code == 200
+
+
+def test_workspace_mobile_navigation_control_is_hidden_on_desktop(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    styles = client.get("/_site/workspace/styles.css").text
+
+    assert ".icon-button.mobile-menu{display:none}" in styles
+    assert "@media(max-width:760px)" in styles
+    assert ".icon-button.mobile-menu{display:grid}" in styles
+
+
+def test_workspace_hidden_role_controls_cannot_be_overridden_by_layout_styles(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    styles = client.get("/_site/workspace/styles.css").text
+
+    assert "[hidden]{display:none!important}" in styles
+
+
+def test_workspace_script_wires_teacher_and_campus_management_actions(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    script = client.get("/_site/workspace/app.js").text
+
+    assert 'request("/api/workspace/teachers' in script
+    assert 'request("/api/workspace/campuses' in script
+    assert "loadTeachers" in script
+    assert "loadCampuses" in script
+    assert "openTeacherDialog" in script
+    assert "openCampusDialog" in script
+    assert "/password" in script
+
+
+def test_workspace_dialog_cancel_controls_bypass_required_field_validation(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    template = Path(server_module.__file__).resolve().parent / "site_assets" / "workspace" / "index.html"
+    page = template.read_text(encoding="utf-8")
+    script = client.get("/_site/workspace/app.js").text
+
+    assert page.count('type="button" data-dialog-cancel') == 2
+    assert 'value="cancel" type="submit"' not in page
+    assert 'querySelectorAll("[data-dialog-cancel]")' in script
+    assert 'document.getElementById("record-dialog").close()' in script
+
+
+def test_admin_workspace_teacher_lifecycle_controls_login_and_campus_scope(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(
+        tmp_path,
+        profile_name="admin",
+        username="principal",
+        token="admin-token",
+        user_info={"id": 9001, "realName": "Principal"},
+    )
+    store = MirrorStore(tmp_path)
+    store.upsert_local_campus({"id": 851, "name": "中心校区"})
+    admin = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    admin.cookies.set("mirror_profile", "admin")
+
+    created_response = admin.post(
+        "/api/workspace/teachers",
+        json={
+            "name": "teacher-new",
+            "realName": "New Teacher",
+            "password": "StrongPass123",
+            "eduCampusIdList": [851],
+            "eduRoleIdList": [1],
+            "state": "在职",
+            "tchState": True,
+        },
+    )
+
+    assert created_response.status_code == 200
+    created = created_response.json()["content"]
+    assert created["name"] == "teacher-new"
+    assert created["eduCampusIdList"] == [851]
+    assert created["tchState"] is True
+
+    login = TestClient(create_app(tmp_path, allow_live_proxy=False)).post(
+        "/java-api/school/tch/login",
+        json={"userName": "teacher-new", "password": "StrongPass123"},
+    )
+    assert login.json()["success"] is True
+    assert login.json()["mirror"]["redirect"] == "/code-classroom/classroom-index"
+
+    disabled_response = admin.patch(
+        f"/api/workspace/teachers/{created['userId']}",
+        json={"state": "停用", "tchState": False},
+    )
+    assert disabled_response.status_code == 200
+    assert disabled_response.json()["content"]["tchState"] is False
+
+    disabled_login = TestClient(create_app(tmp_path, allow_live_proxy=False)).post(
+        "/java-api/school/tch/login",
+        json={"userName": "teacher-new", "password": "StrongPass123"},
+    )
+    assert disabled_login.json()["success"] is False
+    assert disabled_login.json()["error"]["code"] == "AccountDisabled"
+
+    enabled_response = admin.patch(
+        f"/api/workspace/teachers/{created['userId']}",
+        json={"state": "在职", "tchState": True},
+    )
+    assert enabled_response.json()["content"]["tchState"] is True
+    reset_response = admin.post(
+        f"/api/workspace/teachers/{created['userId']}/password",
+        json={"password": "ResetPass456"},
+    )
+    assert reset_response.status_code == 200
+    old_password_login = TestClient(create_app(tmp_path, allow_live_proxy=False)).post(
+        "/java-api/school/tch/login",
+        json={"userName": "teacher-new", "password": "StrongPass123"},
+    )
+    new_password_login = TestClient(create_app(tmp_path, allow_live_proxy=False)).post(
+        "/java-api/school/tch/login",
+        json={"userName": "teacher-new", "password": "ResetPass456"},
+    )
+    assert old_password_login.json()["success"] is False
+    assert new_password_login.json()["success"] is True
+
+
+def test_workspace_teacher_delete_rejects_class_reference(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path, profile_name="admin", username="principal", token="admin-token")
+    admin = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    admin.cookies.set("mirror_profile", "admin")
+    created = admin.post(
+        "/api/workspace/teachers",
+        json={"name": "teacher-linked", "realName": "Linked Teacher", "password": "StrongPass123"},
+    ).json()["content"]
+    MirrorStore(tmp_path).upsert_local_class(
+        {"id": 4201, "name": "引用班级", "campusId": 851, "lecturer_id": created["userId"]}
+    )
+
+    response = admin.delete(f"/api/workspace/teachers/{created['userId']}")
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "TeacherInUse"
+    assert MirrorStore(tmp_path).get_profile(f"teacher_{created['userId']}") is not None
+
+
+def test_teacher_cannot_mutate_workspace_staff_or_campuses(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
+
+    assert client.post("/api/workspace/teachers", json={"name": "blocked"}).status_code == 403
+    assert client.post("/api/workspace/campuses", json={"name": "blocked"}).status_code == 403
+
+
+def test_employee_setting_and_campus_compatibility_use_workspace_services(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(
+        tmp_path,
+        profile_name="admin",
+        username="principal",
+        token="admin-token",
+        user_info={"id": 9001, "realName": "Principal"},
+    )
+    _store_teacher_profile(
+        tmp_path,
+        username="teacher-one",
+        token="teacher-token",
+        user_info={"id": 12385, "realName": "Teacher One"},
+    )
+    MirrorStore(tmp_path).upsert_local_campus({"id": 851, "name": "中心校区"})
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "admin")
+
+    employees = client.post(
+        "/java-api/school/tch/employeeSetting/selectEmployList",
+        json={"pageNum": 1, "pageSize": 20},
+    )
+    campuses = client.get("/api/get/school/right/info")
+    campus_teachers = client.get(
+        "/java-api/school/edu/campus/selectEduCampusTchList",
+        params={"eduCampusId": 851},
+    )
+
+    assert employees.status_code == 200
+    assert any(row["name"] == "teacher-one" for row in employees.json()["content"]["records"])
+    assert campuses.status_code == 200
+    assert campuses.json()["content"]["campusList"][0]["id"] == 851
+    assert campus_teachers.status_code == 200
+    assert any(row["name"] == "teacher-one" for row in campus_teachers.json()["content"])
+
+
 def _store_runtime_student_profile(root: Path, *, token: str = "student-token") -> None:
     _store_student_profile(
         root,
@@ -836,6 +1217,33 @@ def test_student_fresh_data_is_normalized_for_legacy_frontend_shape(tmp_path: Pa
     assert content["stuBaseInfo"]["realName"] == "陈沐然"
 
 
+def test_teacher_fresh_data_uses_fresh_auth_user_info(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(
+        tmp_path,
+        user_info={
+            "id": 12385,
+            "name": "zhaosenlin",
+            "realName": "赵森林",
+            "phoneNum": "18164173640",
+        },
+        school_info={"id": 834, "name": "乐启享机器人"},
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get(
+        "/java-api/school/tch/freshData?t=1",
+        headers={"Authorization": "Bearer teacher-token"},
+    )
+
+    assert response.status_code == 200
+    content = response.json()["content"]
+    assert content["identity"] == 1
+    assert content["userInfo"]["id"] == 12385
+    assert content["userInfo"]["realName"] == "赵森林"
+    assert content["schoolInfo"]["name"] == "乐启享机器人"
+
+
 def test_student_subject_endpoints_use_local_fallback_when_capture_is_invalid_token(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
@@ -1152,7 +1560,9 @@ def test_points_star_rule_prefers_local_array_payload_over_cached_object_respons
 
 def test_frontend_route_like_path_falls_back_to_shell(tmp_path: Path) -> None:
     _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
     response = client.get("/school-home-page/class-management1/students-management1")
 
@@ -1168,6 +1578,7 @@ def test_teacher_students_management_route_bootstraps_schoolinfo_session(tmp_pat
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path, school_info={"id": 834, "name": "Mirror School", "eduCampusId": 851})
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
     response = client.get("/school-home-page/class-management1/students-management1")
 
@@ -1176,7 +1587,7 @@ def test_teacher_students_management_route_bootstraps_schoolinfo_session(tmp_pat
     assert "sessionStorage.setItem('schoolInfo',JSON.stringify(data))" in response.text
 
 
-def test_shell_fallback_prunes_missing_prefetch_assets(tmp_path: Path) -> None:
+def test_shell_fallback_removes_optional_prefetch_but_keeps_required_assets(tmp_path: Path) -> None:
     target = tmp_path / "origin" / "steam.fun"
     (target / "css").mkdir(parents=True, exist_ok=True)
     (target / "index.html").write_text(
@@ -1184,6 +1595,7 @@ def test_shell_fallback_prunes_missing_prefetch_assets(tmp_path: Path) -> None:
             "<!doctype html><html><head>"
             '<link rel="prefetch" href="/css/chunk-missing.123456.css">'
             '<link rel="prefetch" href="/css/chunk-present.123456.css">'
+            '<link rel="preload" href="/js/app.js" as="script">'
             '<link rel="stylesheet" href="/css/app.css">'
             "</head><body>shell</body></html>"
         ),
@@ -1191,17 +1603,22 @@ def test_shell_fallback_prunes_missing_prefetch_assets(tmp_path: Path) -> None:
     )
     (target / "css" / "chunk-present.123456.css").write_text("body{color:#222;}", encoding="utf-8")
     (target / "css" / "app.css").write_text("body{background:#fff;}", encoding="utf-8")
+    (target / "js").mkdir(parents=True, exist_ok=True)
+    (target / "js" / "app.js").write_text("console.log('app');", encoding="utf-8")
+    _store_teacher_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
     response = client.get("/school-home-page/class-management1/students-management1")
 
     assert response.status_code == 200
     assert '/css/chunk-missing.123456.css' not in response.text
-    assert '/css/chunk-present.123456.css' in response.text
+    assert '/css/chunk-present.123456.css' not in response.text
+    assert '/js/app.js' in response.text
     assert '/css/app.css' in response.text
 
 
-def test_shell_fallback_prunes_missing_same_origin_js_prefetch_assets(tmp_path: Path) -> None:
+def test_shell_fallback_removes_present_and_missing_js_prefetch_assets(tmp_path: Path) -> None:
     target = tmp_path / "origin" / "steam.fun"
     (target / "js").mkdir(parents=True, exist_ok=True)
     (target / "index.html").write_text(
@@ -1217,13 +1634,15 @@ def test_shell_fallback_prunes_missing_same_origin_js_prefetch_assets(tmp_path: 
     (target / "js" / "chunk-present.123456.js").write_text("console.log('present');", encoding="utf-8")
     (target / "css").mkdir(parents=True, exist_ok=True)
     (target / "css" / "app.css").write_text("body{background:#fff;}", encoding="utf-8")
+    _store_teacher_profile(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
     response = client.get("/school-home-page/class-management1/students-management1")
 
     assert response.status_code == 200
     assert '/js/chunk-missing.123456.js' not in response.text
-    assert '/js/chunk-present.123456.js' in response.text
+    assert '/js/chunk-present.123456.js' not in response.text
 
 
 def test_classroom_ppt_routes_include_local_narrow_layout_guard(tmp_path: Path) -> None:
@@ -1356,16 +1775,31 @@ def test_marketing_homepage_contains_required_sections(tmp_path: Path) -> None:
     assert "cinema-stage" in response.text
     assert "collection-stage" in response.text
     assert "signal-stage" in response.text
+    assert "从乐高启蒙 到 AI 创造" in response.text
+    assert "让好奇心 在指尖生长" in response.text
+    assert "不止于搭建 · 更创造未来" in response.text
+    assert "把每一个奇思妙想 · 都变成作品" in response.text
+    assert "与未来同行 · 从第一块积木开始" in response.text
+    assert "7 年深耕 · STEAM 教育" in response.text
+    assert "乐高启蒙 · 机器人工程 · 编程思维" in response.text
+    assert "让每一次好奇 · 都被认真对待" in response.text
+    assert "扫码 · 让孩子的未来 提前开始" in response.text
     assert "乐启享" in response.text
     assert "18164173640" in response.text
     assert "宜昌市猇亭区金岭路59-1号" in response.text
     assert "/_site/courses/" in response.text
     assert 'href="/login"' in response.text
+    assert 'class="hero-menu-toggle"' in response.text
+    assert 'id="heroNav"' in response.text
+    assert 'nav-link--external' in response.text
+    assert 'href="/competitions.html"' in response.text
+    assert 'target="_blank"' in response.text
     assert "森林老师" in response.text
     assert "senlin-c1n.pages.dev" in response.text
     assert "student-001" in response.text
     assert "student-150" in response.text
-    assert "honors/3c4b1c9a" in response.text
+    assert "honors/3eec15d34062bf6ef680de67fb74689f" in response.text
+    assert "honors/3c4b1c9a" not in response.text
     assert "home/1.webp" in response.text
     assert "showreel-birthday.mp4" in response.text
     assert "ai-camp-clip.mp4" in response.text
@@ -1380,6 +1814,25 @@ def test_marketing_homepage_contains_required_sections(tmp_path: Path) -> None:
     assert "cinema-wall" in response.text
     assert "texture.png" not in response.text
 
+
+
+def test_homepage_typewriter_starts_within_the_normal_rotation_cycle(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    script = client.get("/_site/homepage/app.js").text
+
+    assert script.count("setTimeout(tick, 120);") >= 2
+    assert script.count("const holdDelay = 850;") >= 2
+    assert "let unitIndex = 0;" in script
+    assert "let uIdx = 0;" in script
+    assert script.count("let deleting = false;") >= 2
+    assert "unitIndex -= 1" in script
+    assert "uIdx -= 1" in script
+    assert "const typeDelay = 48;" in script
+    assert "const typeDelay = 44;" in script
+    assert "setTimeout(tick, 30000);" not in script
+    assert "setTimeout(tick, 24000);" not in script
 
 
 def test_homepage_static_asset_route_serves_local_css(tmp_path: Path) -> None:
@@ -1402,8 +1855,122 @@ def test_homepage_static_asset_route_serves_local_logo(tmp_path: Path) -> None:
     assert response.headers["content-type"].startswith("image/png")
 
 
+def test_homepage_static_asset_route_wires_mobile_nav_toggle(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    script = client.get("/_site/homepage/app.js").text
+
+    assert "hero-menu-toggle" in script
+    assert "hero-nav-open" in script
+    assert "is-menu-open" in script
+    assert "window.matchMedia('(max-width: 1023.98px)')" in script
+
+
+def test_public_course_legacy_routes_are_not_claimed_by_logged_in_spa(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path, profile_name="admin", username="principal", token="admin-token")
+    _store_teacher_profile(tmp_path)
+    _store_student_profile(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    for profile_name in ("admin", "teacher", "student"):
+        client.cookies.set("mirror_profile", profile_name)
+
+        courses = client.get("/courses.html", follow_redirects=False)
+        detail = client.get("/course-detail.html?id=lego-large", follow_redirects=False)
+
+        assert courses.status_code == 200
+        assert detail.status_code == 200
+        assert "课程体系 - 乐启享编程教育" in courses.text
+        assert "课程详情 - 乐启享编程教育" in detail.text
+        assert 'href="/#hero"' in courses.text
+        assert 'href="/#hero"' in detail.text
+        assert "/background/course-management" not in courses.text
+        assert "/code-classroom/classroom-index" not in courses.text
+        assert courses.headers["cache-control"] == "no-store, no-cache, must-revalidate, max-age=0"
+        assert detail.headers["cache-control"] == "no-store, no-cache, must-revalidate, max-age=0"
+
+
+def test_competitions_page_is_localized_and_has_no_form_fields(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get("/competitions.html")
+
+    assert response.status_code == 200
+    assert 'class="navbar"' in response.text
+    assert 'id="home" class="hero"' in response.text
+    assert 'class="hero-media"' in response.text
+    assert "/_site/homepage/media/hero-cloudfront-20260331-045634.mp4" in response.text
+    assert "探索科技未来" in response.text
+    assert "科技竞赛项目" in response.text
+    assert "科技特长生" in response.text
+    assert "contact-static-section" in response.text
+    assert "competitionContactTitle" in response.text
+    assert "data-contact-title-phrases" in response.text
+    assert "乐启享 版权所有" in response.text
+    assert "乐慧享" not in response.text
+    assert "慧享编程" not in response.text
+    assert "/_site/competitions/styles.css" in response.text
+    assert "/_site/competitions/images/yichang-yizhong1.webp" in response.text
+    assert "/_site/competitions/images/qr-liuteacher.png" in response.text
+    assert 'class="hero-stage"' not in response.text
+    assert 'class="hero-header"' not in response.text
+    assert "<form" not in response.text
+    assert "<input" not in response.text
+    assert "<textarea" not in response.text
+
+
+def test_competitions_static_asset_route_wires_mobile_nav_toggle(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    script = client.get("/_site/competitions/app.js").text
+
+    assert "nav-open" in script
+    assert "nav-toggle" in script
+    assert "nav-menu" in script
+    assert "lazy-load" in script
+    assert "hero-menu-toggle" not in script
+
+
+def test_competitions_page_preserves_canonical_interactions(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    page = client.get("/competitions.html").text
+    script = client.get("/_site/competitions/app.js").text
+
+    assert 'onclick="showCompetitionDetail(' in page
+    assert 'id="loadMoreCompetitions"' in page
+    assert "展开全部赛事" in page
+    assert 'id="loadMoreCertification"' in page
+    assert 'id="certificationDetails"' in page
+    assert 'id="loadMoreStudents"' in page
+    assert 'id="moreStudents"' in page
+    assert "展开全部学生案例" in page
+    assert 'href="https://kejitechangsheng.com/category/quanguo"' in page
+    assert 'target="_blank"' in page
+    assert page.count('class="competition-card"') == 12
+    assert page.count('class="student-card"') == 6
+    assert page.count('class="detail-card"') == 4
+    assert page.count('class="school-item"') == 7
+    assert "function createCompetitionModal" in page
+    assert "competition-modal-overlay" in page
+    assert "competition-detail-modal modal modal-scroll" in page
+    assert "role', 'dialog'" in page
+    assert "function scrollToContactForm" in page
+    assert "function setupLoadMore" in script
+    assert "function setupCompetitionDetails" in script
+    assert "收起更多赛事" in script
+    assert "收起详细信息" in script
+    assert "收起学生案例" in script
+
+
 def test_frontend_route_uses_captured_html_when_available(tmp_path: Path) -> None:
     _write_shell(tmp_path)
+    _store_student_profile(tmp_path)
     store = MirrorStore(tmp_path)
     store.store_route_capture(
         profile_name="student",
@@ -1414,6 +1981,7 @@ def test_frontend_route_uses_captured_html_when_available(tmp_path: Path) -> Non
         captured_xhr_count=0,
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "student")
 
     response = client.get("/code-classroom")
 
@@ -1426,6 +1994,7 @@ def test_frontend_route_uses_captured_html_when_available(tmp_path: Path) -> Non
 
 def test_student_code_classroom_snapshot_is_served_without_scripts(tmp_path: Path) -> None:
     _write_shell(tmp_path)
+    _store_student_profile(tmp_path)
     store = MirrorStore(tmp_path)
     store.store_route_capture(
         profile_name="teacher",
@@ -1452,6 +2021,7 @@ def test_student_code_classroom_snapshot_is_served_without_scripts(tmp_path: Pat
         captured_xhr_count=0,
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "student")
 
     response = client.get("/code-classroom")
 
@@ -1517,7 +2087,7 @@ def test_login_redirect_capture_is_skipped_for_route_like_pages(tmp_path: Path) 
     assert "bad login snapshot" not in response.text
 
 
-def test_teacher_school_home_subroute_prefers_teacher_capture_and_bootstraps_vuex(tmp_path: Path) -> None:
+def test_excluded_school_home_subroute_redirects_teacher_to_workspace(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     store = MirrorStore(tmp_path)
@@ -1532,12 +2102,10 @@ def test_teacher_school_home_subroute_prefers_teacher_capture_and_bootstraps_vue
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
     client.cookies.set("mirror_profile", "teacher")
 
-    response = client.get("/school-home-page/orderpay")
+    response = client.get("/school-home-page/orderpay", follow_redirects=False)
 
-    assert response.status_code == 200
-    assert "teacher home capture" in response.text
-    assert "localStorage.setItem('vuex',JSON.stringify(data))" in response.text
-    assert '"adminToken":"teacher-token"' in response.text
+    assert response.status_code in {302, 303, 307}
+    assert response.headers["location"] == "/code-classroom/classroom-index"
 
 
 def test_duplicate_school_home_class_route_redirects_to_normalized_path(tmp_path: Path) -> None:
@@ -1554,7 +2122,7 @@ def test_duplicate_school_home_class_route_redirects_to_normalized_path(tmp_path
     assert response.headers["location"] == "/school-home-page/class-management1?t=1"
 
 
-def test_teacher_auth_bootstrap_rebuilds_nested_permissions_from_auth_tree(tmp_path: Path) -> None:
+def test_teacher_auth_bootstrap_uses_curated_nested_permissions(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     auth_tree_payload = {
         "children": [
@@ -1591,15 +2159,18 @@ def test_teacher_auth_bootstrap_rebuilds_nested_permissions_from_auth_tree(tmp_p
     permissions = bootstrap_payload["user"]["permisionList"]
     assert permissions[0]["alias"] == "tchCenter"
     assert permissions[0]["children"][0]["alias"] == "students-management1"
-    assert permissions[0]["children"][0]["children"][0]["alias"] == "student-query"
+    assert permissions[0]["children"][0]["children"][0]["alias"] == "currentStudent"
+    assert permissions[0]["children"][0]["children"][0]["children"][0]["alias"] == "studentDetails"
     admin_permissions = bootstrap_payload["user"]["adminpermisionList"]
     assert admin_permissions[0]["permission_key"] == "tchCenter"
     assert admin_permissions[0]["children"][0]["permission_key"] == "students-management1"
-    assert admin_permissions[0]["children"][0]["children"][0]["permission_key"] == "student-query"
-    assert admin_permissions[0]["children"][0]["children"][0]["name"] == "\u67e5\u8be2"
+    assert admin_permissions[0]["children"][0]["children"][0]["permission_key"] == "currentStudent"
+    serialized = json.dumps(admin_permissions, ensure_ascii=False)
+    assert "student-query" not in serialized
+    assert "orderpay" not in serialized
 
 
-def test_fresh_auth_data_returns_local_auth_tree_message(tmp_path: Path) -> None:
+def test_fresh_auth_data_returns_curated_teacher_auth_tree(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path, auth_tree='{"children":[{"userResource":{"alias":"students-management1"}}]}')
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
@@ -1611,7 +2182,12 @@ def test_fresh_auth_data_returns_local_auth_tree_message(tmp_path: Path) -> None
 
     assert response.status_code == 200
     assert response.json()["content"]["flag"] is True
-    assert response.json()["content"]["message"] == '{"children":[{"userResource":{"alias":"students-management1"}}]}'
+    message = json.loads(response.json()["content"]["message"])
+    serialized = json.dumps(message, ensure_ascii=False)
+    assert "students-management1" in serialized
+    assert "teachplan1" in serialized
+    assert "school-user-list" not in serialized
+    assert "orderpay" not in serialized
 
 
 def test_fresh_auth_data_limits_auth_tree_for_core_background_referer(tmp_path: Path) -> None:
@@ -1642,7 +2218,7 @@ def test_fresh_auth_data_limits_auth_tree_for_core_background_referer(tmp_path: 
     serialized = json.dumps(filtered_auth_tree, ensure_ascii=False)
     assert "pageHome" not in serialized
     assert "systemSetting" not in serialized
-    assert "classRecord" not in serialized
+    assert "classRecord" in serialized
     assert "school-user-list" not in serialized
     assert "school-curriculum" in serialized
 
@@ -1790,19 +2366,15 @@ def test_admin_fresh_auth_user_data_falls_back_to_teacher_profile(tmp_path: Path
     )
 
     assert response.status_code == 200
-    assert response.json()["content"] == {
-        "token": "teacher-token",
-        "userId": 12385,
-        "userName": "teacher",
-        "userRealname": "Teacher Realname",
-        "authUserPermission": [
-            {
-                "name": "课程管理",
-                "icon_url": "el-icon-notebook-1",
-                "children": [{"name": "课程体系", "permission_key": "school-curriculum", "children": []}],
-            }
-        ],
-    }
+    content = response.json()["content"]
+    assert content["token"] == "teacher-token"
+    assert content["userId"] == 12385
+    assert content["userRealname"] == "Teacher Realname"
+    serialized = json.dumps(content["authUserPermission"], ensure_ascii=False)
+    assert "class-management1" in serialized
+    assert "school-curriculum" in serialized
+    assert "school-user-list" not in serialized
+    assert "orderpay" not in serialized
 
 
 def test_admin_fresh_auth_user_data_uses_teacher_like_profile_from_token(tmp_path: Path) -> None:
@@ -1842,13 +2414,14 @@ def test_admin_fresh_auth_user_data_uses_teacher_like_profile_from_token(tmp_pat
     )
 
     assert response.status_code == 200
-    assert response.json()["content"] == {
-        "token": "admin-token",
-        "userId": 9002,
-        "userName": "18164173640",
-        "userRealname": "Admin Realname",
-        "authUserPermission": [{"name": "课程体系", "permission_key": "school-curriculum", "children": []}],
-    }
+    content = response.json()["content"]
+    assert content["token"] == "admin-token"
+    assert content["userId"] == 9002
+    assert content["userRealname"] == "Admin Realname"
+    serialized = json.dumps(content["authUserPermission"], ensure_ascii=False)
+    assert "school-user-list" in serialized
+    assert "schoolSys" in serialized
+    assert "orderpay" not in serialized
 
 
 def test_admin_fresh_auth_user_data_builds_permissions_from_auth_tree_when_admin_list_empty(tmp_path: Path) -> None:
@@ -1942,10 +2515,13 @@ def test_admin_fresh_auth_user_data_prefers_local_permissions_over_stale_capture
     assert response.status_code == 200
     permissions = response.json()["content"]["authUserPermission"]
     assert permissions[0]["permission_key"] == "tchCenter"
-    assert permissions[0]["children"][0]["permission_key"] == "class-management1"
+    serialized = json.dumps(permissions, ensure_ascii=False)
+    assert "class-management1" in serialized
+    assert "teachplan1" in serialized
+    assert "orderpay" not in serialized
 
 
-def test_admin_fresh_auth_user_data_limits_permissions_for_core_background_referer(tmp_path: Path) -> None:
+def test_teacher_fresh_auth_user_data_uses_curated_permissions_for_background_referer(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     auth_tree_payload = _core_background_auth_tree_payload()
     _store_teacher_profile(
@@ -1973,9 +2549,10 @@ def test_admin_fresh_auth_user_data_limits_permissions_for_core_background_refer
         "students-management1",
         "class-management1",
         "teachplan1",
+        "classRecord",
     }
     serialized = json.dumps(permissions, ensure_ascii=False)
-    assert "classRecord" not in serialized
+    assert "classRecord" in serialized
     assert "systemSetting" not in serialized
     assert "school-user-list" not in serialized
     assert "school-curriculum" in serialized
@@ -2548,7 +3125,7 @@ def test_rewrite_body_injects_classroom_loading_feedback_guard() -> None:
     assert "正在准备课件内容" in rewritten
 
 
-def test_rewrite_body_injects_core_route_cleanup_guard() -> None:
+def test_rewrite_body_does_not_inject_core_route_cleanup_guard() -> None:
     body = (
         "<html><head><title>course</title></head><body>"
         "<nav><a href='/competitionCenter/questionBankCenter/platform'>??</a></nav>"
@@ -2557,11 +3134,9 @@ def test_rewrite_body_injects_core_route_cleanup_guard() -> None:
 
     rewritten = server_module._maybe_rewrite_body(body, "text/html; charset=utf-8").decode("utf-8")
 
-    assert "__localCoreRouteCleanup" in rewritten
-    assert "allowedSubmenus" in rewritten
-    assert "allowedMenuItems" in rewritten
-    assert "教务中心" in rewritten
-    assert "课程中心" in rewritten
+    assert "__localCoreRouteCleanup" not in rewritten
+    assert "allowedSubmenus" not in rewritten
+    assert "allowedMenuItems" not in rewritten
 
 
 def test_teacher_teach_deep_link_bootstraps_session_context(tmp_path: Path) -> None:
@@ -2593,6 +3168,7 @@ def test_teacher_teach_deep_link_bootstraps_session_context(tmp_path: Path) -> N
         ).encode("utf-8"),
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
     response = client.get("/code-classroom/teach-lessons/lessons/ppt?curriculumMaterial_id=39525&teaching_plan_id=999999")
 
@@ -2647,6 +3223,7 @@ def test_teacher_prepare_deep_link_prefers_teacher_classroom_capture(tmp_path: P
         ).encode("utf-8"),
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
     response = client.get("/code-classroom/prepare-lessons/prepare/ppt?curriculumMaterial_id=39525&tchPlanId=999999")
 
@@ -2703,6 +3280,7 @@ def test_teacher_prepare_root_prefers_teacher_classroom_capture_and_default_sess
         ).encode("utf-8"),
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
     response = client.get("/code-classroom/prepare-lessons")
 
@@ -2734,6 +3312,7 @@ def test_teacher_myclass_root_prefers_teacher_classroom_capture(tmp_path: Path) 
         captured_xhr_count=1,
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
     response = client.get("/code-classroom/myClass")
 
@@ -3112,7 +3691,7 @@ def test_platform_rights_ignores_stale_invalid_token_capture(tmp_path: Path) -> 
 
 
 
-def test_school_user_list_route_bootstraps_local_teacher_context(tmp_path: Path) -> None:
+def test_school_user_list_route_rejects_teacher_role(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path, username="zhaosenlin", token="teacher-token")
     store = MirrorStore(tmp_path)
@@ -3125,13 +3704,12 @@ def test_school_user_list_route_bootstraps_local_teacher_context(tmp_path: Path)
         captured_xhr_count=0,
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
-    response = client.get("/school-home-page/school-user-list")
+    response = client.get("/school-home-page/school-user-list", follow_redirects=False)
 
-    assert response.status_code == 200
-    assert "school user list page" in response.text
-    assert "localStorage.setItem('vuex',JSON.stringify(data))" in response.text
-    assert "sessionStorage.setItem('mirror_profile',\"teacher\")" in response.text
+    assert response.status_code in {302, 303, 307}
+    assert response.headers["location"] == "/code-classroom/classroom-index"
 
 
 def test_school_user_list_supports_local_teacher_account_crud_endpoints(tmp_path: Path) -> None:
@@ -3820,7 +4398,7 @@ def test_competition_center_subroute_redirects_to_teacher_core_route(tmp_path: P
     response = client.get("/competitionCenter/questionBankCenter/platform", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
+    assert response.headers["location"] == "/code-classroom/classroom-index"
 
 
 def test_exam_management_subroute_redirects_to_teacher_core_route(tmp_path: Path) -> None:
@@ -3831,7 +4409,7 @@ def test_exam_management_subroute_redirects_to_teacher_core_route(tmp_path: Path
     response = client.get("/exam-management", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
+    assert response.headers["location"] == "/code-classroom/classroom-index"
 
 
 def test_practice_management_subroute_redirects_to_teacher_core_route(tmp_path: Path) -> None:
@@ -3842,7 +4420,7 @@ def test_practice_management_subroute_redirects_to_teacher_core_route(tmp_path: 
     response = client.get("/practice-management", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
+    assert response.headers["location"] == "/code-classroom/classroom-index"
 
 
 def test_exam_management_namespaced_route_redirects_to_teacher_core_route(tmp_path: Path) -> None:
@@ -3853,7 +4431,7 @@ def test_exam_management_namespaced_route_redirects_to_teacher_core_route(tmp_pa
     response = client.get("/exam/exam-management", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
+    assert response.headers["location"] == "/code-classroom/classroom-index"
 
 
 def test_exam_student_subroute_redirects_to_student_core_route(tmp_path: Path) -> None:
@@ -4865,7 +5443,7 @@ def test_login_route_clears_stale_profile_state_and_expires_cookie(tmp_path: Pat
     assert "Max-Age=0" in response.headers["set-cookie"]
 
 
-def test_background_login_route_prefers_captured_login_page_over_shell(tmp_path: Path) -> None:
+def test_background_login_route_uses_professional_local_login_page(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     store = MirrorStore(tmp_path)
@@ -4888,8 +5466,9 @@ def test_background_login_route_prefers_captured_login_page_over_shell(tmp_path:
     response = client.get("/background/login")
 
     assert response.status_code == 200
-    assert "请输入手机号" in response.text
-    assert "登 录" in response.text
+    assert 'class="login-shell"' in response.text
+    assert "学员 / 家长登录" in response.text
+    assert "教师 / 管理员登录" in response.text
     assert "sessionStorage.removeItem('mirror_profile')" in response.text
 
 
@@ -4950,7 +5529,7 @@ def test_background_login_route_prefers_local_password_form_when_admin_profile_e
     assert "����������" not in response.text
 
 
-def test_background_subroute_without_session_bootstraps_local_admin_context(tmp_path: Path) -> None:
+def test_background_subroute_without_session_redirects_to_login(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     store = MirrorStore(tmp_path)
@@ -4989,20 +5568,25 @@ def test_background_subroute_without_session_bootstraps_local_admin_context(tmp_
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
 
-    response = client.get("/background/course-management/school-curriculum")
+    response = client.get(
+        "/background/course-management/school-curriculum",
+        follow_redirects=False,
+    )
 
-    assert response.status_code == 200
-    assert "shell" in response.text
-    assert "localStorage.setItem('vuex',JSON.stringify(data))" in response.text
-    assert '"adminToken":"admin-token"' in response.text
-    assert 'sessionStorage.setItem(\'mirror_profile\',"admin")' in response.text
-
-
+    assert response.status_code == 303
+    assert response.headers["location"].startswith("/login?next=")
 
 
-def test_local_background_curriculum_page_hides_non_core_menu_entries(tmp_path: Path) -> None:
+
+
+def test_local_background_curriculum_page_uses_curated_bootstrap_without_dom_hiding(tmp_path: Path) -> None:
     _write_shell(tmp_path)
-    _store_teacher_profile(tmp_path, username="zhaosenlin", token="teacher-token")
+    _store_teacher_profile(
+        tmp_path,
+        profile_name="admin",
+        username="zhaosenlin",
+        token="teacher-token",
+    )
     store = MirrorStore(tmp_path)
     store.store_route_capture(
         profile_name="teacher",
@@ -5025,6 +5609,7 @@ def test_local_background_curriculum_page_hides_non_core_menu_entries(tmp_path: 
         captured_xhr_count=0,
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "admin")
 
     response = client.get(
         "/background/course-management/school-curriculum",
@@ -5032,20 +5617,20 @@ def test_local_background_curriculum_page_hides_non_core_menu_entries(tmp_path: 
     )
 
     assert response.status_code == 200
-    assert "首页" not in response.text
-    assert "数据看板" not in response.text
-    assert "教务中心" in response.text
-    assert "上课记录" not in response.text
-    assert "课程中心" in response.text
-    assert "前台业务" not in response.text
-    assert "系统设置" not in response.text
+    assert "首页" in response.text
+    assert "前台业务" in response.text
+    assert '"school-user-list"' in response.text
+    assert '"schoolSys"' in response.text
+    assert '"orderpay"' not in response.text
+    assert "__localCoreRouteCleanup" not in response.text
 
 
-def test_local_background_curriculum_page_bootstrap_limits_permissions_to_core_flow(tmp_path: Path) -> None:
+def test_local_background_curriculum_page_bootstrap_uses_admin_teaching_permissions(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     auth_tree_payload = _core_background_auth_tree_payload()
     _store_teacher_profile(
         tmp_path,
+        profile_name="admin",
         username="zhaosenlin",
         token="teacher-token",
         auth_tree=json.dumps(auth_tree_payload, ensure_ascii=False),
@@ -5061,6 +5646,7 @@ def test_local_background_curriculum_page_bootstrap_limits_permissions_to_core_f
         captured_xhr_count=0,
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "admin")
 
     response = client.get(
         "/background/course-management/school-curriculum",
@@ -5072,28 +5658,31 @@ def test_local_background_curriculum_page_bootstrap_limits_permissions_to_core_f
     end = response.text.index(";try{localStorage.setItem('vuex',JSON.stringify(data));}catch(e){}")
     bootstrap_payload = json.loads(response.text[start:end].replace("<\\/", "</"))
     permissions = bootstrap_payload["user"]["permisionList"]
-    assert {node["alias"] for node in permissions} == {"tchCenter", "courseCenter"}
+    assert {node["alias"] for node in permissions} == {"tchCenter", "courseCenter", "systemSetting"}
     teach_center = next(node for node in permissions if node["alias"] == "tchCenter")
     assert {child["alias"] for child in teach_center["children"]} == {
         "students-management1",
         "class-management1",
         "teachplan1",
+        "classRecord",
     }
-    assert "classRecord" not in json.dumps(teach_center, ensure_ascii=False)
+    assert "classRecord" in json.dumps(teach_center, ensure_ascii=False)
     course_center = next(node for node in permissions if node["alias"] == "courseCenter")
     assert {child["alias"] for child in course_center["children"]} == {"course-list"}
     assert "school-curriculum" in json.dumps(course_center, ensure_ascii=False)
 
     admin_permissions = bootstrap_payload["user"]["adminpermisionList"]
-    assert {node["permission_key"] for node in admin_permissions} == {"tchCenter", "courseCenter"}
+    assert {node["permission_key"] for node in admin_permissions} == {"tchCenter", "courseCenter", "systemSetting"}
     admin_teach_center = next(node for node in admin_permissions if node["permission_key"] == "tchCenter")
     assert {child["permission_key"] for child in admin_teach_center["children"]} == {
         "students-management1",
         "class-management1",
         "teachplan1",
+        "classRecord",
     }
-    assert "school-user-list" not in json.dumps(admin_permissions, ensure_ascii=False)
-    assert "systemSetting" not in json.dumps(admin_permissions, ensure_ascii=False)
+    assert "school-user-list" in json.dumps(admin_permissions, ensure_ascii=False)
+    assert "schoolSys" in json.dumps(admin_permissions, ensure_ascii=False)
+    assert "systemSetting" in json.dumps(admin_permissions, ensure_ascii=False)
     assert "pageHome" not in json.dumps(permissions, ensure_ascii=False)
 
 
@@ -5145,7 +5734,7 @@ def test_background_subroute_bootstraps_selected_admin_profile_from_cookie(tmp_p
     assert 'sessionStorage.setItem(\'mirror_profile\',"admin")' in response.text
 
 
-def test_school_home_subroute_without_session_bootstraps_local_teacher_context(tmp_path: Path) -> None:
+def test_school_home_subroute_without_session_redirects_to_login(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path)
     store = MirrorStore(tmp_path)
@@ -5159,13 +5748,10 @@ def test_school_home_subroute_without_session_bootstraps_local_teacher_context(t
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
 
-    response = client.get("/school-home-page/orderpay")
+    response = client.get("/school-home-page/orderpay", follow_redirects=False)
 
-    assert response.status_code == 200
-    assert "teacher home capture" in response.text
-    assert "localStorage.setItem('vuex',JSON.stringify(data))" in response.text
-    assert '"adminToken":"teacher-token"' in response.text
-    assert 'sessionStorage.setItem(\'mirror_profile\',"teacher")' in response.text
+    assert response.status_code == 303
+    assert response.headers["location"].startswith("/login?next=")
 
 
 def test_legacy_competition_question_bank_alias_redirects_to_teacher_core_route(tmp_path: Path) -> None:
@@ -5175,10 +5761,10 @@ def test_legacy_competition_question_bank_alias_redirects_to_teacher_core_route(
     response = client.get("/competitionCenter/questionBank?tabComponent=platformQuestionBank", follow_redirects=False)
 
     assert response.status_code == 307
-    assert response.headers["location"] == "/school-home-page/class-management1/students-management1"
+    assert response.headers["location"] == "/code-classroom/classroom-index"
 
 
-def test_platform_curriculum_route_redirects_to_school_curriculum(tmp_path: Path) -> None:
+def test_platform_curriculum_route_redirects_to_admin_workspace(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path, profile_name="admin", username="18164173640", token="admin-token")
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
@@ -5847,6 +6433,7 @@ def test_local_student_create_fallback_persists_and_appears_in_campus_user_list(
         ).encode("utf-8"),
     )
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
 
     created = client.post(
         "/java-api/school/stu/create?t=1",
@@ -7599,6 +8186,13 @@ def test_student_class_list_prefers_captured_classes_over_newer_local_audit_clas
 def test_divide_class_route_bootstraps_course_arranging_session_state(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     _store_teacher_profile(tmp_path, user_info={"id": 12385, "realName": "Teacher Li"})
+    _store_teacher_profile(
+        tmp_path,
+        profile_name="admin",
+        username="admin",
+        token="admin-token",
+        user_info={"id": 9001, "realName": "Admin User"},
+    )
     _store_teacher_course_chain_captures(tmp_path)
     store = MirrorStore(tmp_path)
     store.upsert_local_class(
@@ -7660,9 +8254,8 @@ def test_divide_class_route_bootstraps_course_arranging_session_state(tmp_path: 
     )
 
     assert unauthenticated_response.status_code == 200
-    assert "sessionStorage.setItem('courseArranging',JSON.stringify(data))" in unauthenticated_response.text
-    assert '"id":3901' in unauthenticated_response.text
-    assert '"name":"Direct Bootstrap Class"' in unauthenticated_response.text
+    assert 'class="login-shell"' in unauthenticated_response.text
+    assert "sessionStorage.setItem('courseArranging',JSON.stringify(data))" not in unauthenticated_response.text
 
     admin_response = client.get(
         "/school-home-page/class-management1/divide-class1?id=3901&campus_id=851&lecturer_id=12385",
@@ -9059,3 +9652,233 @@ def test_get_tch_plan_list_for_add_tmp_and_bulk_template_sync_use_local_overlay(
     cleared_overlay = store.get_teaching_plan_overlay(91001)
     assert cleared_overlay is not None
     assert cleared_overlay["source_tch_plan_id"] is None
+
+def test_logout_endpoint_clears_cookie_and_serves_redirect_page(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
+
+    response = client.get("/logout")
+
+    assert response.status_code == 200
+    assert "cache-control" in response.headers
+    assert response.headers["cache-control"].startswith("no-store")
+    set_cookie_header = response.headers.get("set-cookie", "")
+    assert "mirror_profile=" in set_cookie_header
+    assert "Max-Age=0" in set_cookie_header
+    body = response.text
+    assert "sessionStorage.removeItem" in body
+    assert "window.location.replace" in body
+    assert "/login" in body
+
+
+def test_logout_endpoint_accepts_post_method(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.post("/logout")
+
+    assert response.status_code == 200
+    assert "Max-Age=0" in response.headers.get("set-cookie", "")
+
+
+def test_spa_pages_do_not_inject_location_reload_override(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    store = MirrorStore(tmp_path)
+    captured_html = '<html><body><div id="app"></div></body></html>'
+    store.store_route_capture(
+        profile_name="teacher",
+        route="/school-home-page",
+        final_url="https://steam.fun/school-home-page",
+        status=200,
+        html=captured_html,
+        captured_xhr_count=0,
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    client.cookies.set("mirror_profile", "teacher")
+
+    response = client.get("/school-home-page")
+    assert response.status_code == 200
+    assert 'Object.defineProperty(window.location,"reload"' not in response.text
+
+
+def test_login_html_has_no_demo_account_hints(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    """The login page must not advertise demo accounts."""
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    response = client.get("/login")
+    assert response.status_code == 200
+    body = response.text
+    for forbidden in ("演示账号", "通用密码", "lbschenmuran", "zhaosenlin", "18164173640"):
+        assert forbidden not in body, "demo hint present: %r" % forbidden
+    assert "demo-info" not in body
+
+
+def test_login_route_serves_professional_local_login_page(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get("/login")
+
+    assert response.status_code == 200
+    assert 'class="login-shell"' in response.text
+    assert 'data-target="student"' in response.text
+    assert 'data-target="teacher"' in response.text
+    assert "sessionStorage.removeItem('mirror_profile')" in response.text
+    assert "var mirror=data.mirror||{}" in response.text
+    assert "isAdmin:role==='admin'" in response.text
+    assert "isTeacher:role==='teacher'" in response.text
+    assert "isStudent:role==='student'" in response.text
+    assert "登录后进入" not in response.text
+    assert response.headers["cache-control"].startswith("no-store")
+    for forbidden in ("演示账号", "通用密码", "lbschenmuran", "zhaosenlin", "18164173640"):
+        assert forbidden not in response.text
+
+
+def test_frontend_runtime_routes_spa_logout_to_logout_endpoint() -> None:
+    source = (
+        'this.$store.dispatch("LogOut").then(()=>{'
+        'sessionStorage.setItem("schoolInfo",null),'
+        'localStorage.removeItem("editor_opentype"),'
+        'this.$message.success("退出成功"),'
+        'this.$router.push({path:"/"}),location.reload()})'
+    )
+
+    patched = server_module._maybe_rewrite_body(
+        source.encode("utf-8"),
+        "application/javascript",
+    ).decode("utf-8")
+
+    assert 'window.location.assign("/logout")' in patched
+    assert "location.reload()" not in patched
+
+
+def test_frontend_runtime_routes_admin_logout_to_logout_endpoint() -> None:
+    source = (
+        'layout(){this.$store.dispatch("AdminLogOut").then(()=>{'
+        'this.$message.success("\u9000\u51fa\u6210\u529f"),'
+        'this.$router.push({path:"/background/login"}),'
+        'sessionStorage.setItem("schoolInfo",null)})}'
+    )
+
+    patched = server_module._maybe_rewrite_body(
+        source.encode("utf-8"),
+        "application/javascript",
+    ).decode("utf-8")
+
+    assert 'window.location.assign("/logout")' in patched
+    assert 'this.$router.push({path:"/background/login"})' not in patched
+
+
+def test_teacher_login_does_not_accept_default_password_as_bypass(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path, username="teacher-with-another-password")
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.post(
+        "/java-api/school/tch/login",
+        json={"userName": "teacher-with-another-password", "password": "123456"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is False
+    assert response.cookies.get("mirror_profile") is None
+
+
+def test_admin_login_returns_authoritative_role_and_redirect(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    store = MirrorStore(tmp_path)
+    store.store_profile(
+        profile_name="admin",
+        username="admin-user",
+        password_hash=server_module._hash_login_password("admin-password"),
+        login_path="/java-api/school/tch/login",
+        token="admin-token",
+        login_content={"token": "admin-token"},
+        fresh_auth={"identity": 1, "userInfo": {}, "schoolInfo": {}, "roleList": []},
+        vuex_state={"user": {"token": "admin-token", "identity": 1}},
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.post(
+        "/java-api/school/tch/login",
+        json={"userName": "admin-user", "password": "admin-password"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    assert response.json()["mirror"] == {
+        "profile": "admin",
+        "role": "admin",
+        "redirect": "/background/course-management/school-curriculum",
+    }
+    login_auth_tree = json.loads(response.json()["content"]["authTree"])
+    login_permissions = json.dumps(login_auth_tree, ensure_ascii=False)
+    assert "school-user-list" in login_permissions
+    assert "schoolSys" in login_permissions
+    assert "orderpay" not in login_permissions
+    assert "HttpOnly" in response.headers["set-cookie"]
+
+
+def test_protected_frontend_routes_require_login_and_enforce_role(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    _store_student_profile(tmp_path)
+    store = MirrorStore(tmp_path)
+    store.store_profile(
+        profile_name="admin",
+        username="admin",
+        password_hash="hash",
+        login_path="/java-api/school/tch/login",
+        token="admin-token",
+        login_content={"token": "admin-token"},
+        fresh_auth={"identity": 1, "userInfo": {}, "schoolInfo": {}, "roleList": []},
+        vuex_state={"user": {"token": "admin-token", "identity": 1}},
+    )
+
+    anonymous = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    anonymous_response = anonymous.get("/school-home-page", follow_redirects=False)
+    assert anonymous_response.status_code in {302, 303, 307}
+    assert anonymous_response.headers["location"].startswith("/login?next=")
+
+    student = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    student.cookies.set("mirror_profile", "student")
+    student_response = student.get("/school-home-page", follow_redirects=False)
+    assert student_response.status_code in {302, 303, 307}
+    assert student_response.headers["location"] == "/code-classroom/myClass"
+
+    teacher = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    teacher.cookies.set("mirror_profile", "teacher")
+    teacher_response = teacher.get(
+        "/background/course-management/school-curriculum",
+        follow_redirects=False,
+    )
+    assert teacher_response.status_code in {302, 303, 307}
+    assert teacher_response.headers["location"] == "/code-classroom/classroom-index"
+
+    admin = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    admin.cookies.set("mirror_profile", "admin")
+    admin_response = admin.get("/code-classroom", follow_redirects=False)
+    assert admin_response.status_code in {302, 303, 307}
+    assert admin_response.headers["location"] == "/background/course-management/school-curriculum"
+
+
+def test_role_specific_api_prefixes_reject_missing_and_mismatched_sessions(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    _store_student_profile(tmp_path)
+    app = create_app(tmp_path, allow_live_proxy=False)
+
+    anonymous = TestClient(app)
+    assert anonymous.get("/java-api/school/tch/freshData").status_code == 401
+
+    student = TestClient(app)
+    student.cookies.set("mirror_profile", "student")
+    assert student.get("/java-api/school/tch/freshData").status_code == 403
+
+    teacher = TestClient(app)
+    teacher.cookies.set("mirror_profile", "teacher")
+    assert teacher.get("/java-api/student/stu/freshData").status_code == 403

@@ -324,6 +324,16 @@ class MirrorStore:
                     remark TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS local_campuses (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    address TEXT NOT NULL DEFAULT '',
+                    phone TEXT NOT NULL DEFAULT '',
+                    state INTEGER NOT NULL DEFAULT 1,
+                    created_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+
                 CREATE TABLE IF NOT EXISTS local_students (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     campus_id INTEGER NOT NULL,
@@ -1770,6 +1780,99 @@ class MirrorStore:
                 campuses_by_id[campus_id] = entry
 
         return sorted(campuses_by_id.values(), key=lambda campus: int(campus.get("dept_id") or campus.get("id") or 0))
+
+    @staticmethod
+    def _local_campus_row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
+        return {
+            "id": int(row["id"]),
+            "name": str(row["name"]),
+            "address": str(row["address"] or ""),
+            "phone": str(row["phone"] or ""),
+            "state": int(row["state"]),
+        }
+
+    def list_local_campuses(self) -> list[dict[str, Any]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, name, address, phone, state FROM local_campuses ORDER BY id"
+            ).fetchall()
+        return [self._local_campus_row_to_dict(row) for row in rows]
+
+    def get_local_campus(self, campus_id: int | str | None) -> dict[str, Any] | None:
+        normalized_id = _coerce_int(campus_id)
+        if normalized_id is None:
+            return None
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT id, name, address, phone, state FROM local_campuses WHERE id = ?",
+                (normalized_id,),
+            ).fetchone()
+        return self._local_campus_row_to_dict(row) if row is not None else None
+
+    def upsert_local_campus(self, payload: dict[str, Any]) -> dict[str, Any]:
+        campus_id = _coerce_int(payload.get("id") or payload.get("campusId") or payload.get("eduCampusId"))
+        current = self.get_local_campus(campus_id)
+        if campus_id is None:
+            with self._connect() as connection:
+                row = connection.execute("SELECT COALESCE(MAX(id), 1000) AS max_id FROM local_campuses").fetchone()
+            campus_id = int(row["max_id"] or 1000) + 1
+        name = str(
+            payload.get("name")
+            or payload.get("campusName")
+            or payload.get("dept_name")
+            or (current or {}).get("name")
+            or ""
+        ).strip()
+        if not name:
+            raise ValueError("Campus name is required")
+        address = str(payload.get("address", (current or {}).get("address") or "") or "").strip()
+        phone = str(payload.get("phone", (current or {}).get("phone") or "") or "").strip()
+        state_value = payload.get("state")
+        state = int(bool((current or {}).get("state", 1))) if state_value is None else int(bool(_coerce_int(state_value)))
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO local_campuses (id, name, address, phone, state, created_time, updated_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT(id) DO UPDATE SET
+                    name = excluded.name,
+                    address = excluded.address,
+                    phone = excluded.phone,
+                    state = excluded.state,
+                    updated_at = CURRENT_TIMESTAMP
+                """,
+                (campus_id, name, address, phone, state),
+            )
+        return self.get_local_campus(campus_id) or {
+            "id": campus_id,
+            "name": name,
+            "address": address,
+            "phone": phone,
+            "state": state,
+        }
+
+    def list_campuses(self) -> list[dict[str, Any]]:
+        campuses: dict[int, dict[str, Any]] = {}
+        for captured in self.list_user_campuses():
+            campus_id = _coerce_int(
+                captured.get("id") or captured.get("dept_id") or captured.get("eduCampusId")
+            )
+            if campus_id is None:
+                continue
+            row = self._localize_persisted_value(captured)
+            row.setdefault("id", campus_id)
+            row.setdefault("name", row.get("campusName") or row.get("dept_name") or f"Campus {campus_id}")
+            row.setdefault("address", "")
+            row.setdefault("phone", "")
+            row.setdefault("state", 1)
+            campuses[campus_id] = row
+        for local in self.list_local_campuses():
+            base = campuses.get(local["id"], {})
+            base.update(local)
+            base["campusName"] = local["name"]
+            base["dept_name"] = local["name"]
+            campuses[local["id"]] = base
+        return [campuses[campus_id] for campus_id in sorted(campuses)]
 
     def list_teaching_plans(self) -> list[dict[str, Any]]:
         return self._list_merged_teaching_plans()

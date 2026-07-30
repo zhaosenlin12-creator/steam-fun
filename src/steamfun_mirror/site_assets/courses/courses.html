@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <base href="/_site/courses/">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https: data:; style-src 'self' 'unsafe-inline' https:; img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self' https:; media-src 'self' https: data:; object-src 'none'; base-uri 'self'; form-action 'self';">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -23,18 +24,18 @@
 <body>
   <!-- Navbar -->
   <nav class="courses-nav">
-    <a href="/" class="nav-logo">
+    <a href="/#hero" class="nav-logo">
       <img src="images/logo11.png" alt="乐启享">
       <div class="nav-logo-text">
-        <span class="text-blue">乐创未来</span><br>
-        <span class="text-orange">启享编程</span>
+        <span class="text-blue">乐启享</span><br>
+        <span class="text-orange">机器人编程</span>
       </div>
     </a>
     <button class="menu-toggle" onclick="toggleMenu()">
       <i class="fas fa-bars"></i>
     </button>
     <ul class="nav-links" id="navLinks">
-      <li><a href="/">首页</a></li>
+      <li><a href="/#hero">首页</a></li>
       <li><a href="#courses-grid" class="active">课程体系</a></li>
       <li><a href="#routes">学习路线</a></li>
       <li><a href="#booking">预约体验</a></li>
@@ -179,16 +180,19 @@
         <p>让孩子亲身体验编程的乐趣</p>
       </div>
       <div class="booking-card">
-        <h3><i class="fas fa-gift" style="color: var(--secondary); margin-right: 6px;"></i>现在预约，赠送一节体验课</h3>
-        <p>填写信息后，我们将在24小时内与您联系安排体验</p>
-        <form class="booking-form" id="courseBookingForm">
-          <input type="text" id="bookingName" placeholder="您的姓名" required>
-          <input type="tel" id="bookingPhone" placeholder="联系电话" required>
-          <textarea id="bookingMessage" placeholder="留言内容（如：孩子年龄、感兴趣的课程等）"></textarea>
-          <button type="submit" class="booking-submit">
-            <i class="fas fa-paper-plane" style="margin-right: 6px;"></i>提交预约
-          </button>
-        </form>
+        <div class="booking-contact-copy">
+          <span class="booking-eyebrow">加入乐启享</span>
+          <h3><i class="fas fa-qrcode" style="color: var(--secondary); margin-right: 6px;"></i>扫码添加刘老师微信</h3>
+          <p>预约体验课、咨询课程安排，可直接扫码或拨打电话。</p>
+          <div class="booking-contact-list">
+            <a href="tel:18164173640"><i class="fas fa-phone-alt"></i> 电话 / 微信：18164173640</a>
+            <a target="_blank" rel="noreferrer" href="https://uri.amap.com/marker?markers=110.708018,30.58667,%E4%B9%90%E5%90%AF%E4%BA%AB%E6%9C%BA%E5%99%A8%E4%BA%BA"><i class="fas fa-map-marker-alt"></i> 导航：宜昌市猇亭区金岭路59-1号</a>
+          </div>
+        </div>
+        <figure class="booking-qr">
+          <img src="/_site/homepage/media/qr-liuteacher.png" alt="刘老师微信二维码">
+          <figcaption>微信同手机号</figcaption>
+        </figure>
       </div>
     </div>
   </section>
@@ -196,9 +200,9 @@
   <!-- Footer -->
   <footer class="courses-footer">
     <div class="footer-links-row">
-      <a href="/">首页</a>
+      <a href="/#hero">首页</a>
       <a href="/#about">关于我们</a>
-      <a href="courses.html">课程体系</a>
+      <a href="/_site/courses/">课程体系</a>
       <a href="/#collection">精彩活动</a>
       <a href="/#signal">联系我们</a>
     </div>

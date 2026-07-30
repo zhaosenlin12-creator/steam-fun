@@ -7,15 +7,15 @@ def test_get_login_flow_returns_teacher_role_tab_and_fallback() -> None:
     flow = get_login_flow("teacher")
 
     assert flow.path == "/login"
-    assert flow.role_tab_selector == "#tab-manager"
-    assert flow.fallback_path == "/school-home-page/class-management1/students-management1"
+    assert flow.role_tab_selector == '.tab[data-target="teacher"]'
+    assert flow.fallback_path == "/code-classroom/classroom-index"
 
 
 def test_get_login_flow_returns_student_role_tab_and_fallback() -> None:
     flow = get_login_flow("student")
 
     assert flow.path == "/login"
-    assert flow.role_tab_selector == "#tab-student"
+    assert flow.role_tab_selector == '.tab[data-target="student"]'
     assert flow.fallback_path == "/code-classroom/myClass"
 
 
@@ -23,7 +23,7 @@ def test_get_login_flow_returns_admin_background_entry() -> None:
     flow = get_login_flow("admin")
 
     assert flow.path == "/background/login"
-    assert flow.role_tab_selector is None
+    assert flow.role_tab_selector == '.tab[data-target="teacher"]'
     assert flow.fallback_path == "/background/course-management/school-curriculum"
 
 
