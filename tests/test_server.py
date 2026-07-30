@@ -258,6 +258,93 @@ def test_role_capabilities_define_canonical_workspaces_and_route_scope() -> None
     assert server_module._allowed_frontend_roles("/school-home-page/school-user-list") == frozenset({"admin"})
     assert server_module._allowed_frontend_roles("/workspace/admin") is None
     assert server_module._allowed_frontend_roles("/workspace/teacher") is None
+
+
+def _login_token(response_json: dict) -> str:
+    content = response_json["content"]
+    if isinstance(content, str):
+        return content
+    return content["token"]
+
+
+def test_fresh_local_runtime_bootstraps_three_roles_and_linked_class_data(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    admin_login = client.post(
+        "/java-api/school/tch/login",
+        json={"userName": "18164173640", "password": "123456", "captchaVerifyParam": ""},
+    )
+    teacher_login = client.post(
+        "/java-api/school/tch/login",
+        json={"userName": "zhaosenlin", "password": "123456", "captchaVerifyParam": ""},
+    )
+    student_login = client.post(
+        "/java-api/student/stu/login",
+        json={"userName": "lbschenmuran", "password": "123456", "captchaVerifyParam": ""},
+    )
+
+    assert admin_login.status_code == 200
+    assert admin_login.json()["success"] is True
+    assert admin_login.json()["mirror"]["role"] == "admin"
+    assert teacher_login.status_code == 200
+    assert teacher_login.json()["success"] is True
+    assert teacher_login.json()["mirror"]["role"] == "teacher"
+    assert student_login.status_code == 200
+    assert student_login.json()["success"] is True
+    assert student_login.json()["mirror"]["role"] == "student"
+
+    teacher_headers = {"Authorization": f"Bearer {_login_token(teacher_login.json())}"}
+    student_headers = {"Authorization": f"Bearer {_login_token(student_login.json())}"}
+
+    class_response = client.get(
+        "/api/get/classes/list?t=1&page_no=1&page_size=20",
+        headers=teacher_headers,
+    )
+
+    assert class_response.status_code == 200
+    class_rows = class_response.json()["content"]["class_list"]
+    assert class_rows
+    first_class = class_rows[0]
+    assert first_class["name"]
+    assert first_class["student_total_num"] >= 1
+    assert first_class["tchPlanNum"] >= 2
+    class_id = first_class["id"]
+
+    class_student_response = client.get(
+        f"/api/get/class/student/list?t=2&classId={class_id}&realname=&page_no=1&page_size=20",
+        headers=teacher_headers,
+    )
+    plan_response = client.get(
+        f"/api/get/teaching/plan/by/class/id?t=3&classes_id={class_id}&title=&sign_state=",
+        headers=teacher_headers,
+    )
+    student_class_response = client.get(
+        "/api/stu/get/stu/class/list?t=4&page_no=1&page_size=20",
+        headers=student_headers,
+    )
+    student_timetable_response = client.get(
+        "/api/stu/get/stu/timetable/new?t=5&page_no=1&page_size=20",
+        headers=student_headers,
+    )
+
+    assert class_student_response.status_code == 200
+    student_rows = class_student_response.json()["content"]["studentList"]
+    assert len(student_rows) >= 1
+    assert any(row["studentInfo"]["name"] == "lbschenmuran" for row in student_rows)
+
+    assert plan_response.status_code == 200
+    plan_rows = plan_response.json()["content"]["teaching_plan_list"]
+    assert len(plan_rows) >= 2
+    assert all(row["curriculum_class_id"] == class_id for row in plan_rows[:2])
+
+    assert student_class_response.status_code == 200
+    student_class_rows = student_class_response.json()["content"]["classlist"]
+    assert any(row["id"] == class_id for row in student_class_rows)
+
+    assert student_timetable_response.status_code == 200
+    timetable_rows = student_timetable_response.json()["content"]["tchPlanList"]
+    assert len([row for row in timetable_rows if row["curriculum_class_id"] == class_id]) >= 2
     assert server_module._allowed_frontend_roles("/school-home-page/orderpay") == frozenset()
 
 

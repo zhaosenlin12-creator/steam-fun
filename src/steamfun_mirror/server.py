@@ -13731,8 +13731,257 @@ def _postprocess_json_payload(store: MirrorStore, request: Request, payload: dic
     return payload
 
 
+def _default_profile_state(
+    *,
+    username: str,
+    token: str,
+    role: str,
+    user_info: dict[str, Any],
+    school_info: dict[str, Any],
+    role_list: list[Any] | None = None,
+) -> dict[str, Any]:
+    permissions = permission_tree_for_role(role)
+    return {
+        "user": {
+            "username": user_info.get("realName") or username,
+            "token": token,
+            "adminUserName": username if role == "admin" else "",
+            "adminUserId": user_info.get("id") if role == "admin" else None,
+            "adminToken": token if role == "admin" else "",
+            "isSuperAdmin": role == "admin",
+            "is_principal": role == "admin",
+            "roleList": role_list or [],
+            "selected_schools": [],
+            "permisionList": permissions,
+            "adminpermisionList": permissions if role == "admin" else [],
+            "userInfo": user_info,
+            "schoolInfo": school_info,
+            "identity": 1,
+            "eduTchList": [],
+            "isAdmin": role == "admin",
+            "isTeacher": role == "teacher",
+            "isStudent": False,
+        }
+    }
+
+
+def _store_default_staff_profile(
+    store: MirrorStore,
+    *,
+    profile_name: str,
+    username: str,
+    token: str,
+    user_info: dict[str, Any],
+    school_info: dict[str, Any],
+    role_list: list[Any] | None = None,
+) -> None:
+    role = "admin" if profile_name == "admin" else "teacher"
+    store.store_profile(
+        profile_name=profile_name,
+        username=username,
+        password_hash=_hash_login_password("123456"),
+        login_path=TEACHER_LOGIN_PATH,
+        token=token,
+        login_content={"authTree": json.dumps({"children": []}, ensure_ascii=False), "token": token},
+        fresh_auth={
+            "identity": 1,
+            "userInfo": user_info,
+            "schoolInfo": school_info,
+            "roleList": role_list or [],
+        },
+        vuex_state=_default_profile_state(
+            username=username,
+            token=token,
+            role=role,
+            user_info=user_info,
+            school_info=school_info,
+            role_list=role_list,
+        ),
+    )
+
+
+def _ensure_default_local_runtime_data(store: MirrorStore) -> None:
+    """Seed a brand-new local runtime with usable role and class data."""
+    if store.list_profiles():
+        return
+
+    campus_id = 851
+    school_info = {
+        "id": 834,
+        "eduCampusId": campus_id,
+        "name": "乐启享机器人",
+        "domain": "lqx",
+        "offTime": "2099-12-31 23:59:59",
+        "maxTeacherNum": 20,
+        "maxStudentNum": 10000,
+        "stuRemainTime": 99999,
+        "authorize": False,
+        "isTry": False,
+        "questionBankPermission": True,
+        "ojPermission": True,
+        "pointAuth": True,
+        "prepareContentAuth": True,
+        "stuZoneAuth": True,
+        "typingPlanetAuth": True,
+        "themeColor": "#1778FF",
+    }
+    store.upsert_local_campus(
+        {
+            "id": campus_id,
+            "name": "乐启享机器人中心校区",
+            "address": "宜昌市猇亭区金岭路9-1号",
+            "phone": "18164173640",
+            "state": 1,
+        }
+    )
+    _store_default_staff_profile(
+        store,
+        profile_name="admin",
+        username="18164173640",
+        token="local-admin-token",
+        role_list=[5],
+        school_info=school_info,
+        user_info={
+            "id": 3394,
+            "userId": 3394,
+            "name": "18164173640",
+            "realName": "超级管理员",
+            "phoneNum": "18164173640",
+            "principal": True,
+            "state": "在职",
+            "eduCampusId": campus_id,
+        },
+    )
+    _store_default_staff_profile(
+        store,
+        profile_name="teacher",
+        username="zhaosenlin",
+        token="local-teacher-token",
+        role_list=[1],
+        school_info=school_info,
+        user_info={
+            "id": 12385,
+            "userId": 12385,
+            "name": "zhaosenlin",
+            "realName": "森林老师",
+            "phoneNum": "18164173640",
+            "principal": False,
+            "state": "在职",
+            "eduCampusId": campus_id,
+        },
+    )
+
+    student = store.create_local_student(
+        {
+            "eduCampusId": campus_id,
+            "headimgUrl": "/_external/wugecdn.steam.fun/resources/static/homepage/nanxueshengtouxiang-min.png",
+            "normalState": "1",
+            "name": "lbschenmuran",
+            "realName": "陈沐然",
+            "sex": "M",
+            "parentAPhoneNum": "18164173640",
+            "schoolName": "乐启享机器人",
+            "grade": "小学",
+            "leader": "森林老师",
+            "remark": "默认本地运行学员",
+            "studyDate": "2026-07-01",
+        }
+    )
+    student_profile = store.upsert_student_login_profile(
+        student,
+        password_hash=_hash_login_password("123456"),
+        token="local-student-token",
+        login_path=STUDENT_LOGIN_PATH,
+    )
+    store.store_profile(
+        profile_name="student",
+        username="lbschenmuran",
+        password_hash=_hash_login_password("123456"),
+        login_path=STUDENT_LOGIN_PATH,
+        token="local-student-token",
+        login_content=student_profile["login_content"],
+        fresh_auth=student_profile["fresh_auth"],
+        vuex_state=student_profile["vuex_state"],
+    )
+
+    class_id = 143567
+    store.upsert_local_class(
+        {
+            "id": class_id,
+            "className": "乐启享 AI 创造周六班",
+            "campusId": campus_id,
+            "lecturer_id": 12385,
+            "lecturer_name": "森林老师",
+            "curriculum_class_type": 1,
+            "teaching_type": 1,
+            "week_json": [6],
+            "week_str": "周六",
+            "time_str": "09:00-10:30",
+            "subjectIdArr": [1],
+            "curriculumIdArr": [501],
+            "end_class_state": 0,
+        }
+    )
+    student_id = int(student["id"])
+    store.upsert_local_class_student_relation(
+        class_id=class_id,
+        student_user_id=student_id,
+        in_class_date="2026-07-01",
+    )
+
+    for index, payload in enumerate(
+        (
+            {
+                "id": 5182933,
+                "curriculum_meterial_id": 7001,
+                "class_date": "2026-07-04",
+                "start_class_date": "2026-07-04 09:00:00",
+                "end_class_date": "2026-07-04 10:30:00",
+                "sign_state": 1,
+                "sign_state_new": 1,
+                "sign_date": "2026-07-04 10:30:00",
+                "custom_lesson_title": "AI 创造启蒙第一课",
+            },
+            {
+                "id": 5182934,
+                "curriculum_meterial_id": 7002,
+                "class_date": "2026-07-11",
+                "start_class_date": "2026-07-11 09:00:00",
+                "end_class_date": "2026-07-11 10:30:00",
+                "sign_state": 0,
+                "sign_state_new": 0,
+                "sign_date": "",
+                "custom_lesson_title": "机器人结构与程序控制",
+            },
+        ),
+        start=1,
+    ):
+        plan = store.upsert_local_teaching_plan(
+            {
+                **payload,
+                "curriculum_class_id": class_id,
+                "educational_institution_campus_id": campus_id,
+                "lecturer_id": 12385,
+                "lecturer_name": "森林老师",
+                "subject_id": 1,
+                "curriculum_id": 501,
+                "sort_num": index,
+                "cost_lesson_hour": 1,
+            }
+        )
+        if plan is not None:
+            store.upsert_local_teaching_plan_student_relation(
+                teaching_plan_id=plan["id"],
+                student_user_id=student_id,
+                sign_state=payload["sign_state"],
+                sign_date=payload["sign_date"],
+                cost_lesson_hour=1,
+            )
+
+
 def create_app(root: Path, *, allow_live_proxy: bool = True) -> FastAPI:
     store = MirrorStore(root)
+    _ensure_default_local_runtime_data(store)
     app = FastAPI(title="steam.fun local mirror")
 
     @app.get("/__mirror__/health")
