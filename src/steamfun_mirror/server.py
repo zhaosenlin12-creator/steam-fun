@@ -1007,6 +1007,10 @@ LOCAL_TEACHER_FALLBACK_PATHS = {
     "/api/admin/add/or/update/auth/user",
     "/api/admin/delete/auth/user",
     "/api/admin/auth/user/update/password",
+    "/api/get/educational_institution_campus/list",
+    "/api/get/campus/arr/subject/list",
+    "/api/get/campus/user/list",
+    "/api/get/user/campus/list",
     "/api/get/homepage",
     "/api/get/teaching/plan/list",
     "/api/get/campus/subject/list",
@@ -1019,6 +1023,8 @@ LOCAL_TEACHER_FALLBACK_PATHS = {
     "/api/get/school/file/list",
     "/api/get/school/board/main/data",
     "/api/tch/get/tch/curriculum",
+    "/api/tch/get/tch/subject/auth",
+    "/api/tch/getTchIndexClassListWithTchPlanInfo",
     "/api/tch/get/teaching/plan/list",
     "/api/tch/get/stu/tch/plan/list/by/tch/id",
     "/api/tch/getTchPlanListForEvaluate",
@@ -1064,6 +1070,8 @@ LOCAL_TEACHER_FALLBACK_PATHS = {
     "/java-api/school/lessonHourRecord/selectLessonCost",
     "/java-api/school/orderPayRecord/selectOrderPayDetail",
     "/java-api/school/tch/common/selectByEduCampusId",
+    "/java-api/school/tch/verifyPhoneState",
+    "/java-api/school/tch/checkPwd",
     "/java-api/school/community/work/queryStuWorkList",
     "/java-api/school/tch/employeeSetting/resetWeMiniOpenid",
     "/java-api/school//tch/employeeSetting/resetWeMiniOpenid",
@@ -1105,9 +1113,15 @@ LOCAL_TEACHER_PREFER_LOCAL_FALLBACK_PATHS = {
     "/api/admin/add/or/update/auth/user",
     "/api/admin/delete/auth/user",
     "/api/admin/auth/user/update/password",
+    "/api/get/educational_institution_campus/list",
+    "/api/get/campus/arr/subject/list",
+    "/api/get/campus/user/list",
     "/api/get/school/board/main/data",
+    "/api/get/user/campus/list",
     "/api/get/teaching/plan/list",
     "/api/tch/get/teaching/plan/list",
+    "/api/tch/get/tch/subject/auth",
+    "/api/tch/getTchIndexClassListWithTchPlanInfo",
     "/api/tch/get/stu/tch/plan/list/by/tch/id",
     "/api/get/class/student/list",
     "/api/get/tch/lesson/work/list",
@@ -1121,6 +1135,8 @@ LOCAL_TEACHER_PREFER_LOCAL_FALLBACK_PATHS = {
     "/java-api/school/tch/employeeSetting/resetWeMiniOpenid",
     "/java-api/school//tch/employeeSetting/resetWeMiniOpenid",
     "/java-api/school/tch/employeeSetting/selectEmployList",
+    "/java-api/school/tch/verifyPhoneState",
+    "/java-api/school/tch/checkPwd",
     "/java-api/school/edu/campus/selectEduCampusTchList",
     "/api/get/school/right/info",
     "/java-api/exam/sch/testExamStu/getPracticeRecords",
@@ -1157,11 +1173,16 @@ LOCAL_STUDENT_FALLBACK_PATHS = {
     "/api/stu/get/stu/work/subject",
     "/api/stu/get/tch/work/list",
     "/api/stu/get/stu/class/list",
+    "/api/get/user/campus/list",
+    "/api/tch/get/tch/subject/auth",
+    "/api/tch/getTchIndexClassListWithTchPlanInfo",
     "/api/tch/class/get/classlist",
     "/api/stu/get/stu/tch/plan/list",
     "/api/stu/get/stu/timetable",
     "/api/stu/get/stu/timetable/new",
     "/api/stu/getStuTimetableNewWithOutPageInfo",
+    "/java-api/student/stu/checkPwd",
+    "/java-api/student/stu/getStuPwdRemind",
 }
 LOCAL_STUDENT_PREFER_LOCAL_FALLBACK_PATHS = set(LOCAL_STUDENT_FALLBACK_PATHS)
 LOCAL_STUDENT_PREFER_LOCAL_FALLBACK_PATHS.update(
@@ -4924,14 +4945,13 @@ def _build_route_bootstrap(
         )
         if teacher_auth_bootstrap:
             scripts.append(teacher_auth_bootstrap)
-        if _normalize_route_path(route_key).startswith("/school-home-page"):
-            teacher_homepage_session_bootstrap = _build_teacher_homepage_session_bootstrap(
-                store,
-                request,
-                bootstrap_profile_name,
-            )
-            if teacher_homepage_session_bootstrap:
-                scripts.append(teacher_homepage_session_bootstrap)
+        teacher_homepage_session_bootstrap = _build_teacher_homepage_session_bootstrap(
+            store,
+            request,
+            bootstrap_profile_name,
+        )
+        if teacher_homepage_session_bootstrap:
+            scripts.append(teacher_homepage_session_bootstrap)
         if _should_bootstrap_teacher_context(route_key):
             teacher_session_bootstrap = _build_teacher_session_bootstrap(store, request, bootstrap_profile_name)
             if teacher_session_bootstrap:
@@ -10599,6 +10619,63 @@ def _build_user_campus_rows(store: MirrorStore, profile_name: str = "teacher") -
     ]
 
 
+def _build_classroom_index_content(store: MirrorStore, request: Request) -> dict[str, Any]:
+    resolved_profile = _resolve_profile(store, request)
+    profile_name = resolved_profile["profile_name"] if resolved_profile else _resolve_profile_name(store, request)
+    profile_role = _profile_role(profile_name, resolved_profile)
+    if profile_role == "student":
+        class_rows, user_subject = _build_student_class_rows(store, request)
+    else:
+        class_rows, user_subject = _build_teacher_class_rows(store, request)
+
+    plan_rows = _build_teacher_teaching_plan_rows(store, request)
+    plans_by_class: dict[int, list[dict[str, Any]]] = {}
+    for plan in plan_rows:
+        if not isinstance(plan, dict):
+            continue
+        class_info = plan.get("classInfo") if isinstance(plan.get("classInfo"), dict) else {}
+        class_id = _coerce_int(class_info.get("id") or plan.get("curriculum_class_id") or plan.get("classId"))
+        if class_id is None:
+            continue
+        plans_by_class.setdefault(class_id, []).append(_json_deep_copy(plan))
+
+    page_limit = _coerce_int(_first_query_value(request, "pageLimit") or _first_query_value(request, "page_size")) or 20
+    page_rows: list[dict[str, Any]] = []
+    for row in class_rows[:page_limit]:
+        normalized = _json_deep_copy(row)
+        class_id = _coerce_int(normalized.get("id"))
+        row_plans = plans_by_class.get(class_id or -1, [])
+        normalized["tchPlanList"] = row_plans
+        normalized["teachingPlanList"] = row_plans
+        normalized["teaching_plan_list"] = row_plans
+        normalized["tchPlanInfoList"] = row_plans
+        if row_plans:
+            normalized["recentTchPlanInfo"] = row_plans[0]
+            normalized["nextTchPlanInfo"] = row_plans[-1]
+        page_rows.append(normalized)
+
+    visible_plan_rows = [
+        plan
+        for row in page_rows
+        for plan in (row.get("tchPlanList") or [])
+        if isinstance(plan, dict)
+    ]
+    return {
+        "classList": page_rows,
+        "classlist": page_rows,
+        "tchClassList": page_rows,
+        "classListWithTchPlanInfo": page_rows,
+        "list": page_rows,
+        "rows": page_rows,
+        "userSubject": user_subject,
+        "subjectList": user_subject,
+        "tchPlanList": visible_plan_rows,
+        "teachingPlanList": visible_plan_rows,
+        "total": len(class_rows),
+        "pageLimit": page_limit,
+    }
+
+
 def _teacher_notice_rows(store: MirrorStore) -> list[dict[str, Any]]:
     notice_rows: list[dict[str, Any]] = []
     seen_ids: set[str] = set()
@@ -11328,6 +11405,119 @@ def _build_local_api_fallback(store: MirrorStore, request: Request, request_body
             "headers": {"content-type": "application/json; charset=utf-8"},
             "body": json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         }
+
+    if path == "/api/get/user/campus/list":
+        resolved_profile = _resolve_profile(store, request)
+        profile_name = (
+            resolved_profile["profile_name"]
+            if resolved_profile is not None and resolved_profile.get("profile_name")
+            else _resolve_profile_name(store, request)
+            or "teacher"
+        )
+        rows = _build_user_campus_rows(store, profile_name)
+        return _local_json_record(
+            _success_payload(
+                {
+                    "campusList": rows,
+                    "userCampusList": rows,
+                    "userDeptList": rows,
+                    "campus_list": rows,
+                    "list": rows,
+                    "rows": rows,
+                    "total": len(rows),
+                }
+            )
+        )
+
+    if path == "/api/get/educational_institution_campus/list":
+        resolved_profile = _resolve_profile(store, request)
+        profile_name = (
+            resolved_profile["profile_name"]
+            if resolved_profile is not None and resolved_profile.get("profile_name")
+            else _resolve_profile_name(store, request)
+            or "teacher"
+        )
+        rows = _build_user_campus_rows(store, profile_name)
+        return _local_json_record(
+            _success_payload(
+                {
+                    "campusList": rows,
+                    "educationalInstitutionCampusList": rows,
+                    "educational_institution_campus_list": rows,
+                    "userCampusList": rows,
+                    "userDeptList": rows,
+                    "list": rows,
+                    "rows": rows,
+                    "total": len(rows),
+                }
+            )
+        )
+
+    if path == "/api/get/campus/arr/subject/list":
+        subjects = _teacher_subject_catalog(store)
+        return _local_json_record(
+            _success_payload(
+                {
+                    "campusSubjectList": subjects,
+                    "subjectList": subjects,
+                    "schoolSubjectList": subjects,
+                    "userSubject": subjects,
+                    "list": subjects,
+                    "rows": subjects,
+                    "total": len(subjects),
+                }
+            )
+        )
+
+    if path == "/api/get/campus/user/list":
+        campus_id = _first_query_value(request, "campusId")
+        rows = [
+            _build_local_student_entry(student, store)
+            for student in store.list_local_students(campus_id)
+            if not _student_overlay_is_hidden(store.get_student_overlay(student["id"]))
+        ]
+        return _local_json_record(
+            _success_payload(
+                {
+                    "campusUserList": rows,
+                    "userList": rows,
+                    "studentList": rows,
+                    "list": rows,
+                    "rows": rows,
+                    "total": len(rows),
+                    "page_no": _page_window(request)[0],
+                    "page_size": _page_window(request)[1],
+                }
+            )
+        )
+
+    if path == "/java-api/school/tch/verifyPhoneState":
+        return _local_json_record(_success_payload(0))
+
+    if path == "/java-api/school/tch/checkPwd":
+        return _local_json_record(_success_payload(False))
+
+    if path == "/api/tch/get/tch/subject/auth":
+        resolved_profile = _resolve_profile(store, request)
+        profile_name = resolved_profile["profile_name"] if resolved_profile else _resolve_profile_name(store, request)
+        profile_role = _profile_role(profile_name, resolved_profile)
+        subjects = _student_subject_rows(store) if profile_role == "student" else _teacher_subject_catalog(store)
+        return _local_json_record(
+            _success_payload(
+                {
+                    "subjectList": subjects,
+                    "userSubject": subjects,
+                    "tchSubjectList": subjects,
+                    "stuSubjectList": subjects,
+                    "list": subjects,
+                    "rows": subjects,
+                    "total": len(subjects),
+                }
+            )
+        )
+
+    if path == "/api/tch/getTchIndexClassListWithTchPlanInfo":
+        return _local_json_record(_success_payload(_build_classroom_index_content(store, request)))
 
     if path == "/java-api/auth/sch/eduRole/queryListNoCheck":
         return _local_json_record(_success_payload(_json_deep_copy(_local_staff_role_rows())))
@@ -13105,10 +13295,10 @@ def _build_local_api_fallback(store: MirrorStore, request: Request, request_body
         return _local_json_record(_success_payload({"is_update": True}))
 
     if path == "/java-api/student/stu/checkPwd":
-        return _local_json_record(_success_payload({"needUpdatePwd": False, "isNeedUpdatePwd": False}))
+        return _local_json_record(_success_payload(False))
 
     if path == "/java-api/student/stu/getStuPwdRemind":
-        return _local_json_record(_success_payload({"remind": False, "isRemind": False, "showRemind": False}))
+        return _local_json_record(_success_payload(False))
 
     if path == "/java-api/school/stu/setEndDate":
         submitted = _load_request_payload(request_body)
@@ -13903,6 +14093,7 @@ def _ensure_default_local_runtime_data(store: MirrorStore) -> None:
         fresh_auth=student_profile["fresh_auth"],
         vuex_state=student_profile["vuex_state"],
     )
+    store.delete_profile(str(student_profile.get("profile_name") or ""))
 
     class_id = 143567
     store.upsert_local_class(
@@ -14633,13 +14824,28 @@ def _local_login_response(store: MirrorStore, payload: dict[str, Any], *, expect
     submitted_password = str(payload.get("password") or "")
     profile = store.get_profile_by_username(username)
 
+    if expected_login_path == STUDENT_LOGIN_PATH:
+        canonical_student_profile = store.get_profile("student")
+        if (
+            canonical_student_profile is not None
+            and canonical_student_profile.get("login_path") == STUDENT_LOGIN_PATH
+            and str(canonical_student_profile.get("username") or "").strip() == str(username or "").strip()
+        ):
+            profile = canonical_student_profile
+
     # Fallback: if no profile row exists for this username but a local_students
     # row matches (e.g. student created via /java-api/school/stu/create after
     # the seeded profiles snapshot), auto-provision a profile on the fly so the
     # student can sign in immediately.
     if expected_login_path == STUDENT_LOGIN_PATH:
         student_row = store.find_local_student_by_username(username or "")
-        if student_row is not None:
+        existing_profile_name = str((profile or {}).get("profile_name") or "").strip()
+        has_canonical_student_profile = (
+            profile is not None
+            and profile.get("login_path") == STUDENT_LOGIN_PATH
+            and not existing_profile_name.startswith("local_student_")
+        )
+        if student_row is not None and not has_canonical_student_profile:
             local_profile_name = f"local_student_{int(student_row.get('id') or 0)}"
             existing_local_profile = store.get_profile(local_profile_name) or profile
             password_hash = str((existing_local_profile or {}).get("password_hash") or "").strip()
@@ -14823,9 +15029,13 @@ def _local_fresh_auth_response(store: MirrorStore, request: Request) -> Response
     fresh_auth = (profile or {}).get("fresh_auth") or {}
     if path == "/java-api/student/stu/freshData":
         # Build the student freshData payload from the profile data.
+        homepage_content = _build_homepage_content(store, request)
         stu_user = _student_user_info_from_profile(profile)
         stu_base_info = stu_user.get("stuUserInfo") if isinstance(stu_user.get("stuUserInfo"), dict) else {}
-        school_info = (fresh_auth.get("schoolInfo") if isinstance(fresh_auth, dict) else None) or {}
+        school_info = _merge_dict_defaults(
+            (fresh_auth.get("schoolInfo") if isinstance(fresh_auth, dict) else None) or {},
+            homepage_content.get("schoolInfo") if isinstance(homepage_content.get("schoolInfo"), dict) else {},
+        )
         role_list = (fresh_auth.get("roleList") if isinstance(fresh_auth, dict) else None) or []
         content = {
             "identity": 2,
@@ -14836,10 +15046,14 @@ def _local_fresh_auth_response(store: MirrorStore, request: Request) -> Response
             "stuUserInfo": stu_user,
             "stuBaseInfo": stu_base_info,
             "schoolInfo": school_info,
+            "homepageData": _json_deep_copy(homepage_content.get("homepageData") or {}),
+            "homepage": _json_deep_copy(homepage_content.get("homepage") or {}),
+            "imgUrl": homepage_content.get("imgUrl"),
             "roleList": role_list,
         }
         return JSONResponse({"success": True, "content": content, "error": {"message": "", "code": ""}}, status_code=200)
     if path == "/java-api/school/tch/freshData":
+        homepage_content = _build_homepage_content(store, request)
         fresh_auth_user = fresh_auth.get("userInfo") if isinstance(fresh_auth.get("userInfo"), dict) else {}
         tch_user = (
             fresh_auth_user
@@ -14847,12 +15061,18 @@ def _local_fresh_auth_response(store: MirrorStore, request: Request) -> Response
             or login_content.get("tchUserInfo")
             or {}
         )
-        school_info = (fresh_auth.get("schoolInfo") if isinstance(fresh_auth, dict) else None) or {}
+        school_info = _merge_dict_defaults(
+            (fresh_auth.get("schoolInfo") if isinstance(fresh_auth, dict) else None) or {},
+            homepage_content.get("schoolInfo") if isinstance(homepage_content.get("schoolInfo"), dict) else {},
+        )
         role_list = (fresh_auth.get("roleList") if isinstance(fresh_auth, dict) else None) or [1, 2]
         content = {
             "identity": 1,
             "userInfo": tch_user,
             "schoolInfo": school_info,
+            "homepageData": _json_deep_copy(homepage_content.get("homepageData") or {}),
+            "homepage": _json_deep_copy(homepage_content.get("homepage") or {}),
+            "imgUrl": homepage_content.get("imgUrl"),
             "roleList": role_list,
         }
         return JSONResponse({"success": True, "content": content, "error": {"message": "", "code": ""}}, status_code=200)

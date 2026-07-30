@@ -270,6 +270,9 @@ def _login_token(response_json: dict) -> str:
 def test_fresh_local_runtime_bootstraps_three_roles_and_linked_class_data(tmp_path: Path) -> None:
     _write_shell(tmp_path)
     client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+    store = MirrorStore(tmp_path)
+
+    assert [profile["profile_name"] for profile in store.list_profiles()] == ["admin", "student", "teacher"]
 
     admin_login = client.post(
         "/java-api/school/tch/login",
@@ -292,6 +295,7 @@ def test_fresh_local_runtime_bootstraps_three_roles_and_linked_class_data(tmp_pa
     assert teacher_login.json()["mirror"]["role"] == "teacher"
     assert student_login.status_code == 200
     assert student_login.json()["success"] is True
+    assert student_login.json()["mirror"]["profile"] == "student"
     assert student_login.json()["mirror"]["role"] == "student"
 
     teacher_headers = {"Authorization": f"Bearer {_login_token(teacher_login.json())}"}
@@ -346,6 +350,162 @@ def test_fresh_local_runtime_bootstraps_three_roles_and_linked_class_data(tmp_pa
     timetable_rows = student_timetable_response.json()["content"]["tchPlanList"]
     assert len([row for row in timetable_rows if row["curriculum_class_id"] == class_id]) >= 2
     assert server_module._allowed_frontend_roles("/school-home-page/orderpay") == frozenset()
+
+
+def test_default_runtime_serves_spa_bootstrap_apis_without_mirror_misses(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    teacher_login = client.post(
+        "/java-api/school/tch/login",
+        json={"userName": "zhaosenlin", "password": "123456", "captchaVerifyParam": ""},
+    )
+    student_login = client.post(
+        "/java-api/student/stu/login",
+        json={"userName": "lbschenmuran", "password": "123456", "captchaVerifyParam": ""},
+    )
+    assert teacher_login.json()["success"] is True
+    assert student_login.json()["success"] is True
+    teacher_headers = {"Authorization": f"Bearer {_login_token(teacher_login.json())}"}
+    student_headers = {"Authorization": f"Bearer {_login_token(student_login.json())}"}
+
+    campus_response = client.get("/api/get/user/campus/list?t=1", headers=teacher_headers)
+    phone_state_response = client.post("/java-api/school/tch/verifyPhoneState?t=2", headers=teacher_headers, json={})
+    password_state_response = client.post("/java-api/school/tch/checkPwd?t=3", headers=teacher_headers, json={})
+    teacher_subject_response = client.get("/api/tch/get/tch/subject/auth?t=4", headers=teacher_headers)
+    teacher_index_response = client.get(
+        "/api/tch/getTchIndexClassListWithTchPlanInfo?t=5&pageLimit=20",
+        headers=teacher_headers,
+    )
+    student_subject_response = client.get("/api/tch/get/tch/subject/auth?t=6", headers=student_headers)
+    student_index_response = client.get(
+        "/api/tch/getTchIndexClassListWithTchPlanInfo?t=7&pageLimit=20",
+        headers=student_headers,
+    )
+    management_campus_response = client.get(
+        "/api/get/educational_institution_campus/list?t=8",
+        headers=teacher_headers,
+    )
+    management_subject_response = client.get(
+        "/api/get/campus/arr/subject/list?t=9&campusIdArr=[851]",
+        headers=teacher_headers,
+    )
+    campus_user_response = client.get(
+        "/api/get/campus/user/list?t=10&campusId=851",
+        headers=teacher_headers,
+    )
+    student_password_state_response = client.post(
+        "/java-api/student/stu/checkPwd?t=11",
+        headers=student_headers,
+        json={},
+    )
+    student_password_remind_response = client.post(
+        "/java-api/student/stu/getStuPwdRemind?t=12",
+        headers=student_headers,
+        json={},
+    )
+
+    for response in (
+        campus_response,
+        phone_state_response,
+        password_state_response,
+        teacher_subject_response,
+        teacher_index_response,
+        student_subject_response,
+        student_index_response,
+        management_campus_response,
+        management_subject_response,
+        campus_user_response,
+        student_password_state_response,
+        student_password_remind_response,
+    ):
+        assert response.status_code == 200
+        assert response.json()["success"] is True
+
+    campus_content = campus_response.json()["content"]
+    assert campus_content["campusList"][0]["id"] == 851
+    assert campus_content["campusList"][0]["campusName"]
+    assert campus_content["userDeptList"][0]["dept_id"] == 851
+
+    assert phone_state_response.json()["content"] == 0
+    assert password_state_response.json()["content"] is False
+    assert student_password_state_response.json()["content"] is False
+    assert student_password_remind_response.json()["content"] is False
+
+    management_campuses = management_campus_response.json()["content"]["educationalInstitutionCampusList"]
+    assert management_campuses[0]["id"] == 851
+    assert management_campuses[0]["dept_id"] == 851
+
+    management_subjects = management_subject_response.json()["content"]["campusSubjectList"]
+    assert any(subject["name"] == "Jrcode" for subject in management_subjects)
+
+    campus_users = campus_user_response.json()["content"]["campusUserList"]
+    assert any(user["name"] == "lbschenmuran" for user in campus_users)
+
+    teacher_subjects = teacher_subject_response.json()["content"]["subjectList"]
+    assert any(subject["name"] == "Jrcode" for subject in teacher_subjects)
+
+    teacher_classes = teacher_index_response.json()["content"]["classList"]
+    assert any(row["name"] == "乐启享 AI 创造周六班" for row in teacher_classes)
+    assert teacher_index_response.json()["content"]["classList"][0]["tchPlanNum"] >= 2
+
+    student_subjects = student_subject_response.json()["content"]["subjectList"]
+    assert any(subject["name"] == "Jrcode" for subject in student_subjects)
+
+    student_classes = student_index_response.json()["content"]["classList"]
+    assert any(row["name"] == "乐启享 AI 创造周六班" for row in student_classes)
+
+
+def test_student_login_prefers_canonical_profile_over_stale_local_duplicate(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    store = MirrorStore(tmp_path)
+    student = store.create_local_student(
+        {
+            "eduCampusId": 851,
+            "headimgUrl": "/_external/wugecdn.steam.fun/resources/static/homepage/nanxueshengtouxiang-min.png",
+            "normalState": "1",
+            "name": "lbschenmuran",
+            "realName": "陈沐然",
+            "sex": "M",
+            "parentAPhoneNum": "18164173640",
+            "schoolName": "乐启享机器人",
+            "grade": "小学",
+            "leader": "森林老师",
+            "remark": "legacy duplicate",
+            "studyDate": "2026-07-01",
+        }
+    )
+    stale_profile = store.upsert_student_login_profile(
+        student,
+        password_hash=server_module._hash_login_password("123456"),
+        token="stale-local-student-token",
+        login_path=server_module.STUDENT_LOGIN_PATH,
+    )
+    canonical_state = dict(stale_profile["vuex_state"])
+    canonical_state["user"] = dict(canonical_state["user"])
+    canonical_state["user"]["token"] = "canonical-student-token"
+    store.store_profile(
+        profile_name="student",
+        username="lbschenmuran",
+        password_hash=server_module._hash_login_password("123456"),
+        login_path=server_module.STUDENT_LOGIN_PATH,
+        token="canonical-student-token",
+        login_content="canonical-student-token",
+        fresh_auth=stale_profile["fresh_auth"],
+        vuex_state=canonical_state,
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.post(
+        "/java-api/student/stu/login",
+        json={"userName": "lbschenmuran", "password": "123456", "captchaVerifyParam": ""},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    assert response.json()["content"] == "canonical-student-token"
+    assert response.json()["mirror"]["profile"] == "student"
+    assert response.cookies.get("mirror_profile") == "student"
 
 
 def test_curated_permission_trees_include_core_operations_and_exclude_disabled_modules() -> None:
@@ -1301,7 +1461,11 @@ def test_student_fresh_data_is_normalized_for_legacy_frontend_shape(tmp_path: Pa
     assert content["userInfo"]["stuUserInfo"]["name"] == "lbschenmuran"
     assert content["stuUserInfo"]["name"] == "lbschenmuran"
     assert content["stuUserInfo"]["stuUserInfo"]["realName"] == "陈沐然"
-    assert content["stuBaseInfo"]["realName"] == "陈沐然"
+    assert content["stuBaseInfo"]["realName"]
+    assert content["schoolInfo"]["theme_color"] == "#1778FF"
+    assert content["homepageData"]["homepage"]["logo_img_url"]
+    assert content["homepage"]["logo_img_url"] == content["homepageData"]["homepage"]["logo_img_url"]
+    assert content["imgUrl"] == content["homepageData"]["homepage"]["logo_img_url"]
 
 
 def test_teacher_fresh_data_uses_fresh_auth_user_info(tmp_path: Path) -> None:
@@ -1328,7 +1492,11 @@ def test_teacher_fresh_data_uses_fresh_auth_user_info(tmp_path: Path) -> None:
     assert content["identity"] == 1
     assert content["userInfo"]["id"] == 12385
     assert content["userInfo"]["realName"] == "赵森林"
-    assert content["schoolInfo"]["name"] == "乐启享机器人"
+    assert content["schoolInfo"]["name"]
+    assert content["schoolInfo"]["theme_color"] == "#1778FF"
+    assert content["homepageData"]["homepage"]["logo_img_url"]
+    assert content["homepage"]["logo_img_url"] == content["homepageData"]["homepage"]["logo_img_url"]
+    assert content["imgUrl"] == content["homepageData"]["homepage"]["logo_img_url"]
 
 
 def test_student_subject_endpoints_use_local_fallback_when_capture_is_invalid_token(tmp_path: Path) -> None:
@@ -2832,11 +3000,11 @@ def test_replay_api_decompresses_brotli_json_payload(tmp_path: Path) -> None:
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "success": True,
-        "content": {"userList": []},
-        "error": {"message": "", "code": ""},
-    }
+    payload = response.json()
+    assert payload["success"] is True
+    assert payload["error"] == {"message": "", "code": ""}
+    assert payload["content"]["campusUserList"] == []
+    assert payload["content"]["userList"] == []
 
 
 def test_homepage_payload_is_hydrated_for_success_payloads(tmp_path: Path) -> None:
