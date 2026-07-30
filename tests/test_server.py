@@ -478,6 +478,10 @@ def test_default_runtime_serves_seeded_teacher_ppt_material_detail(tmp_path: Pat
     assert payload["success"] is True
     assert payload["content"]["curriculumMaterial"]["id"] == 7001
     assert payload["content"]["curriculumMaterial"]["pptUrl"]
+    template_info = payload["content"]["tchPlanInfo"]
+    assert template_info["classWorkUrl"].endswith(".sb3")
+    assert template_info["exampleWorkUrl"].endswith(".sb3")
+    assert template_info["homeworkWorkUrl"].endswith(".sb3")
     assert payload["content"]["tchPlanInfo"]["teachingPlanId"] == 5182933
 
 
@@ -658,6 +662,20 @@ def test_runtime_guards_redirect_student_spa_navigation_from_teacher_prepare_rou
     assert "school-home-page|\\/background" in patched
     assert "window.location.replace('/code-classroom/myClass')" in patched
     assert "\\u5907\\u8bfe\\u4e2d\\u5fc3" in patched
+
+
+def test_runtime_guards_add_close_control_for_teacher_course_planning_drawer() -> None:
+    html = "<!doctype html><html><head></head><body></body></html>"
+
+    patched = server_module._inject_runtime_guards(html)
+
+    assert "__localTeacherPrepGuideDrawerGuard" in patched
+    assert "local-prep-guide-close" in patched
+    assert "guide-drawer" in patched
+    assert "floating-guide-btn" in patched
+    assert "form-curriculum" in patched
+    assert "guideDialogVisible=false" in patched
+    assert "z-index:20!important" in patched
 
 
 def test_shared_class_detail_route_is_available_to_teacher_and_student(tmp_path: Path) -> None:

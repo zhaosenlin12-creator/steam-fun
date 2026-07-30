@@ -213,6 +213,41 @@ STUDENT_CLASS_DETAIL_GUARD = (
     "html.local-student-class-detail .classlist-btn{display:none!important;}"
     "</style>"
 )
+TEACHER_PREP_GUIDE_DRAWER_GUARD = (
+    "<script>"
+    "(function(){"
+    "if(window.__localTeacherPrepGuideDrawerGuard){return;}"
+    "window.__localTeacherPrepGuideDrawerGuard=true;"
+    "function apply(){"
+    "if(!/^\\/code-classroom\\/prepare-lessons(?:\\/)?$/.test(location.pathname||'')){return;}"
+    "var drawer=document.querySelector('.el-drawer.guide-drawer');"
+    "if(!drawer||drawer.querySelector('.local-prep-guide-close')){return;}"
+    "var close=document.createElement('button');"
+    "close.type='button';close.className='local-prep-guide-close';"
+    "close.setAttribute('aria-label','Close course planning');close.setAttribute('title','Close course planning');"
+    "close.innerHTML='<span aria-hidden=\"true\">&times;</span>';"
+    "function hide(){"
+    "var form=document.querySelector('.form-curriculum');var view=form&&form.__vue__;"
+    "if(view&&typeof view.handleDrawerClose==='function'){view.handleDrawerClose(function(){view.guideDialogVisible=false;});return;}"
+    "drawer.classList.add('local-prep-guide-closed');"
+    "}"
+    "close.addEventListener('click',hide);"
+    "document.addEventListener('keydown',function(event){if(event.key==='Escape'){hide();}});"
+    "document.addEventListener('click',function(event){if(event.target&&event.target.closest&&event.target.closest('.floating-guide-btn')){drawer.classList.remove('local-prep-guide-closed');}},true);"
+    "drawer.appendChild(close);"
+    "}"
+    "function schedule(){apply();setTimeout(apply,0);}"
+    "if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',schedule,{once:true});}else{schedule();}"
+    "new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});"
+    "}());"
+    "</script>"
+    "<style>"
+    ".el-drawer.guide-drawer{position:relative!important;}"
+    ".el-drawer.guide-drawer .local-prep-guide-close{position:absolute!important;top:12px!important;right:14px!important;z-index:20!important;width:36px!important;height:36px!important;padding:0!important;border:1px solid #d9e2ea!important;border-radius:4px!important;background:#fff!important;color:#263643!important;font:26px/30px Arial,sans-serif!important;cursor:pointer!important;}"
+    ".el-drawer.guide-drawer .local-prep-guide-close:hover{border-color:#16a085!important;color:#0d7d6f!important;}"
+    ".el-drawer.guide-drawer.local-prep-guide-closed{display:none!important;}"
+    "</style>"
+)
 ADMIN_WORKSPACE_LAYOUT_GUARD = (
     "<script>"
     "(function(){"
@@ -1524,6 +1559,8 @@ def _inject_runtime_guards(text: str) -> str:
         guard_block += STUDENT_MYCLASS_LAYOUT_GUARD
     if STUDENT_CLASS_DETAIL_GUARD not in text:
         guard_block += STUDENT_CLASS_DETAIL_GUARD
+    if TEACHER_PREP_GUIDE_DRAWER_GUARD not in text:
+        guard_block += TEACHER_PREP_GUIDE_DRAWER_GUARD
     if ADMIN_WORKSPACE_LAYOUT_GUARD not in text:
         guard_block += ADMIN_WORKSPACE_LAYOUT_GUARD
     if TEACHER_CLASSROOM_INDEX_LAYOUT_GUARD not in text:
@@ -14181,6 +14218,13 @@ def _store_default_staff_profile(
     )
 
 
+DEFAULT_LOCAL_JRCODE_TEMPLATE_URL = (
+    "/_external/wugecdn.steam.fun/courses/b_scratch_course/bb_general_course/version1.0/"
+    "L1_16/sb3%E7%A9%BA%E6%A8%A1%E6%9D%BF/"
+    "09-%E4%B8%83%E5%BD%A9%E9%92%A2%E7%90%B4%20%E7%A9%BA%E6%A8%A1%E6%9D%BF.sb3"
+)
+
+
 def _ensure_default_local_runtime_materials(store: MirrorStore) -> None:
     """Provide explicit local course materials for the seeded offline class."""
     store.upsert_local_curriculum_snapshot(
@@ -14202,9 +14246,9 @@ def _ensure_default_local_runtime_materials(store: MirrorStore) -> None:
             "desc": "认识传感器与顺序控制，完成第一辆智能小车。",
             "img_url": "/_site/courses/images/robot-camp.webp",
             "ppt_url": "/_site/workspace/ppt-demo.html?lesson=smart-car",
-            "teach_template_url": "/_site/workspace/ppt-demo.html?lesson=smart-car",
-            "exampal_work_url": "/_site/workspace/ppt-demo.html?lesson=smart-car",
-            "home_template_url": "/_site/workspace/ppt-demo.html?lesson=smart-car",
+            "teach_template_url": DEFAULT_LOCAL_JRCODE_TEMPLATE_URL,
+            "exampal_work_url": DEFAULT_LOCAL_JRCODE_TEMPLATE_URL,
+            "home_template_url": DEFAULT_LOCAL_JRCODE_TEMPLATE_URL,
         },
         {
             "id": 7002,
@@ -14215,9 +14259,9 @@ def _ensure_default_local_runtime_materials(store: MirrorStore) -> None:
             "desc": "组合机械结构与程序控制，完成协作挑战。",
             "img_url": "/_site/courses/images/lego-course.webp",
             "ppt_url": "/_site/workspace/ppt-demo.html?lesson=robot-mission",
-            "teach_template_url": "/_site/workspace/ppt-demo.html?lesson=robot-mission",
-            "exampal_work_url": "/_site/workspace/ppt-demo.html?lesson=robot-mission",
-            "home_template_url": "/_site/workspace/ppt-demo.html?lesson=robot-mission",
+            "teach_template_url": DEFAULT_LOCAL_JRCODE_TEMPLATE_URL,
+            "exampal_work_url": DEFAULT_LOCAL_JRCODE_TEMPLATE_URL,
+            "home_template_url": DEFAULT_LOCAL_JRCODE_TEMPLATE_URL,
         },
     ):
         store.upsert_local_curriculum_material_snapshot(material)

@@ -7,42 +7,61 @@ import os
 import re
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from playwright.sync_api import BrowserContext, Page, TimeoutError as PlaywrightTimeoutError, sync_playwright
 
 from steamfun_mirror.browser_audit import navigate_for_audit, split_request_failures
+from steamfun_mirror.runtime_audit import get_login_flow
 
 
 ROOT = Path(r"D:\kaifa\steam_fun")
 DEFAULT_BASE = os.environ.get("STEAMFUN_BASE_URL", "http://127.0.0.1:8000")
+TEACHER_ACCOUNT = os.environ.get("STEAMFUN_TEACHER_ACCOUNT", "zhaosenlin")
+TEACHER_PASSWORD = os.environ.get("STEAMFUN_TEACHER_PASSWORD", "123456")
+POPUP_WAIT_TIMEOUT_MS = 1_500
+ACTION_SETTLE_TIMEOUT_MS = 1_000
+
+
+def navigate(page: Page, url: str) -> None:
+    navigate_for_audit(
+        page,
+        url,
+        networkidle_timeout_ms=1_500,
+        settle_timeout_ms=500,
+    )
 
 
 def build_scenarios(base: str) -> list[dict[str, Any]]:
     return [
         {
             "name": "prepare_ppt",
+            "role": "teacher",
             "component": "prepare-ppt",
-            "url": f"{base}/code-classroom/prepare-lessons/prepare/ppt?curriculumMaterial_id=39525&tchPlanId=999999",
+            "url": f"{base}/code-classroom/prepare-lessons/prepare/ppt?curriculumMaterial_id=7001&tchPlanId=5182933",
             "actions": [
+                {"name": "prepare_material", "label": "\u5907\u8bfe\u8d44\u6599"},
                 {"name": "class_result", "label": "\u8bfe\u5802\u6210\u679c"},
                 {"name": "teach_template", "label": "\u6388\u8bfe\u6a21\u677f"},
                 {"name": "home_template", "label": "\u4f5c\u4e1a\u6a21\u677f"},
-                {"name": "student_handout", "label": "\u5b66\u751f\u8bb2\u4e49"},
                 {"name": "start_create", "label": "\u5f00\u59cb\u521b\u4f5c"},
             ],
         },
         {
             "name": "teach_ppt",
+            "role": "teacher",
             "component": "teach-ppt",
-            "url": f"{base}/code-classroom/teach-lessons/lessons/ppt?curriculumMaterial_id=39525&teaching_plan_id=999999",
+            "url": f"{base}/code-classroom/teach-lessons/lessons/ppt?curriculumMaterial_id=7001&teaching_plan_id=5182933",
             "actions": [
+                {"name": "course_tools", "label": "\u8bfe\u7a0b\u5de5\u5177"},
                 {"name": "class_result", "label": "\u8bfe\u5802\u6210\u679c"},
                 {"name": "teach_template", "label": "\u6388\u8bfe\u6a21\u677f"},
                 {"name": "home_template", "label": "\u4f5c\u4e1a\u6a21\u677f"},
                 {"name": "template_sync", "label": "\u6a21\u677f\u540c\u6b65"},
                 {"name": "learning_data", "label": "\u5b66\u4e60\u8d44\u6599"},
-                {"name": "student_handout", "label": "\u5b66\u751f\u8bb2\u4e49"},
+                {"name": "knowledge_poster", "label": "\u77e5\u8bc6\u70b9\u6d77\u62a5"},
+                {"name": "student_management", "label": "\u5b66\u5458\u7ba1\u7406"},
+                {"name": "roll_call", "label": "\u70b9\u540d\u4e0a\u8bfe"},
                 {"name": "student_works", "label": "\u5b66\u751f\u4f5c\u54c1"},
                 {"name": "community", "label": "\u4f5c\u54c1\u793e\u533a"},
                 {"name": "start_create", "label": "\u5f00\u59cb\u521b\u4f5c"},
@@ -94,6 +113,53 @@ def safe_screenshot(page: Page, path: Path, *, full_page: bool = True) -> dict[s
 
 def is_login_redirect(url: str) -> bool:
     return "/login" in url
+
+
+def authenticate_teacher(page: Page, base: str) -> str:
+    flow = get_login_flow("teacher")
+    login_url = f"{base.rstrip('/')}{flow.path}"
+    navigate(page, login_url)
+    if flow.role_tab_selector:
+        page.locator(flow.role_tab_selector).click()
+    page.locator('#form-teacher input[name="userName"]').fill(TEACHER_ACCOUNT)
+    page.locator('#form-teacher input[name="password"]').fill(TEACHER_PASSWORD)
+    page.locator('#form-teacher button[type="submit"]').click()
+    page.wait_for_url(lambda url: urlparse(url).path == flow.fallback_path, timeout=20_000)
+    page.wait_for_timeout(800)
+    if urlparse(page.url).path != flow.fallback_path:
+        raise AssertionError(f"teacher login landed on {page.url}")
+    return page.url
+
+
+def open_teacher_context(browser, base: str) -> tuple[BrowserContext, str]:
+    context = browser.new_context(viewport={"width": 1900, "height": 1000}, locale="zh-CN")
+    login_page = context.new_page()
+    try:
+        return context, authenticate_teacher(login_page, base)
+    except Exception:
+        context.close()
+        raise
+    finally:
+        login_page.close()
+
+
+def audit_result_passed(result: dict[str, Any]) -> bool:
+    if result.get("error") or result.get("is_login_redirect"):
+        return False
+    for nested_key in ("popup", "probe"):
+        nested = result.get(nested_key)
+        if isinstance(nested, dict) and (
+            nested.get("is_login_redirect")
+            or nested.get("navigation_error")
+            or nested.get("page_errors")
+            or nested.get("request_failures")
+            or nested.get("bad_responses")
+        ):
+            return False
+    return not any(
+        result.get(key)
+        for key in ("page_errors", "request_failures", "bad_responses", "invalid_token_responses")
+    )
 
 
 def attach_watchers(page: Page) -> dict[str, Any]:
@@ -298,7 +364,7 @@ def probe_target_page(
     target_url = urljoin(base, url) if url.startswith("/") else url
     navigation_error = None
     try:
-        navigate_for_audit(page, target_url)
+        navigate(page, target_url)
     except Exception as exc:
         navigation_error = str(exc)
         page.wait_for_timeout(2000)
@@ -324,23 +390,24 @@ def probe_target_page(
 
 
 def run_action(
-    browser,
+    context: BrowserContext,
     scenario: dict[str, Any],
     action: dict[str, str],
     outdir: Path,
     *,
     base: str,
+    authenticated_url: str,
 ) -> dict[str, Any]:
-    context = browser.new_context(viewport={"width": 1900, "height": 1000}, locale="zh-CN")
     page = context.new_page()
     watchers = attach_watchers(page)
-    navigate_for_audit(page, scenario["url"])
+    navigate(page, scenario["url"])
 
     target = find_action_locator(page, action["label"])
     result: dict[str, Any] = {
         "scenario": scenario["name"],
         "action": action["name"],
         "label": action["label"],
+        "authenticated_url": authenticated_url,
         "initial_url": page.url,
         "component_before": component_state(page, scenario["component"]),
         "body_before": body_sample(page),
@@ -355,18 +422,17 @@ def run_action(
         result["screenshot"] = safe_screenshot(page, shot, full_page=True)
         result.update(watchers)
         page.close()
-        context.close()
         return result
 
     popup_page: Page | None = None
     try:
-        with context.expect_page(timeout=6000) as popup_info:
+        with context.expect_page(timeout=POPUP_WAIT_TIMEOUT_MS) as popup_info:
             target.click(timeout=10000)
         popup_page = popup_info.value
     except PlaywrightTimeoutError:
         popup_page = None
 
-    page.wait_for_timeout(4000)
+    page.wait_for_timeout(ACTION_SETTLE_TIMEOUT_MS)
     result["final_url"] = page.url
     result["is_login_redirect"] = is_login_redirect(page.url)
     result["component_after"] = component_state(page, scenario["component"])
@@ -381,7 +447,7 @@ def run_action(
     if popup_page is not None:
         popup_watchers = attach_watchers(popup_page)
         popup_page.wait_for_load_state("domcontentloaded", timeout=15000)
-        popup_page.wait_for_timeout(5000)
+        popup_page.wait_for_timeout(ACTION_SETTLE_TIMEOUT_MS)
         popup_shot = outdir / f"{scenario['name']}_{action['name']}_popup.png"
         result["popup"] = {
             "final_url": popup_page.url,
@@ -404,7 +470,6 @@ def run_action(
             )
 
     page.close()
-    context.close()
     return result
 
 
@@ -421,8 +486,23 @@ def main() -> None:
         for scenario in scenarios:
             scenario_dir = outdir / safe_name(scenario["name"])
             scenario_dir.mkdir(parents=True, exist_ok=True)
-            for action in scenario["actions"]:
-                results.append(run_action(browser, scenario, action, scenario_dir, base=base))
+            if scenario["role"] != "teacher":
+                raise ValueError(f"Unsupported classroom audit role: {scenario['role']}")
+            context, authenticated_url = open_teacher_context(browser, base)
+            try:
+                for action in scenario["actions"]:
+                    results.append(
+                        run_action(
+                            context,
+                            scenario,
+                            action,
+                            scenario_dir,
+                            base=base,
+                            authenticated_url=authenticated_url,
+                        )
+                    )
+            finally:
+                context.close()
         browser.close()
 
     (outdir / "results.json").write_text(
@@ -430,6 +510,9 @@ def main() -> None:
         encoding="utf-8",
     )
     print(outdir)
+    all_passed = bool(results) and all(audit_result_passed(result) for result in results)
+    print(f"all_passed={all_passed}")
+    raise SystemExit(0 if all_passed else 1)
 
 
 if __name__ == "__main__":
