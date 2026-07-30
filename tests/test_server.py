@@ -637,6 +637,42 @@ def test_runtime_guards_add_path_scoped_student_myclass_responsive_layout() -> N
     assert "html.local-student-myclass .school-home-page>.frame>section" in patched
 
 
+def test_runtime_guards_hide_teacher_controls_on_student_class_detail() -> None:
+    html = "<!doctype html><html><head></head><body></body></html>"
+
+    patched = server_module._inject_runtime_guards(html)
+
+    assert "__localStudentClassDetailGuard" in patched
+    assert "local-student-class-detail" in patched
+    assert "classlist_desc_teacher" in patched
+    assert "\\u70b9\\u540d\\u4e0a\\u8bfe" in patched
+    assert "\\u5b66\\u5458\\u4fe1\\u606f" in patched
+
+
+def test_shared_class_detail_route_is_available_to_teacher_and_student(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    _store_runtime_student_profile(tmp_path)
+    app = create_app(tmp_path, allow_live_proxy=False)
+
+    teacher = TestClient(app)
+    teacher.cookies.set("mirror_profile", "teacher")
+    student = TestClient(app)
+    student.cookies.set("mirror_profile", "student")
+
+    teacher_response = teacher.get(
+        "/code-classroom/classlist_desc_teacher?class_id=3001",
+        follow_redirects=False,
+    )
+    student_response = student.get(
+        "/code-classroom/classlist_desc_teacher?class_id=3001",
+        follow_redirects=False,
+    )
+
+    assert teacher_response.status_code == 200
+    assert student_response.status_code == 200
+
+
 def test_runtime_guards_add_path_scoped_admin_mobile_layout() -> None:
     html = "<!doctype html><html><head></head><body></body></html>"
 
@@ -1561,6 +1597,8 @@ def test_teacher_fresh_data_uses_fresh_auth_user_info(tmp_path: Path) -> None:
     assert content["identity"] == 1
     assert content["userInfo"]["id"] == 12385
     assert content["userInfo"]["realName"] == "赵森林"
+    assert content["userInfo"]["userImageUrl"]
+    assert content["userInfo"]["headimgUrl"] == content["userInfo"]["userImageUrl"]
     assert content["schoolInfo"]["name"]
     assert content["schoolInfo"]["theme_color"] == "#1778FF"
     assert content["homepageData"]["homepage"]["logo_img_url"]
@@ -3684,11 +3722,57 @@ def test_local_api_fallback_returns_empty_teacher_plan_list(tmp_path: Path) -> N
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "success": True,
-        "content": {"teachingPlan": [], "total": 0, "page_no": 2, "page_size": 3},
-        "error": {"message": "", "code": ""},
-    }
+    payload = response.json()
+    assert payload["success"] is True
+    assert payload["error"] == {"message": "", "code": ""}
+    assert payload["content"]["teachingPlan"] == []
+    assert payload["content"]["total"] == 0
+    assert payload["content"]["page_no"] == 2
+    assert payload["content"]["page_size"] == 3
+
+
+def test_teacher_dashboard_calendar_returns_persisted_plans_in_requested_date_range(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path)
+    store = MirrorStore(tmp_path)
+    store.upsert_local_teaching_plan(
+        {
+            "id": 92001,
+            "curriculum_class_id": 3001,
+            "class_date": "2026-05-13",
+            "start_class_date": "2026-05-13 18:30:00",
+            "end_class_date": "2026-05-13 20:00:00",
+            "custom_lesson_title": "Calendar lesson",
+            "sign_state": 0,
+        }
+    )
+    store.upsert_local_teaching_plan(
+        {
+            "id": 92002,
+            "curriculum_class_id": 3001,
+            "class_date": "2026-05-20",
+            "start_class_date": "2026-05-20 18:30:00",
+            "end_class_date": "2026-05-20 20:00:00",
+            "custom_lesson_title": "Outside calendar range",
+            "sign_state": 0,
+        }
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.get(
+        "/api/tch/getTeachingPlanList?page_no=1&page_size=20"
+        "&start_date=2026-05-13+00:00:00&end_date=2026-05-13+23:59:59",
+        headers={"Authorization": "Bearer teacher-token"},
+    )
+
+    assert response.status_code == 200
+    content = response.json()["content"]
+    assert [row["id"] for row in content["teachingPlan"]] == [92001]
+    assert content["teachingPlanList"] == content["teachingPlan"]
+    assert content["tchPlanList"] == content["teachingPlan"]
+    assert content["total"] == 1
+    assert content["page_no"] == 1
+    assert content["page_size"] == 20
 
 
 def test_local_api_fallback_returns_teacher_user_info_for_course_packages(tmp_path: Path) -> None:
@@ -7643,6 +7727,64 @@ def test_local_class_student_list_returns_flat_content_for_class_detail_page(tmp
     assert content["content"][0]["starNum"] == 9
     assert content["content"][0]["stuName"] == "Mirror Student One"
     assert content["content"][0]["phoneNum"] == "13800138000"
+
+
+def test_teacher_class_detail_member_tab_returns_class_scoped_java_rows(tmp_path: Path) -> None:
+    _write_shell(tmp_path)
+    _store_teacher_profile(tmp_path, user_info={"id": 12385, "realName": "Teacher Li"})
+    store = MirrorStore(tmp_path)
+    enrolled = store.create_local_student(
+        {
+            "eduCampusId": 851,
+            "normalState": "1",
+            "name": "enrolled-student",
+            "realName": "Enrolled Student",
+            "sex": "F",
+            "parentAPhoneNum": "13800138001",
+            "schoolName": "Mirror School",
+            "grade": "",
+            "leader": "",
+            "remark": "",
+            "studyDate": "2026-05-13",
+            "headimgUrl": "",
+        }
+    )
+    store.create_local_student(
+        {
+            "eduCampusId": 851,
+            "normalState": "1",
+            "name": "other-student",
+            "realName": "Other Student",
+            "sex": "M",
+            "parentAPhoneNum": "13800138002",
+            "schoolName": "Mirror School",
+            "grade": "",
+            "leader": "",
+            "remark": "",
+            "studyDate": "2026-05-13",
+            "headimgUrl": "",
+        }
+    )
+    store.upsert_local_class_student_relation(
+        class_id=3001,
+        student_user_id=enrolled["id"],
+        in_class_date="2026-05-13",
+    )
+    client = TestClient(create_app(tmp_path, allow_live_proxy=False))
+
+    response = client.post(
+        "/java-api/school/stu/queryClsStuMsg",
+        headers={"Authorization": "Bearer teacher-token"},
+        json={"classId": 3001, "pageRequest": {"pageNum": 1, "pageSize": 20}},
+    )
+
+    assert response.status_code == 200
+    content = response.json()["content"]
+    assert content["totalSize"] == 1
+    assert content["total"] == 1
+    assert [row["stuId"] for row in content["content"]] == [enrolled["id"]]
+    assert content["content"][0]["stuName"] == "Enrolled Student"
+    assert content["content"][0]["phoneNum"] == "13800138001"
 
 
 def test_teacher_like_admin_token_uses_teacher_local_class_fallbacks(tmp_path: Path) -> None:

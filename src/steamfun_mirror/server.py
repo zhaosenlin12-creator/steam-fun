@@ -174,6 +174,39 @@ STUDENT_MYCLASS_LAYOUT_GUARD = (
     "}"
     "</style>"
 )
+STUDENT_CLASS_DETAIL_GUARD = (
+    "<script>"
+    "(function(){"
+    "if(window.__localStudentClassDetailGuard){return;}"
+    "window.__localStudentClassDetailGuard=true;"
+    "var detailPath=/\\/code-classroom\\/classlist_desc_teacher(?:\\/)?$/;"
+    "var studentTab='\\u5b66\\u5458\\u4fe1\\u606f';"
+    "var teacherLabels=['\\u8fdb\\u5165\\u8bfe\\u5802','\\u5907\\u8bfe','\\u70b9\\u540d\\u4e0a\\u8bfe'];"
+    "function isStudent(){try{if(/(?:^|;\\s*)mirror_profile=(?:student|local_student_)/.test(document.cookie)){return true;}}catch(e){}"
+    "try{if(sessionStorage.getItem('mirror_profile')==='student'){return true;}}catch(e){}"
+    "try{var state=JSON.parse(localStorage.getItem('vuex')||'{}');return Number(((state||{}).user||{}).identity)===2;}catch(e){return false;}}"
+    "function apply(){"
+    "var root=document.documentElement;"
+    "if(!isStudent()||!detailPath.test(location.pathname||'')){root.classList.remove('local-student-class-detail');return;}"
+    "root.classList.add('local-student-class-detail');"
+    "Array.prototype.forEach.call(document.querySelectorAll('.classlist-btn'),function(node){node.style.setProperty('display','none','important');});"
+    "Array.prototype.forEach.call(document.querySelectorAll('button'),function(button){if(teacherLabels.indexOf((button.textContent||'').trim())!==-1){button.style.setProperty('display','none','important');}});"
+    "Array.prototype.forEach.call(document.querySelectorAll('.el-tabs__item'),function(tab){if((tab.textContent||'').trim()!==studentTab){return;}"
+    "tab.setAttribute('aria-hidden','true');tab.style.setProperty('display','none','important');"
+    "if(tab.classList.contains('is-active')){var first=tab.parentElement&&tab.parentElement.querySelector('.el-tabs__item:not([aria-hidden=\"true\"])');if(first){first.click();}}});"
+    "}"
+    "function schedule(){apply();setTimeout(apply,0);}"
+    "if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',schedule,{once:true});}else{schedule();}"
+    "new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});"
+    "var pushState=history.pushState;history.pushState=function(){var result=pushState.apply(this,arguments);schedule();return result;};"
+    "var replaceState=history.replaceState;history.replaceState=function(){var result=replaceState.apply(this,arguments);schedule();return result;};"
+    "window.addEventListener('popstate',schedule);"
+    "}());"
+    "</script>"
+    "<style>"
+    "html.local-student-class-detail .classlist-btn{display:none!important;}"
+    "</style>"
+)
 ADMIN_WORKSPACE_LAYOUT_GUARD = (
     "<script>"
     "(function(){"
@@ -1142,6 +1175,7 @@ LOCAL_TEACHER_FALLBACK_PATHS = {
     "/api/get/school/right/info",
     "/java-api/school/stu/setEndDate",
     "/java-api/school/stu/batchSetEndDate",
+    "/java-api/school/stu/queryClsStuMsg",
     "/java-api/school/currCls/countSignedTchPlan",
     "/java-api/school/tch/selectCurrCls",
     "/java-api/exam/sch/testExamStu/getList",
@@ -1186,6 +1220,7 @@ LOCAL_TEACHER_PREFER_LOCAL_FALLBACK_PATHS = {
     "/api/tch/getTchIndexClassListWithTchPlanInfo",
     "/api/tch/get/stu/tch/plan/list/by/tch/id",
     "/api/get/class/student/list",
+    "/java-api/school/stu/queryClsStuMsg",
     "/api/get/tch/lesson/work/list",
     "/api/tch/get/stu/lesson/tch/work/list",
     "/api/tch/get/tch/stu/tch/work/list",
@@ -1481,6 +1516,8 @@ def _inject_runtime_guards(text: str) -> str:
         guard_block += CLASSROOM_PPT_LAYOUT_GUARD
     if STUDENT_MYCLASS_LAYOUT_GUARD not in text:
         guard_block += STUDENT_MYCLASS_LAYOUT_GUARD
+    if STUDENT_CLASS_DETAIL_GUARD not in text:
+        guard_block += STUDENT_CLASS_DETAIL_GUARD
     if ADMIN_WORKSPACE_LAYOUT_GUARD not in text:
         guard_block += ADMIN_WORKSPACE_LAYOUT_GUARD
     if TEACHER_CLASSROOM_INDEX_LAYOUT_GUARD not in text:
@@ -13651,6 +13688,34 @@ def _build_local_api_fallback(store: MirrorStore, request: Request, request_body
 
     if path == "/java-api/school/stu/queryClsStuMsg":
         submitted = _load_request_payload(request_body)
+        class_id = _parse_int_like(_request_payload_value(request, submitted, "classId", "class_id", "classes_id"))
+        if class_id is not None:
+            class_payload = store.get_class_student_payload(class_id) or {}
+            source_rows = class_payload.get("studentList") if isinstance(class_payload, dict) else []
+            flattened_rows = [
+                _flatten_class_student_detail_row(row)
+                for row in source_rows
+                if isinstance(row, dict)
+            ]
+            page_num, page_size = _page_request_window(submitted, default_page_size=500)
+            start = (page_num - 1) * page_size
+            page_rows = flattened_rows[start:start + page_size]
+            total_size = len(flattened_rows)
+            return _local_json_record(
+                _success_payload(
+                    {
+                        "pageNum": page_num,
+                        "pageSize": page_size,
+                        "totalSize": total_size,
+                        "totalPages": 0 if total_size == 0 else (total_size + page_size - 1) // page_size,
+                        "content": page_rows,
+                        "studentList": page_rows,
+                        "list": page_rows,
+                        "rows": page_rows,
+                        "total": total_size,
+                    }
+                )
+            )
         student_ids = _extract_student_ids(submitted, request)
         student_id = student_ids[0] if student_ids else 0
         overlay = store.get_student_overlay(student_id)
@@ -13870,6 +13935,39 @@ def _build_local_api_fallback(store: MirrorStore, request: Request, request_body
                 ensure_ascii=False,
             ).encode("utf-8"),
         }
+
+    if path == "/api/tch/getTeachingPlanList":
+        start_date, end_date = _dashboard_requested_date_window(
+            _first_query_value(request, "start_date"),
+            _first_query_value(request, "end_date"),
+        )
+        rows = _build_teacher_teaching_plan_rows(store, request)
+        filtered_rows: list[dict[str, Any]] = []
+        for row in rows:
+            row_start = _parse_dashboard_datetime(row.get("start_class_date") or row.get("class_date"))
+            row_end = _parse_dashboard_datetime(row.get("end_class_date") or row.get("class_date"))
+            if start_date is not None and row_end is not None and row_end < start_date:
+                continue
+            if end_date is not None and row_start is not None and row_start > end_date:
+                continue
+            filtered_rows.append(row)
+
+        page_no, page_size, start = _page_window(request)
+        page_rows = filtered_rows[start:start + page_size]
+        return _local_json_record(
+            _success_payload(
+                {
+                    "teachingPlan": page_rows,
+                    "teachingPlanList": page_rows,
+                    "tchPlanList": page_rows,
+                    "list": page_rows,
+                    "rows": page_rows,
+                    "total": len(filtered_rows),
+                    "page_no": page_no,
+                    "page_size": page_size,
+                }
+            )
+        )
 
     if path in TEACHING_PLAN_EMPTY_ENDPOINTS:
         payload = json.loads(json.dumps(TEACHING_PLAN_EMPTY_ENDPOINTS[path], ensure_ascii=False))
@@ -15189,6 +15287,11 @@ def _local_fresh_auth_response(store: MirrorStore, request: Request) -> Response
             or login_content.get("userInfo")
             or login_content.get("tchUserInfo")
             or {}
+        )
+        tch_user = _hydrate_teacher_user_info(
+            store,
+            tch_user,
+            str((profile or {}).get("profile_name") or "teacher"),
         )
         school_info = _merge_dict_defaults(
             (fresh_auth.get("schoolInfo") if isinstance(fresh_auth, dict) else None) or {},

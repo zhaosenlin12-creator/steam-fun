@@ -72,6 +72,7 @@ ROLE_CAPABILITIES: dict[str, RoleCapabilities] = {
         frontend_prefixes=(
             "/code-classroom/classroom-index",
             "/code-classroom/myClass",
+            "/code-classroom/classlist_desc_teacher",
             "/code-classroom/prepare-lessons",
             "/code-classroom/teach-lessons",
             "/school-home-page/class-management1",
@@ -85,6 +86,7 @@ ROLE_CAPABILITIES: dict[str, RoleCapabilities] = {
         navigation=STUDENT_NAVIGATION,
         frontend_prefixes=(
             "/code-classroom/myClass",
+            "/code-classroom/classlist_desc_teacher",
             "/code-classroom/classroom-index",
             "/code-classroom",
             "/exam-stu",
